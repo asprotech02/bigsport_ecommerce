@@ -2,26 +2,29 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail; // <-- 1. Garis miring (//) sudah dihapus
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail 
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable; // <-- 2. Hanya dipanggil satu kali saja
 
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
-    protected $fillable = [
+    protected $fillable = [     // <-- 3. Dijadikan satu array agar tidak saling timpa
         'name',
         'email',
         'password',
+        'birthday',
+        'gender',
+        'phone_number',
     ];
 
     /**
@@ -46,4 +49,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // --- RELASI DATABASE ---
+    public function addresses() { return $this->hasMany(Address::class); }
+    public function orders() { return $this->hasMany(Order::class); }
+    public function carts() { return $this->hasMany(Cart::class); }
+    public function wishlists() { return $this->hasMany(Wishlist::class); }
 }

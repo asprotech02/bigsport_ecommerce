@@ -13,19 +13,20 @@
 
         <div class="sidebar-divider"></div>
 
-        <a href="#" 
-           class="sidebar-link {{ request()->routeIs('orders') ? 'active' : '' }}">
+        <a href="{{ route('order') }}" 
+           class="sidebar-link {{ request()->routeIs('order') ? 'active' : '' }}">
             Pesanan
         </a>
 
-        <a href="#" 
-           class="sidebar-link {{ request()->routeIs('order_status') ? 'active' : '' }}">
+        <a href="{{ route('order_track') }}" 
+           class="sidebar-link {{ request()->routeIs('order_track') ? 'active' : '' }}">
             Status Pesanan
         </a>
 
         <div class="sidebar-divider"></div>
 
-        <a href="#" class="sidebar-link">
+        <a href="{{ route('contact_store') }}" 
+           class="sidebar-link {{ request()->routeIs('contact_store') ? 'active' : '' }}">
             Kontak Kami
         </a>
 
@@ -34,9 +35,9 @@
             Lokasi Toko
         </a>
 
-        <a href="#" class="sidebar-link">
+        <!-- <a href="#" class="sidebar-link">
             Bantuan
-        </a>
+        </a> -->
 
     </div>
 </div>

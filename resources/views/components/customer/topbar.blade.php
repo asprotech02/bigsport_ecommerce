@@ -1,5 +1,6 @@
 <div class="border-bottom py-2 bg-white" style="font-size: 12px; font-weight: 700;">
     <div class="container d-flex justify-content-between align-items-center">
+        
         <div class="d-flex align-items-center text-truncate pe-2">
             <i class="bi bi-truck me-2 fs-6 fs-md-5"></i>
             <span class="text-truncate">FREE ONGKIR Se-Indonesia</span>
@@ -8,10 +9,32 @@
         <div class="d-flex align-items-center gap-3 gap-md-4">
             
             <a href="/" class="text-dark text-decoration-none d-md-block">BERANDA</a>
-            <a href="{{ route('login') }}" class="text-dark text-decoration-none d-none d-md-block">
-                MASUK | DAFTAR
-            </a>
             
+            @guest
+                <a href="{{ route('login') }}" class="text-dark text-decoration-none d-none d-md-block">
+                    MASUK | DAFTAR
+                </a>
+            @endguest
+
+            @auth
+                <div class="d-none d-md-flex align-items-center gap-2">
+                    <a href="{{ route('profile') }}" class="text-dark text-decoration-none text-uppercase text-truncate" style="max-width: 150px;">
+                        HAI, {{ explode(' ', Auth::user()->name)[0] }}
+                    </a>
+                    
+                    <span class="text-muted">|</span>
+                    
+                    <a href="{{ route('logout') }}" 
+                       class="text-dark text-decoration-none"
+                       onclick="event.preventDefault(); document.getElementById('topbar-logout-form').submit();">
+                        KELUAR
+                    </a>
+
+                    <form id="topbar-logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                        @csrf
+                    </form>
+                </div>
+            @endauth
             <div class="dropdown">
                 <button class="btn p-0 border-0 text-dark d-flex align-items-center gap-1 gap-md-2 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 12px; font-weight: 700;">
                     <span class="d-none d-sm-inline">INDONESIA</span>

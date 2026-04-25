@@ -27,7 +27,7 @@
                         <div class="profile-info-text mb-2">Wisnu Azi</div>
                         <div class="profile-info-text mb-2">02 Oktober 2004</div>
                         <div class="profile-info-text mb-4">Laki-laki</div>
-                        <a href="{{ route('profile.edit') }}" class="btn btn-black btn-sm px-4 py-2">Edit</a>
+                        <a href="{{ route('profile_edit') }}" class="btn btn-black btn-sm px-4 py-2">Edit</a>
                     </div>
                     
                     <div>

@@ -1105,6 +1105,21 @@ body {
 /* =======================================
    PRODUCT DETAIL STYLES
 ======================================== */
+
+/* =======================================
+   GALLERY NAVIGATION BUTTONS
+======================================== */
+.gallery-nav-btn {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(2px);
+    transition: all 0.3s ease;
+}
+
+.gallery-nav-btn:hover {
+    background-color: rgba(0, 0, 0, 0.7) !important;
+    transform: translateY(-50%) scale(1.05); /* Sedikit membesar saat di-hover */
+}
+
 /* Menyembunyikan scrollbar pada thumbnail di layar Mobile tapi tetap bisa di-swipe */
 .thumbnail-scroll::-webkit-scrollbar {
     display: none;
@@ -1127,4 +1142,29 @@ body {
 }
 .hover-opacity-100:hover {
     opacity: 1 !important;
+}
+
+/* =======================================
+   TAB NAVIGATION STYLES
+======================================== */
+.nav-tab-custom {
+    background: transparent !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 3px solid transparent !important;
+    border-radius: 0 !important; /* Menghilangkan lengkungan */
+    transition: all 0.2s ease;
+}
+
+.nav-tab-custom.active {
+    border-bottom: 3px solid #dc3545 !important; /* Hanya menyisakan garis bawah merah */
+    opacity: 1 !important;
+    color: #000 !important;
+}
+
+/* Menghilangkan efek biru/glow saat tab diklik */
+.nav-tab-custom:focus {
+    outline: none !important;
+    box-shadow: none !important;
 }

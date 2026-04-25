@@ -24,7 +24,7 @@
             </div>
             
             <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
-                @foreach($products as $product)
+                @foreach($discountProducts as $product)
                 <div class="col d-flex">
                     <x-customer.product_card :product="$product" />
                 </div>
@@ -49,7 +49,7 @@
             </div>
             
             <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
-                @foreach($products as $product)
+                @foreach($featuredProducts as $product)
                 <div class="col d-flex">
                     <x-customer.product_card :product="$product" />
                 </div>

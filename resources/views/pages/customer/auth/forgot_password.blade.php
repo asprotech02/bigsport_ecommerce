@@ -20,7 +20,8 @@
                     Masukkan alamat email yang terdaftar pada akun Anda. Kami akan mengirimkan tautan untuk mengatur ulang password Anda.
                 </p>
 
-                <form action="#" method="POST">
+                <form action="{{ route('password.email') }}" method="POST">
+                    @csrf
                     <div class="mb-4">
                         <label class="form-label auth-label">Email <span class="text-danger">*</span></label>
                         <input type="email" class="form-control rounded-0 shadow-none auth-input" required>

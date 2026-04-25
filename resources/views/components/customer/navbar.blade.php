@@ -41,7 +41,7 @@
             </div>
 
             <ul class="navbar-nav mx-auto d-flex flex-column flex-lg-row justify-content-lg-between align-items-lg-center m-0 p-3 p-lg-0 mt-2" style="max-width: 850px; width: 100%;">
-                <li class="nav-item"><a href="#" class="text-decoration-none nav-link-custom text-sale">SALE</a></li>
+                <li class="nav-item"><a href="{{ route('order_success') }}" class="text-decoration-none nav-link-custom text-sale">SALE</a></li>
                 <li class="nav-item"><a href="#" class="text-decoration-none nav-link-custom">PRODUK BARU</a></li>
                 <li class="nav-item"><a href="#" class="text-decoration-none nav-link-custom">EKSKLUSIF</a></li>
                 
@@ -56,7 +56,7 @@
                                 <div class="col-lg-4 px-0 text-start mb-3 mb-lg-0"> 
                                     <h6 class="mega-menu-title mt-2 mt-lg-0 mb-3 fs-6">SEPATU</h6>
                                     <a href=
-                                        "{{ route('products.index', ['gender' => 'pria', 'category' => 'sepatu', 'subcategory' => 'sepak bola']) }}"
+                                        "#"
                                         class="mega-menu-link m-0 mb-2">Sepak Bola
                                     </a>
                                     <a href="#" class="mega-menu-link m-0 mb-2">Basket</a>
@@ -108,7 +108,7 @@
                                     <div>
                                         <h6 class="mega-menu-title mt-2 mt-lg-0 mb-3 fs-6">PAKAIAN</h6>
                                         <a href=
-                                            "{{ route('products.index', ['gender' => 'perempuan', 'category' => 'pakaian', 'subcategory' => 'kaos']) }}" 
+                                            "#" 
                                             class="mega-menu-link m-0 mb-2">Kaos
                                         </a>
                                         <a href="#" class="mega-menu-link m-0 mb-2">Jersey</a>
