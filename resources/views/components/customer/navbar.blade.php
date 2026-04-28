@@ -55,9 +55,12 @@
                                 
                                 <div class="col-lg-4 px-0 text-start mb-3 mb-lg-0"> 
                                     <h6 class="mega-menu-title mt-2 mt-lg-0 mb-3 fs-6">SEPATU</h6>
-                                    <a href=
-                                        "#"
-                                        class="mega-menu-link m-0 mb-2">Sepak Bola
+                                    <a class="mega-menu-link m-0 mb-2" href="{{ route('product.index', [
+                                        'gender' => 'Laki-laki', 
+                                        'category' => 'Sepatu', 
+                                        'subcategory' => 'Sepak Bola'
+                                        ]) }}">
+                                        Sepak Bola
                                     </a>
                                     <a href="#" class="mega-menu-link m-0 mb-2">Basket</a>
                                     <a href="#" class="mega-menu-link m-0 mb-2">Volly</a>
@@ -107,9 +110,12 @@
                                 <div class="col-lg-4 px-0 d-flex justify-content-lg-center text-start mb-3 mb-lg-0">
                                     <div>
                                         <h6 class="mega-menu-title mt-2 mt-lg-0 mb-3 fs-6">PAKAIAN</h6>
-                                        <a href=
-                                            "#" 
-                                            class="mega-menu-link m-0 mb-2">Kaos
+                                        <a class="nav-link" href="{{ route('product.index', [
+                                            'gender' => 'Perempuan', 
+                                            'category' => 'Pakaian', 
+                                            'subcategory' => 'Kaos'
+                                            ]) }}">
+                                            Kaos
                                         </a>
                                         <a href="#" class="mega-menu-link m-0 mb-2">Jersey</a>
                                         <a href="#" class="mega-menu-link m-0 mb-2">Hoodie</a>

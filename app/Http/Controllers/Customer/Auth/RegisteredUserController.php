@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Customer\Auth;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Controller; // Namespace disesuaikan
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -10,14 +10,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    public function create() { return view('pages.customer.auth.login'); }
+    public function create(): View
+    {
+        return view('pages.customer.auth.register'); 
+    }
 
     public function store(Request $request): RedirectResponse
     {
-        // Menggunakan validateWithBag agar error masuk ke kantong 'register'
         $request->validateWithBag('register', [
             'name'         => ['required', 'string', 'max:255'],
             'birthday'     => ['required', 'date'],
@@ -27,17 +30,17 @@ class RegisteredUserController extends Controller
             'password'     => ['required', 'confirmed', Rules\Password::defaults()],
             'terms'        => ['accepted']
         ], [
-            // Custom pesan Bahasa Indonesia
-            'name.required'         => 'Nama lengkap wajib diisi.',
-            'birthday.required'     => 'Tanggal lahir wajib diisi.',
-            'gender.required'       => 'Pilih jenis kelamin Anda.',
-            'phone_number.required' => 'Nomor handphone wajib diisi.',
-            'email.required'        => 'Alamat email wajib diisi.',
-            'email.unique'          => 'Email ini sudah terdaftar, silakan gunakan email lain.',
-            'password.required'     => 'Password wajib diisi.',
-            'password.confirmed'    => 'Konfirmasi password tidak cocok.',
-            'password.min'          => 'Password minimal harus :min karakter.',
-            'terms.accepted'        => 'Anda harus menyetujui kebijakan keamanan data.'
+            'name.required'         => 'Nama lengkap wajib diisi',
+            'birthday.required'     => 'Tanggal lahir wajib diisi',
+            'gender.required'       => 'Pilih jenis kelamin Anda',
+            'phone_number.required' => 'Nomor handphone wajib diisi',
+            'email.required'        => 'Alamat email wajib diisi',
+            'email.email'           => 'Format email tidak valid (pastikan menggunakan tanda @)', 
+            'email.unique'          => 'Email ini sudah terdaftar, silakan gunakan email lain',
+            'password.required'     => 'Password wajib diisi',
+            'password.confirmed'    => 'Password dan Konfirmasi password tidak cocok',
+            'password.min'          => 'Password minimal harus :min karakter',
+            'terms.accepted'        => 'Anda harus menyetujui kebijakan keamanan data'
         ]);
 
         $user = User::create([

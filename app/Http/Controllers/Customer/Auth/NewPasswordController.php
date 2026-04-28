@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Customer\Auth;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Controller; // Namespace disesuaikan
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -12,20 +13,20 @@ use Illuminate\Validation\Rules;
 
 class NewPasswordController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        // 1. Validasi token, email, dan aturan password (misal minimal 8 karakter)
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'password.required' => 'Password baru wajib diisi.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
-        // 2. Coba reset password di database
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
-                // Jika cocok, timpa password lama dengan yang baru yang sudah di-Hash (enkripsi)
                 $user->forceFill([
                     'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
@@ -35,9 +36,10 @@ class NewPasswordController extends Controller
             }
         );
 
-        // 3. Jika sukses, arahkan ke halaman Login. Jika gagal, kembalikan ke form.
-        return $status === Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withErrors(['email' => [__($status)]]);
+        if ($status == Password::PASSWORD_RESET) {
+            return redirect()->route('login')->with('success', 'Password Anda berhasil diubah! Silakan login dengan password baru');
+        }
+
+        return back()->withErrors(['email' => 'Token reset password tidak valid atau sudah kedaluwarsa']);
     }
 }

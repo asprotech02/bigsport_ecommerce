@@ -2,14 +2,9 @@
 
 @section('content')
     <header class="sticky-header-custom">
-        <!-- TOPBAR -->
         <x-customer.topbar />
-        <!-- TOPBAR -->
-        
-        <!-- NAVBAR -->
         <x-customer.navbar />
-        <!-- NAVBAR -->
-    </header>
+        </header>
 
     <section class="py-5 bg-white" style="min-height: 70vh;">
         <div class="container" style="max-width: 500px;">
@@ -17,7 +12,7 @@
                 <h4 class="fw-bold mb-3 text-center">BUAT PASSWORD BARU</h4>
                 <p class="auth-subtitle mb-4 text-center">Silakan masukkan password baru untuk akun Anda.</p>
 
-                <form action="{{ route('password.store') }}" method="POST">
+                <form action="{{ route('password.store') }}" method="POST" novalidate>
                     @csrf
                     
                     <input type="hidden" name="token" value="{{ $token }}">
@@ -34,9 +29,11 @@
                         <label class="form-label auth-label">Password Baru <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="password" name="password" id="resetPassword" class="form-control rounded-0 shadow-none auth-input border-end-0 @error('password') is-invalid @enderror" required autofocus>
+                            
                             <span class="input-group-text rounded-0 bg-white border-start-0 cursor-pointer @error('password') border-danger @enderror" onclick="togglePassword('resetPassword', 'resetIcon')">
                                 <i class="bi bi-eye-slash text-muted" id="resetIcon"></i>
                             </span>
+                            
                             @error('password') 
                                 <div class="invalid-feedback">{{ $message }}</div> 
                             @enderror
@@ -59,36 +56,26 @@
         </div>
     </section>
 
-    <!-- FOOTER -->
     <x-customer.footer />
-    <!-- FOOTER -->
-
-    <!-- ICON CHATBOT -->
     <x-customer.chatbot />
-    <!-- ICON CHATBOT -->
+    <script>
+        function togglePassword(inputId, iconId) {
+            var input = document.getElementById(inputId);
+            var icon = document.getElementById(iconId);
 
-
-
-    <!-- ===================================================== -->
-        <script>
-            function togglePassword(inputId, iconId) {
-                var input = document.getElementById(inputId);
-                var icon = document.getElementById(iconId);
-
-                if (input.type === "password") {
-                    input.type = "text";
-                    icon.classList.remove("bi-eye-slash");
-                    icon.classList.add("bi-eye");
-                    icon.classList.remove("text-muted");
-                    icon.classList.add("text-dark");
-                } else {
-                    input.type = "password";
-                    icon.classList.remove("bi-eye");
-                    icon.classList.add("bi-eye-slash");
-                    icon.classList.remove("text-dark");
-                    icon.classList.add("text-muted");
-                }
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+                icon.classList.remove("text-muted");
+                icon.classList.add("text-dark");
+            } else {
+                input.type = "password";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+                icon.classList.remove("text-dark");
+                icon.classList.add("text-muted");
             }
-        </script>
-    <!-- ===================================================== -->
+        }
+    </script>
 @endsection

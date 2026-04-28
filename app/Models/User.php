@@ -2,35 +2,31 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail; // <-- 1. Garis miring (//) sudah dihapus
-use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements MustVerifyEmail 
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable; // <-- 2. Hanya dipanggil satu kali saja
+    // CUKUP PAKAI HasFactory dan Notifiable SAJA
+    use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * Atribut yang dapat diisi (Mass Assignable).
      */
-    protected $fillable = [     // <-- 3. Dijadikan satu array agar tidak saling timpa
+    protected $fillable = [
         'name',
         'email',
         'password',
+        'google_id',
         'birthday',
         'gender',
         'phone_number',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Atribut yang harus disembunyikan saat serialisasi.
      */
     protected $hidden = [
         'password',
@@ -38,9 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Casting atribut (Konversi tipe data otomatis).
      */
     protected function casts(): array
     {

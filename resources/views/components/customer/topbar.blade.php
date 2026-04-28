@@ -11,9 +11,23 @@
             <a href="/" class="text-dark text-decoration-none d-md-block">BERANDA</a>
             
             @guest
-                <a href="{{ route('login') }}" class="text-dark text-decoration-none d-none d-md-block">
-                    MASUK | DAFTAR
-                </a>
+                <div class="d-none d-md-flex align-items-center gap-2">
+                    <a href="{{ route('login') }}" class="text-dark text-decoration-none hover-link">
+                        MASUK
+                    </a>
+                    
+                    <span class="text-muted" style="font-weight: 300;">|</span>
+                    
+                    <a href="{{ route('register') }}" class="text-dark text-decoration-none hover-link">
+                        DAFTAR
+                    </a>
+                </div>
+
+                <div class="d-md-none">
+                    <a href="{{ route('login') }}" class="text-dark text-decoration-none">
+                        <i class="bi bi-person fs-5"></i>
+                    </a>
+                </div>
             @endguest
 
             @auth

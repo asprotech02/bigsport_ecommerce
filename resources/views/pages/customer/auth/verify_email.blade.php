@@ -6,7 +6,7 @@
         <x-customer.navbar />
     </header>
 
-    <section class="py-5 bg-white" style="min-height: 70vh;">
+    <section class="py-5 bg-white" style="min-height: 60vh;">
         <div class="container" style="max-width: 500px;">
             <div class="auth-card h-100 text-center">
                 
@@ -32,14 +32,14 @@
                     </button>
                 </form>
 
-                <div class="mt-4">
+                <!-- <div class="mt-4">
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="btn btn-link text-dark fw-bold text-decoration-none p-0" style="font-size: 14px;">
                             <i class="bi bi-box-arrow-left me-1"></i> Keluar
                         </button>
                     </form>
-                </div>
+                </div> -->
             </div>
         </div>
     </section>

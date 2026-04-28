@@ -2,7 +2,7 @@
         <div class="album-video">
 
             <video autoplay muted loop playsinline>
-                <source src="{{ asset('assets/video/video-album1.mp4') }}" type="video/mp4">
+                <source src="{{ asset('assets/customer/video/video-album1.mp4') }}" type="video/mp4">
             </video>
 
             <div class="album-overlay">

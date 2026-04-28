@@ -1,33 +1,35 @@
 @props(['product'])
 
 <div class="product-card h-100">
-    <div class="product-image-wrapper">
+    <div class="product-image-wrapper position-relative">
         <button class="btn-wishlist">
             <i class="bi bi-heart fs-5"></i>
         </button>
 
         @php
-            $primaryImage = $product->images->where('is_primary', true)->first();
-            $imagePath = $primaryImage ? asset('storage/' . $primaryImage->image_path) : 'https://placehold.co/600x600?text=No+Image';
-            
-            // Hitung Persentase Diskon
             $discountPercentage = 0;
             if ($product->discount_price && $product->base_price > 0) {
                 $discountPercentage = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
             }
         @endphp
 
-        <img src="{{ $imagePath }}" 
+        <img src="{{ $product->image_url }}" 
              alt="{{ $product->name }}" 
              class="product-img">
 
-        <div class="product-overlay">
-            <a href="{{ route('detail_product', $product->slug) }}" 
-               class="btn btn-light btn-sm product-btn px-3 py-2 rounded-0">
-                Lihat Detail
-            </a>
+        @if($product->is_out_of_stock)
+            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background-color: rgba(255,255,255,0.6); z-index: 5;">
+                <span class="badge bg-dark py-2 px-3 rounded-0 shadow-sm" style="font-size: 14px; letter-spacing: 1px;">STOK HABIS</span>
+            </div>
+        @else
+            <div class="product-overlay">
+                <a href="{{ route('detail_product', $product->slug ?? $product->id) }}" 
+                   class="btn btn-light btn-sm product-btn px-3 py-2 rounded-0">
+                    Lihat Detail
+                </a>
+            </div>
+        @endif
         </div>
-    </div>
 
     <div class="product-body">
         <span class="product-brand text-uppercase fw-bold text-secondary" style="font-size: 13px;">
@@ -40,7 +42,6 @@
 
         <div class="product-meta mb-2">
             <div class="text-secondary" style="font-size: 14px;">{{ $product->category->name ?? '-' }}</div>
-            <!-- <div class="text-secondary" style="font-size: 14px;"><b>Warna :</b> Putih</div> -->
         </div>
 
         <div class="product-price d-flex align-items-center gap-2 flex-wrap mb-2">
@@ -64,7 +65,7 @@
         <div class="product-rating">
             <div class="stars">
                 @for($i = 1; $i <= 5; $i++)
-                    @if($i <= ($product->reviews_avg_rating ?? 0))
+                    @if($i <= round($product->reviews_avg_rating ?? 0))
                         <i class="bi bi-star-fill text-dark"></i>
                     @else
                         <i class="bi bi-star-fill text-secondary opacity-25"></i>

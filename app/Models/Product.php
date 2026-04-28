@@ -12,6 +12,8 @@ class Product extends Model
     public function images() { return $this->hasMany(ProductImage::class); }
     public function skus() { return $this->hasMany(ProductSku::class); }
     public function reviews() { return $this->hasMany(Review::class); }
+    
+    // Fungsi untuk mengambil gambar utama
     public function getImageUrlAttribute()
     {
         $image = $this->images->firstWhere('is_primary', true);
@@ -19,5 +21,11 @@ class Product extends Model
         return $image
             ? asset('storage/' . $image->image_path)
             : 'https://placehold.co/600x600?text=No+Image';
+    }
+
+    // Fungsi otomatis mendeteksi apakah stok habis
+    public function getIsOutOfStockAttribute()
+    {
+        return $this->skus->sum('stock') <= 0;
     }
 }
