@@ -19,8 +19,8 @@
         <div class="container">
             
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold mb-0 text-sale text-uppercase section-title">LAGI DISKON 🔥</h4>
-                <a href="#" class="link-lihat-semua">CEK SEMUA</a>
+                <h4 class="fw-bold mb-0 text-sale text-uppercase section-title">FLASH SALE 🔥</h4>
+                <a href="{{ route('product.index', ['type' => 'sale']) }}" class="link-lihat-semua">CEK SEMUA</a>
             </div>
             
             <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
@@ -44,7 +44,7 @@
         <div class="container">
             
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold mb-0 text-ekslusife text-uppercase">PRODUK PILIHAN ⚡</h4>
+                <h4 class="fw-bold mb-0 text-ekslusife text-uppercase">PRODUK EKSKLUSIF ⚡</h4>
                 <a href="#" class="link-lihat-semua">CEK SEMUA</a>
             </div>
             

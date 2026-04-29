@@ -19,7 +19,7 @@
 
         <div class="carousel-item">
             <div class="hero-overlay overlay-bottom"></div>
-            <img src="{{ asset('assets/customer/images/banner2.svg') }}" class="d-block w-100 hero-img" alt="Banner 2">
+            <img src="{{ asset('assets/customer/images/banner/banner2.svg') }}" class="d-block w-100 hero-img" alt="Banner 2">
 
             <div class="container hero-content content-bottom-center">
                 <h1>NEW<br>ARRIVAL<br>SPORT</h1>
@@ -28,7 +28,7 @@
 
         <div class="carousel-item">
             <div class="hero-overlay overlay-left"></div>
-            <img src="{{ asset('assets/customer/images/banner3.svg') }}" class="d-block w-100 hero-img" alt="Banner 3">
+            <img src="{{ asset('assets/customer/images/banner/banner3.svg') }}" class="d-block w-100 hero-img" alt="Banner 3">
 
             <div class="container hero-content content-left">
                 <h1>LIMITED<br>EDITION<br>GEAR</h1>

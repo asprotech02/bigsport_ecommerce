@@ -5,172 +5,129 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Faker\Factory as Faker;
 
-// Import semua model satu per satu
+// Import Model
 use App\Models\User;
 use App\Models\Category;
+use App\Models\Subcategory;
 use App\Models\Brand;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductSku;
-use App\Models\Address;
-use App\Models\Cart;
-use App\Models\Wishlist;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Payment;
-use App\Models\ShippingDetail;
-use App\Models\Review;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. USERS
-        $admin = User::create([
+        $faker = Faker::create('id_ID');
+
+        // 1. USER ADMIN & CUSTOMER
+        User::create([
             'name' => 'Admin Big Sport',
             'email' => 'admin@bigsport.com',
             'password' => Hash::make('password'),
             'role' => 'admin',
         ]);
 
-        $customer = User::create([
+        User::create([
             'name' => 'Budi Santoso',
             'email' => 'customer@gmail.com',
             'password' => Hash::make('password'),
             'role' => 'customer',
         ]);
 
-        // 2. CATEGORIES
-        $categories = ['Running', 'Basketball', 'Lifestyle', 'Football'];
-        foreach ($categories as $cat) {
-            Category::create(['name' => $cat, 'slug' => Str::slug($cat)]);
+        // 2. DATA MASTER (KATEGORI, SUBKATEGORI, MEREK)
+        $kategoriData = [
+            'Sepatu' => ['Sepak Bola', 'Basket', 'Volly', 'Casual', 'Sepatu Lari'],
+            'Pakaian' => ['Kaos', 'Jersey', 'Hoodie', 'Celana'],
+            'Aksesoris' => ['Tas', 'Topi', 'Kaos Kaki', 'Alat Olahraga']
+        ];
+
+        $merekData = ['Adidas', 'Nike', 'Puma', 'Ortuseight', 'Specs'];
+        $genderData = ['Laki-laki', 'Perempuan', 'Anak-anak', 'Unisex'];
+        
+        $brandsDb = [];
+        $catsDb = [];
+        $subcatsDb = [];
+
+        foreach ($merekData as $merek) {
+            $brandsDb[] = Brand::create(['name' => $merek, 'slug' => Str::slug($merek)]);
         }
 
-        // 3. BRANDS
-        $brands = ['Adidas', 'Nike', 'New Balance', 'Puma'];
-        foreach ($brands as $br) {
-            Brand::create(['name' => $br, 'slug' => Str::slug($br)]);
+        foreach ($kategoriData as $catName => $subCats) {
+            $category = Category::create(['name' => $catName, 'slug' => Str::slug($catName)]);
+            $catsDb[$catName] = $category;
+
+            foreach ($subCats as $subName) {
+                $subcatsDb[$catName][] = Subcategory::create([
+                    'category_id' => $category->id, 
+                    'name' => $subName, 
+                    'slug' => Str::slug($subName)
+                ]);
+            }
         }
 
-        // 4. PRODUCTS
-        $product = Product::create([
-            'category_id' => 3, // Lifestyle
-            'brand_id' => 1,    // Adidas
-            'name' => 'Adidas Samba OG Black',
-            'slug' => Str::slug('Adidas Samba OG Black'),
-            'description' => 'Sepatu klasik dengan gaya abadi.',
-            'base_price' => 1850000,
-            'weight_gram' => 800,
-        ]);
+        // 3. GENERATOR 150 PRODUK DUMMY
+        for ($i = 1; $i <= 150; $i++) {
+            $randomCatName = array_rand($kategoriData);
+            $kategori = $catsDb[$randomCatName];
+            $subkategori = $faker->randomElement($subcatsDb[$randomCatName]);
+            $merek = $faker->randomElement($brandsDb);
+            $gender = $faker->randomElement($genderData);
 
-        // 5. PRODUCT_IMAGES
-        ProductImage::create([
-            'product_id' => $product->id,
-            'image_path' => 'products/samba-black.jpg',
-            'is_primary' => true
-        ]);
+            $namaProduk = $merek->name . ' ' . $subkategori->name . ' ' . ucfirst($faker->word);
+            $basePrice = $faker->numberBetween(15, 250) * 10000; 
+            
+            // Logika Diskon (Agar sorting SR-02 bekerja dengan baik)
+            $isDiscount = $faker->boolean(40); // 40% peluang diskon
+            $discountPrice = null;
+            if ($isDiscount) {
+                $persenPotongan = $faker->randomElement([0.1, 0.2, 0.3, 0.5]); // 10% s/d 50%
+                $discountPrice = $basePrice - ($basePrice * $persenPotongan);
+            }
 
+            $product = Product::create([
+                'category_id'    => $kategori->id,
+                'subcategory_id' => $subkategori->id,
+                'brand_id'       => $merek->id,
+                'gender'         => $gender,
+                'name'           => $namaProduk,
+                'slug'           => Str::slug($namaProduk . '-' . $i),
+                'description'    => $faker->paragraph(3),
+                'base_price'     => $basePrice,
+                'discount_price' => $discountPrice,
+                'is_featured'    => $faker->boolean(20),
+                'weight_gram'    => $faker->numberBetween(200, 1000),
+                'created_at'     => $faker->dateTimeBetween('-3 months', 'now'),
+            ]);
 
-        $name = 'Nike Air Zoom Pegasus 40';
+            ProductImage::create([
+                'product_id' => $product->id, 
+                'image_path' => 'products/pegasus-40.jpg', 
+                'is_primary' => true
+            ]);
 
-        $product = Product::create([
-            'category_id'    => 2,
-            'brand_id'       => 2,
-            'name'           => $name,
-            'slug'           => Str::slug($name),
-            'description'    => 'Sepatu lari performa tinggi dengan teknologi Air Zoom.',
-            'base_price'     => 2100000,
-            'discount_price' => 1850000, 
-            'is_featured'    => true, // KUNCINYA DI SINI
-            'weight_gram'    => 850,
-        ]);
+            // 4. LOGIKA UKURAN PINTAR (Disesuaikan dengan kategori)
+            if ($randomCatName == 'Pakaian') {
+                $availableSizes = ['S', 'M', 'L', 'XL', 'XXL'];
+            } elseif ($randomCatName == 'Sepatu') {
+                $availableSizes = ['38', '39', '40', '41', '42', '43', '44'];
+            } else {
+                $availableSizes = ['All Size'];
+            }
 
-        // Jangan lupa tambahkan fotonya
-        ProductImage::create([
-            'product_id' => $product->id,
-            'image_path' => 'products/pegasus-40.jpg',
-            'is_primary' => true
-        ]);
+            // Ambil 1 sampai 4 ukuran secara acak dari daftar yang sesuai
+            $numSizes = ($randomCatName == 'Aksesoris') ? 1 : $faker->numberBetween(1, 4);
+            $chosenSizes = $faker->randomElements($availableSizes, $numSizes);
 
-        // 6. PRODUCT_SKUS (Varian Ukuran)
-        $sku42 = ProductSku::create([
-            'product_id' => $product->id,
-            'size' => '42',
-            'stock' => 10
-        ]);
-        ProductSku::create(['product_id' => $product->id, 'size' => '43', 'stock' => 5]);
-
-        // 7. ADDRESSES
-        $address = Address::create([
-            'user_id' => $customer->id,
-            'province_id' => 6, // DKI Jakarta
-            'city_id' => 151,   // Jakarta Barat
-            'district_id' => 2101,
-            'full_address' => 'Jl. Merdeka No. 123, Kembangan',
-            'receiver_name' => 'Budi Santoso',
-            'receiver_phone' => '08123456789',
-            'is_default' => true
-        ]);
-
-        // 8. CARTS
-        Cart::create([
-            'user_id' => $customer->id,
-            'product_sku_id' => $sku42->id,
-            'quantity' => 1
-        ]);
-
-        // 9. WISHLISTS
-        Wishlist::create([
-            'user_id' => $customer->id,
-            'product_id' => $product->id
-        ]);
-
-        // 10. ORDERS
-        $order = Order::create([
-            'user_id' => $customer->id,
-            'address_id' => $address->id,
-            'invoice_number' => 'INV-' . date('Ymd') . '-001',
-            'total_product_price' => 1850000,
-            'total_shipping_cost' => 20000,
-            'grand_total' => 1870000,
-            'status' => 'completed'
-        ]);
-
-        // 11. ORDER_ITEMS
-        OrderItem::create([
-            'order_id' => $order->id,
-            'product_sku_id' => $sku42->id,
-            'price_at_purchase' => 1850000,
-            'quantity' => 1
-        ]);
-
-        // 12. PAYMENTS (Log Midtrans)
-        Payment::create([
-            'order_id' => $order->id,
-            'midtrans_transaction_id' => 'MID-TRX-998877',
-            'payment_type' => 'bank_transfer',
-            'payment_status' => 'settlement',
-            'bank_name' => 'BCA',
-            'gross_amount' => 1870000
-        ]);
-
-        // 13. SHIPPING_DETAILS (Log Biteship)
-        ShippingDetail::create([
-            'order_id' => $order->id,
-            'biteship_order_id' => 'BITESHIP-12345',
-            'courier_name' => 'JNE',
-            'courier_service' => 'REG',
-            'tracking_number' => 'JN123456789ID',
-            'cost' => 20000
-        ]);
-
-        // 14. REVIEWS
-        Review::create([
-            'user_id' => $customer->id,
-            'product_id' => $product->id,
-            'rating' => 5,
-            'comment' => 'Barang original, pengiriman cepat sampai Tangerang!'
-        ]);
+            foreach ($chosenSizes as $size) {
+                ProductSku::create([
+                    'product_id' => $product->id, 
+                    'size'       => $size, 
+                    'stock'      => $faker->boolean(90) ? $faker->numberBetween(5, 50) : 0 
+                ]);
+            }
+        }
     }
 }

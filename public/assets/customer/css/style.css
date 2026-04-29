@@ -1168,3 +1168,81 @@ body {
     outline: none !important;
     box-shadow: none !important;
 }
+
+
+/* =======================================
+   MEGA MENU BRAND LOGOS (NAVBAR ONLY)
+======================================= */
+
+/* Container Utama Logo di Navigasi */
+.mega-menu-brand-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2rem; /* Jarak antar logo di desktop */
+}
+
+/* Base Style untuk Logo Putih */
+.brand-nav-logo {
+    /* Trik mengubah gambar apapun menjadi putih bersih */
+    filter: brightness(0) invert(1); 
+    width: auto;
+    display: block;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.85;
+}
+
+/* Efek Hover Logo */
+.brand-nav-logo:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    cursor: pointer;
+}
+
+/* PENGATURAN UKURAN MASING-MASING BRAND (CUSTOM) */
+/* Karena setiap logo memiliki proporsi berbeda (lebar/tinggi) */
+
+.nav-logo-adidas {
+    height: 50px;
+}
+
+.nav-logo-nike {
+    height: 24px;
+}
+
+.nav-logo-puma {
+    height: 50px;
+}
+
+.nav-logo-ortus {
+    height: 65px;
+}
+
+.nav-logo-specs {
+    height: 70px;
+}
+
+.nav-logo-mizuno {
+    height: 32px;
+}
+
+.nav-logo-newbalance {
+    height: 28px;
+}
+
+/* RESPONSIVE: Penyesuaian di layar Mobile */
+@media (max-width: 991.98px) {
+    .mega-menu-brand-container {
+        gap: 1.5rem;
+        padding-left: 10px; /* Menyesuaikan padding mobile Anda */
+    }
+
+    /* Memperkecil sedikit logo saat di menu mobile */
+    .nav-logo-adidas { height: 32px; }
+    .nav-logo-nike { height: 22px; }
+    .nav-logo-puma { height: 26px; }
+    .nav-logo-ortus { height: 20px; }
+    .nav-logo-specs { height: 16px; }
+    .nav-logo-mizuno { height: 26px; }
+    .nav-logo-newbalance { height: 24px; }
+}

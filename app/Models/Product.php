@@ -28,4 +28,8 @@ class Product extends Model
     {
         return $this->skus->sum('stock') <= 0;
     }
+
+    public function subcategory() { 
+        return $this->belongsTo(Subcategory::class); 
+    }
 }

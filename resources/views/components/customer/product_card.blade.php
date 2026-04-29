@@ -41,7 +41,7 @@
         </h6>
 
         <div class="product-meta mb-2">
-            <div class="text-secondary" style="font-size: 14px;">{{ $product->category->name ?? '-' }}</div>
+            <div class="text-secondary" style="font-size: 14px;">{{ $product->gender ?? '-' }}</div>
         </div>
 
         <div class="product-price d-flex align-items-center gap-2 flex-wrap mb-2">
