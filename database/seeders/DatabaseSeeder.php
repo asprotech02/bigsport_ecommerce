@@ -15,6 +15,8 @@ use App\Models\Brand;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductSku;
+use App\Models\Review;
+use App\Models\Promo; // <--- TAMBAHKAN INI
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,7 +24,7 @@ class DatabaseSeeder extends Seeder
     {
         $faker = Faker::create('id_ID');
 
-        // 1. USER ADMIN & CUSTOMER
+        // 1. USER ADMIN & CUSTOMER UTAMA
         User::create([
             'name' => 'Admin Big Sport',
             'email' => 'admin@bigsport.com',
@@ -36,6 +38,17 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'customer',
         ]);
+
+        // 1.b GENERATE 10 CUSTOMER DUMMY
+        $dummyCustomers = [];
+        for ($i = 0; $i < 10; $i++) {
+            $dummyCustomers[] = User::create([
+                'name' => $faker->name,
+                'email' => $faker->unique()->safeEmail,
+                'password' => Hash::make('password'),
+                'role' => 'customer',
+            ]);
+        }
 
         // 2. DATA MASTER (KATEGORI, SUBKATEGORI, MEREK)
         $kategoriData = [
@@ -79,11 +92,10 @@ class DatabaseSeeder extends Seeder
             $namaProduk = $merek->name . ' ' . $subkategori->name . ' ' . ucfirst($faker->word);
             $basePrice = $faker->numberBetween(15, 250) * 10000; 
             
-            // Logika Diskon (Agar sorting SR-02 bekerja dengan baik)
-            $isDiscount = $faker->boolean(40); // 40% peluang diskon
+            $isDiscount = $faker->boolean(40);
             $discountPrice = null;
             if ($isDiscount) {
-                $persenPotongan = $faker->randomElement([0.1, 0.2, 0.3, 0.5]); // 10% s/d 50%
+                $persenPotongan = $faker->randomElement([0.1, 0.2, 0.3, 0.5]);
                 $discountPrice = $basePrice - ($basePrice * $persenPotongan);
             }
 
@@ -94,7 +106,7 @@ class DatabaseSeeder extends Seeder
                 'gender'         => $gender,
                 'name'           => $namaProduk,
                 'slug'           => Str::slug($namaProduk . '-' . $i),
-                'description'    => $faker->paragraph(3),
+                'description'    => $faker->paragraph(3) . "\n\n" . "Material premium yang nyaman digunakan.",
                 'base_price'     => $basePrice,
                 'discount_price' => $discountPrice,
                 'is_featured'    => $faker->boolean(20),
@@ -102,32 +114,65 @@ class DatabaseSeeder extends Seeder
                 'created_at'     => $faker->dateTimeBetween('-3 months', 'now'),
             ]);
 
-            ProductImage::create([
-                'product_id' => $product->id, 
-                'image_path' => 'products/pegasus-40.jpg', 
-                'is_primary' => true
-            ]);
+            // Galeri Gambar Dummy
+            ProductImage::create(['product_id' => $product->id, 'image_path' => 'products/pegasus-40.jpg', 'is_primary' => true]);
+            ProductImage::create(['product_id' => $product->id, 'image_path' => 'products/samba-side.jpg', 'is_primary' => false]);
 
-            // 4. LOGIKA UKURAN PINTAR (Disesuaikan dengan kategori)
-            if ($randomCatName == 'Pakaian') {
-                $availableSizes = ['S', 'M', 'L', 'XL', 'XXL'];
-            } elseif ($randomCatName == 'Sepatu') {
-                $availableSizes = ['38', '39', '40', '41', '42', '43', '44'];
-            } else {
-                $availableSizes = ['All Size'];
+            // Ukuran & Stok
+            if ($randomCatName == 'Pakaian') { $availableSizes = ['S', 'M', 'L', 'XL']; } 
+            elseif ($randomCatName == 'Sepatu') { $availableSizes = ['40', '41', '42']; } 
+            else { $availableSizes = ['All Size']; }
+
+            foreach ($faker->randomElements($availableSizes, 1) as $size) {
+                ProductSku::create(['product_id' => $product->id, 'size' => $size, 'stock' => $faker->numberBetween(5, 20)]);
             }
 
-            // Ambil 1 sampai 4 ukuran secara acak dari daftar yang sesuai
-            $numSizes = ($randomCatName == 'Aksesoris') ? 1 : $faker->numberBetween(1, 4);
-            $chosenSizes = $faker->randomElements($availableSizes, $numSizes);
-
-            foreach ($chosenSizes as $size) {
-                ProductSku::create([
-                    'product_id' => $product->id, 
-                    'size'       => $size, 
-                    'stock'      => $faker->boolean(90) ? $faker->numberBetween(5, 50) : 0 
+            // Reviews Dummy
+            $numReviews = $faker->numberBetween(0, 3);
+            for ($r = 0; $r < $numReviews; $r++) {
+                Review::create([
+                    'product_id' => $product->id,
+                    'user_id'    => $faker->randomElement($dummyCustomers)->id,
+                    'rating'     => $faker->numberBetween(4, 5),
+                    'comment'    => 'Barang bagus sesuai pesanan.',
                 ]);
             }
         }
+
+        // ==========================================
+        // 6. GENERATE DATA PROMO (BARU)
+        // ==========================================
+        Promo::create([
+            'code' => 'BIGSPORT10',
+            'type' => 'fixed',
+            'reward' => 10000,
+            'max_usage' => 100,
+            'used_count' => 0,
+            'min_order_amount' => 50000,
+            'is_active' => true,
+            'expires_at' => now()->addDays(30),
+        ]);
+
+        Promo::create([
+            'code' => 'PROMOHEMAT',
+            'type' => 'percentage',
+            'reward' => 10, // 10%
+            'max_usage' => 50,
+            'used_count' => 0,
+            'min_order_amount' => 100000,
+            'is_active' => true,
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        Promo::create([
+            'code' => 'LEBARAN2026',
+            'type' => 'fixed',
+            'reward' => 50000,
+            'max_usage' => 10,
+            'used_count' => 0,
+            'min_order_amount' => 500000,
+            'is_active' => true,
+            'expires_at' => '2026-05-30 23:59:59',
+        ]);
     }
 }

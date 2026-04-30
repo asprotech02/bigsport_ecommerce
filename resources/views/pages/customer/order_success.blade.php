@@ -19,7 +19,17 @@
             
             <p class="text-secondary mb-5" style="font-size: 15px; line-height: 1.8;">
                 Terima kasih telah berbelanja di toko kami, nomor pesanan Anda adalah <br>
-                <span class="fw-bold text-dark mt-2 mb-2 d-inline-block" style="font-size: 20px;">#INV-20260425-001</span><br>
+                
+                {{-- LOGIKA DINAMIS DIMULAI DI SINI --}}
+                <span class="fw-bold text-dark mt-2 mb-2 d-inline-block" style="font-size: 20px;">
+                    @if($order)
+                        #{{ $order->invoice_number }}
+                    @else
+                        #TIDAK-ADA-PESANAN
+                    @endif
+                </span><br>
+                {{-- LOGIKA DINAMIS SELESAI --}}
+
                 Kami telah mengirimkan detail pesanan ke email Anda, Cek Email Untuk Cetak Invoice.
             </p>
 

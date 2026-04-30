@@ -14,12 +14,16 @@ return new class extends Migration
         Schema::create('addresses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->integer('province_id'); // ID dari API RajaOngkir/Biteship
-            $table->integer('city_id');
-            $table->integer('district_id');
-            $table->text('full_address');
-            $table->string('receiver_name');
+            $table->string('receiver_name'); // <--- PASTIKAN INI ADA
             $table->string('receiver_phone');
+            $table->integer('province_id');
+            $table->string('province_name');
+            $table->integer('city_id');
+            $table->string('city_name');
+            $table->integer('district_id');
+            $table->string('district_name');
+            $table->string('postal_code');
+            $table->text('full_address');
             $table->boolean('is_default')->default(false);
             $table->timestamps();
         });

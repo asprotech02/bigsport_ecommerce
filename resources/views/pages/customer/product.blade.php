@@ -35,7 +35,7 @@
                             // Link untuk Level 1: Gender
                             if ($activeGen) {
                                 $breadcrumbs[] = [
-                                    'label' => 'KOLEKSI ' . strtoupper($activeGen), 
+                                    'label' => 'KATEGORI ' . strtoupper($activeGen), 
                                     'url' => $currentUrl . '?gender=' . urlencode($activeGen)
                                 ];
                             }
@@ -108,8 +108,8 @@
                 @empty
                     <div class="d-flex flex-column justify-content-center align-items-center text-center py-5" style="min-height: 40vh; flex: 0 0 100%; max-width: 100%;">
                         <i class="bi bi-search text-secondary mb-3" style="font-size: 3rem; opacity: 0.5;"></i>
-                        <h5 class="text-secondary fw-bold" style="letter-spacing: 0.5px;">Maaf, tidak ada produk yang sesuai dengan filter Anda.</h5>
-                        <p class="text-muted" style="font-size: 14px;">Coba ubah kata kunci atau kurangi filter untuk melihat lebih banyak hasil.</p>
+                        <h5 class="text-secondary fw-bold" style="letter-spacing: 0.5px;">Maaf tidak ada produk yang sesuai dengan filter Anda</h5>
+                        <p class="text-muted" style="font-size: 14px;">Coba ubah kata kunci atau kurangi filter untuk melihat lebih banyak hasil</p>
                     </div>
                 @endforelse
                 

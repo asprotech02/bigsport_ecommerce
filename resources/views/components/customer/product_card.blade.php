@@ -2,9 +2,19 @@
 
 <div class="product-card h-100">
     <div class="product-image-wrapper position-relative">
-        <button class="btn-wishlist">
-            <i class="bi bi-heart fs-5"></i>
-        </button>
+    @php
+        // Cek apakah produk ini sudah ada di wishlist user yang login
+        $isInWishlist = false;
+        if(auth()->check()) {
+            $isInWishlist = \App\Models\Wishlist::where('user_id', auth()->id())
+                                            ->where('product_id', $product->id)
+                                            ->exists();
+        }
+    @endphp
+
+    <button class="btn-wishlist toggle-wishlist" data-product-id="{{ $product->id }}">
+        <i class="bi {{ $isInWishlist ? 'bi-heart-fill text-danger' : 'bi-heart' }} fs-5"></i>
+    </button>
 
         @php
             $discountPercentage = 0;
@@ -23,7 +33,7 @@
             </div>
         @else
             <div class="product-overlay">
-                <a href="{{ route('detail_product', $product->slug ?? $product->id) }}" 
+                <a href="{{ route('product.detail', $product->slug) }}" 
                    class="btn btn-light btn-sm product-btn px-3 py-2 rounded-0">
                     Lihat Detail
                 </a>

@@ -14,6 +14,7 @@ class ProductController extends Controller
     {
         // 1. Tangkap parameter dasar
         $type = $request->query('type');               
+        $search = $request->query('search');
         $gender = $request->query('gender');           
         $category = $request->query('category');       
         $subcategory = $request->query('subcategory'); 
@@ -41,7 +42,8 @@ class ProductController extends Controller
                         $q->where('is_primary', true);
                     }])
                     ->withAvg('reviews', 'rating')
-                    ->withCount('reviews');
+                    ->withCount('reviews')
+                    ->withSum('skus', 'stock'); // <-- SUNTIKAN 1: Hitung total stok
 
         // 4. LOGIKA JUDUL BREADCRUMB (Cerdas membaca array filter)
         $title = 'SEMUA PRODUK';
@@ -67,7 +69,7 @@ class ProductController extends Controller
         // Jika hanya 1 gender yang difilter, jadikan judul
         $displayGender = $gender ?: (count($filterGen) == 1 ? $filterGen[0] : null);
         if ($displayGender) {
-            $title = ($title == 'SEMUA PRODUK') ? 'KOLEKSI ' . strtoupper($displayGender) : $title . ' ' . strtoupper($displayGender);
+            $title = ($title == 'SEMUA PRODUK') ? 'KATEGORI ' . strtoupper($displayGender) : $title . ' ' . strtoupper($displayGender);
         }
 
         // Jika hanya 1 kategori yang difilter, jadikan judul
@@ -83,7 +85,25 @@ class ProductController extends Controller
             $title .= ' - ' . strtoupper($subcategory);
         }
 
+        // Ubah judul jika sedang mencari produk
+        if ($search) {
+            $title = 'HASIL PENCARIAN: "' . strtoupper($search) . '"';
+        }
+
         // 5. TERAPKAN FILTER
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', '%' . $search . '%') // <-- Cukup 'name'
+                  ->orWhere('description', 'LIKE', '%' . $search . '%') // <-- Cukup 'description'
+                  ->orWhereHas('brand', function($b) use ($search) {
+                      $b->where('name', 'LIKE', '%' . $search . '%');
+                  })
+                  ->orWhereHas('category', function($c) use ($search) {
+                      $c->where('name', 'LIKE', '%' . $search . '%');
+                  });
+            });
+        }
+
         if (!empty($filterGen)) {
             $query->whereIn('gender', $filterGen);
         }
@@ -114,6 +134,9 @@ class ProductController extends Controller
         }
 
         // 6. SORTING (PENGURUTAN)
+        // <-- SUNTIKAN 2: Prioritaskan produk yang stoknya > 0 di atas, yang 0 di bawah
+        $query->orderByRaw('CASE WHEN skus_sum_stock > 0 THEN 1 ELSE 0 END DESC');
+        
         if ($sort == 'terbaru') {
             $query->latest();
         } elseif ($sort == 'harga_tertinggi') {
@@ -137,5 +160,34 @@ class ProductController extends Controller
         $products = $query->paginate(32)->withQueryString();
 
         return view('pages.customer.product', compact('products', 'title'));
+    }
+
+    // Tambahkan fungsi ini di bawah fungsi index()
+    public function show($slug)
+    {
+        // Panggil produk beserta relasi tabel yang dibutuhkan
+        $product = Product::with([
+                'brand', 
+                'category', 
+                'subcategory', 
+                'images', 
+                'skus', 
+                'reviews.user' // TAMBAHKAN INI UNTUK MENGAMBIL NAMA USER
+            ])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        // Ambil gambar utama (is_primary = true)
+        $primaryImage = $product->images->where('is_primary', true)->first();
+
+        // Hitung total terjual (dummy atau real query)
+        $totalSold = \Illuminate\Support\Facades\DB::table('order_items')
+            ->join('product_skus', 'order_items.product_sku_id', '=', 'product_skus.id')
+            ->where('product_skus.product_id', $product->id)
+            ->sum('quantity');
+
+        return view('pages.customer.detail_product', compact('product', 'primaryImage', 'totalSold'));
     }
 }

@@ -1227,7 +1227,7 @@ body {
 }
 
 .nav-logo-newbalance {
-    height: 28px;
+    height: 56px;
 }
 
 /* RESPONSIVE: Penyesuaian di layar Mobile */
@@ -1238,11 +1238,16 @@ body {
     }
 
     /* Memperkecil sedikit logo saat di menu mobile */
-    .nav-logo-adidas { height: 32px; }
-    .nav-logo-nike { height: 22px; }
-    .nav-logo-puma { height: 26px; }
-    .nav-logo-ortus { height: 20px; }
-    .nav-logo-specs { height: 16px; }
-    .nav-logo-mizuno { height: 26px; }
-    .nav-logo-newbalance { height: 24px; }
+    .nav-logo-adidas { height: 47px; }
+    .nav-logo-nike { height: 20px; }
+    .nav-logo-puma { height: 46px; }
+    .nav-logo-ortus { height: 60px; }
+    .nav-logo-specs { height: 60px; }
+    .nav-logo-mizuno { height: 28px; }
+    .nav-logo-newbalance { height: 48px; }
+}
+
+
+.row {
+    overflow: visible !important;
 }

@@ -6,12 +6,19 @@
                 <a href="/" class="text-white text-decoration-none fs-4 fw-bold">LOGO</a>
             </div>
             
-            <div class="col-6 col-lg-6 d-none d-lg-block">
-                <div class="input-group">
-                    <input type="text" class="form-control rounded-0 border-0 py-2 shadow-none" placeholder="Cari produk...">
-                    <button class="btn bg-white rounded-0 border-0 px-3 py-2" type="button" style="border-left: 1px solid #ddd !important;">
-                        <i class="bi bi-search fs-5 text-dark"></i>
-                    </button>
+            <div class="col-6 col-lg-6 d-none d-lg-block px-4">
+                <div class="position-relative w-100" id="search-container-desktop">
+                    <form action="{{ route('product.index') }}" method="GET">
+                        <div class="input-group">
+                            <input type="text" name="search" class="search-input-custom form-control rounded-0 border-0 py-2 shadow-none" placeholder="Cari produk..." autocomplete="off">
+                            <button class="btn bg-white rounded-0 border-0 px-3 py-2" type="submit" style="border-left: 1px solid #ddd !important;">
+                                <i class="bi bi-search fs-5 text-dark"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="search-suggestions search-dropdown-overlay d-none">
+                        @include('components.customer.search_suggestions_content')
+                    </div>
                 </div>
             </div>
             
@@ -20,9 +27,41 @@
                     <i class="bi bi-bell fs-5"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">2</span>
                 </a>
+                
                 <a href="{{ route('profile') }}" class="text-white text-decoration-none d-lg-inline-block"><i class="bi bi-person fs-5"></i></a>
-                <a href="{{ route('wishlist') }}" class="text-white text-decoration-none"><i class="bi bi-heart fs-5"></i></a>
-                <a href="{{ route('cart') }}" class="text-white text-decoration-none"><i class="bi bi-cart2 fs-5"></i></a>
+
+                <a href="{{ route('wishlist') }}" class="text-white text-decoration-none d-lg-inline-block position-relative">
+                    <i class="bi bi-heart fs-5"></i>
+                    
+                    @auth
+                        @php
+                            // Menghitung jumlah produk unik di wishlist user
+                            $wishlistCount = \App\Models\Wishlist::where('user_id', Auth::id())->count();
+                        @endphp
+                        
+                        @if($wishlistCount > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ $wishlistCount > 99 ? '99+' : $wishlistCount }}
+                            </span>
+                        @endif
+                    @endauth
+                </a>
+
+                <a href="{{ route('cart') }}" class="text-white text-decoration-none d-lg-inline-block position-relative">
+                    <i class="bi bi-cart2 fs-5"></i>
+                    
+                    @auth
+                        @php
+                            $cartCount = \App\Models\Cart::where('user_id', Auth::id())->sum('quantity');
+                        @endphp
+                        
+                        @if($cartCount > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ $cartCount > 99 ? '99+' : $cartCount }}
+                            </span>
+                        @endif
+                    @endauth
+                </a>
                 <button class="navbar-toggler border-0 shadow-none p-0 d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#unifiedMenu">
                     <i class="bi bi-list text-white fs-2"></i>
                 </button>
@@ -31,11 +70,20 @@
 
         <div class="collapse navbar-collapse w-100 pb-3" id="unifiedMenu">
             
-            <div class="input-group mb-4 mt-2 d-lg-none">
-                <input type="text" class="form-control rounded-0 border-0 py-2 shadow-none" placeholder="Cari produk...">
-                <button class="btn bg-white rounded-0 border-0 px-3 py-2" type="button">
-                    <i class="bi bi-search fs-5 text-dark"></i>
-                </button>
+            <div class="d-lg-none px-0 pt-2 pb-3" id="search-container-mobile">
+                <div class="position-relative w-100">
+                    <form action="{{ route('product.index') }}" method="GET">
+                        <div class="input-group">
+                            <input type="text" name="search" class="search-input-custom form-control rounded-0 border-0 py-2 shadow-none border-bottom" placeholder="Cari produk..." autocomplete="off">
+                            <button class="btn bg-white rounded-0 border-0 px-3 py-2 border-bottom" type="submit">
+                                <i class="bi bi-search fs-5 text-dark"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="search-suggestions search-dropdown-overlay d-none">
+                        @include('components.customer.search_suggestions_content')
+                    </div>
+                </div>
             </div>
 
             <ul class="navbar-nav mx-auto d-flex flex-column flex-lg-row justify-content-lg-between align-items-lg-center m-0 p-3 p-lg-0 mt-2" style="max-width: 850px; width: 100%;">
@@ -213,6 +261,11 @@
                                                 alt="Mizuno" class="brand-nav-logo nav-logo-mizuno">
                                         </a>
 
+                                        <a href="{{ route('product.index', ['brand' => ['Newbalance']]) }}" class="text-decoration-none">
+                                            <img src="{{ asset('assets/customer/images/brand/brand newbalance.svg') }}" 
+                                                alt="Newbalance" class="brand-nav-logo nav-logo-newbalance">
+                                        </a>
+
                                     </div>
                                 </div>
                             </div>
@@ -223,3 +276,99 @@
         </div>
     </div>
 </nav>
+
+<style>
+    /* =============================================================
+       1. CSS SEARCH (Pencarian Presisi & Overlay)
+    ============================================================== */
+    .search-dropdown-overlay {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        width: 100%; /* Sesuai lebar input */
+        z-index: 1050;
+        background: white;
+        border: 1px solid #ddd;
+        border-top: none;
+    }
+    
+    @media (min-width: 992px) {
+        #search-container-desktop .search-suggestions {
+            min-width: unset; /* Pastikan tidak melebar keluar dari input */
+        }
+    }
+
+    .nav-link-custom {
+        display: block;
+        padding: 10px 15px;
+        white-space: nowrap;
+    }
+
+    /* =============================================================
+       2. CSS BRAND LOGOS (KEMBALI KE ASLI ANDA)
+    ============================================================== */
+    .mega-menu-brand-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .brand-nav-logo {
+        filter: brightness(0) invert(1); /* Tetap Putih Sesuai Permintaan */
+        width: auto;
+        display: block;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0.85;
+    }
+
+    .brand-nav-logo:hover {
+        opacity: 1;
+        transform: scale(1.1);
+        cursor: pointer;
+    }
+
+    /* Ukuran spesifik tiap brand Anda */
+    .nav-logo-adidas { height: 50px; }
+    .nav-logo-nike { height: 24px; }
+    .nav-logo-puma { height: 50px; }
+    .nav-logo-ortus { height: 65px; }
+    .nav-logo-specs { height: 70px; }
+    .nav-logo-mizuno { height: 32px; }
+    .nav-logo-newbalance { height: 56px; }
+
+    @media (max-width: 991.98px) {
+        .mega-menu-brand-container { gap: 1.5rem; padding-left: 10px; }
+        .nav-logo-adidas { height: 47px; }
+        .nav-logo-nike { height: 20px; }
+        .nav-logo-puma { height: 46px; }
+        .nav-logo-ortus { height: 60px; }
+        .nav-logo-specs { height: 60px; }
+        .nav-logo-mizuno { height: 28px; }
+        .nav-logo-newbalance { height: 48px; }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('.search-input-custom');
+        const overlays = document.querySelectorAll('.search-suggestions');
+
+        inputs.forEach(input => {
+            // Munculkan overlay saat input diklik
+            input.addEventListener('focus', () => {
+                overlays.forEach(el => el.classList.add('d-none')); // Sembunyikan yang lain dulu
+                const container = input.closest('.position-relative');
+                container.querySelector('.search-suggestions').classList.remove('d-none');
+            });
+        });
+
+        // Sembunyikan overlay saat klik di luar area search
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#search-container-desktop') && !e.target.closest('#search-container-mobile')) {
+                overlays.forEach(el => el.classList.add('d-none'));
+            }
+        });
+    });
+</script>

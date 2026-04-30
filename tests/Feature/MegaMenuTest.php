@@ -44,7 +44,7 @@ class MegaMenuTest extends TestCase
 
         $response->assertStatus(200);
         // Memastikan judul merangkai dengan benar
-        $response->assertSee('KOLEKSI LAKI-LAKI - SEPATU - SEPATU LARI');
+        $response->assertSee('KATEGORI LAKI-LAKI - SEPATU - SEPATU LARI');
         // Memastikan Nike (Laki-laki) muncul
         $response->assertSee('Nike Air Zoom Pegasus 40');
         // Memastikan Adidas (Unisex/Bukan sepatu lari) tidak muncul
