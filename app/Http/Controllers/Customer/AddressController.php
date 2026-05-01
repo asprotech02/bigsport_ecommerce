@@ -14,45 +14,99 @@ class AddressController extends Controller
     {
         // Sesuaikan 'address_edit' dengan lokasi/nama file blade lo.
         // Kalau file lo ada di resources/views/pages/customer/address_edit.blade.php:
-        return view('pages.customer.address_edit'); 
+        return view('customer.pages.address_edit'); 
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
+{
+    $request->validate([
+        'receiver_name'  => 'required|string|max:255',
+        'receiver_phone' => 'required|string|max:20',
+        'province_id'    => 'required', 
+        'city_id'        => 'required', 
+        'district_id'    => 'required', 
+        'postal_code'    => 'required|numeric',
+        'full_address'   => 'required|string',
+    ]);
+
+    $user = Auth::user();
+
+    // Set alamat lain jadi non-default jika user mencentang 'is_default'
+    if ($request->has('is_default')) {
+        Address::where('user_id', $user->id)->update(['is_default' => false]);
+    }
+
+    // 🔥 TRIK SAKTI: Cari ID Biteship berdasarkan nama Kecamatan + Kota
+    // Kita gabungkan nama wilayah agar pencarian Biteship akurat
+    $searchQuery = $request->district_name . ', ' . $request->city_name;
+    
+    $response = \Illuminate\Support\Facades\Http::withHeaders([
+        'authorization' => env('BITESHIP_API_KEY'),
+    ])->get("https://api.biteship.com/v1/maps/areas", [
+        'input' => $searchQuery,
+        'countries' => 'id'
+    ]);
+
+    $biteshipAreaId = null;
+    if ($response->successful() && isset($response->json()['areas'][0])) {
+        // Ambil ID pertama yang paling relevan (formatnya IDNP...)
+        $biteshipAreaId = $response->json()['areas'][0]['id'];
+    }
+
+    // SIMPAN KE DATABASE
+    Address::create([
+        'user_id'        => $user->id,
+        'receiver_name'  => $request->receiver_name,
+        'receiver_phone' => $request->receiver_phone,
+        'province_id'    => $request->province_id, // ID Emsifa (Angka)
+        'province_name'  => $request->province_name,
+        'city_id'        => $request->city_id,     // ID Emsifa (Angka)
+        'city_name'      => $request->city_name,
+        // 🔥 Simpan ID Biteship (IDNP...) ke kolom district_id jika ditemukan, 
+        // kalau tidak ketemu, baru pakai fallback ID emsifa.
+        'district_id'    => $biteshipAreaId ?? $request->district_id, 
+        'district_name'  => $request->district_name,
+        'village_id'     => $request->village_id,
+        'village_name'   => $request->village_name,
+        'postal_code'    => $request->postal_code,
+        'full_address'   => $request->full_address,
+        'is_default'     => $request->has('is_default'),
+    ]);
+
+    $cartIds = $request->cart_ids ?? session('selected_cart_ids');
+
+    if (!is_array($cartIds)) {
+        $cartIds = [$cartIds]; 
+    }
+
+    // 🔥 PAKSA SIMPAN SESSION SEBELUM REDIRECT
+    session(['selected_cart_ids' => $cartIds]);
+    session()->save(); 
+
+    return redirect()->route('checkout', ['cart_ids' => $cartIds])
+        ->with('success', 'Alamat berhasil sinkron dengan Biteship!');
+}
+
+    public function setMain($id)
     {
-        // 1. Validasi
-        $request->validate([
-            'receiver_name'  => 'required|string|max:255', // Sesuaikan nama field
-            'receiver_phone' => 'required|string|max:20',  // Sesuaikan nama field
-            'province_id'    => 'required',
-            'city_id'        => 'required',
-            'district_id'    => 'required',
-            'postal_code'    => 'required|numeric',
-            'full_address'   => 'required|string',         // Sesuaikan nama field
-        ]);
+        $userId = auth()->id();
+        \App\Models\Address::where('user_id', $userId)->update(['is_default' => 0]);
+        
+        $address = \App\Models\Address::where('user_id', $userId)->findOrFail($id);
+        $address->update(['is_default' => 1]);
 
-        $user = \Illuminate\Support\Facades\Auth::user();
+        return response()->json(['success' => true, 'message' => 'Alamat utama diperbarui']);
+    }
 
-        // 2. Set default false untuk alamat lama
-        if ($request->has('is_default')) {
-            \App\Models\Address::where('user_id', $user->id)->update(['is_default' => false]);
+    public function destroy($id)
+    {
+        $address = \App\Models\Address::where('user_id', auth()->id())->findOrFail($id);
+        
+        if ($address->is_default) {
+            return response()->json(['success' => false, 'message' => 'Alamat utama tidak bisa dihapus'], 400);
         }
 
-        // 3. Create langsung dari request (karena nama variabel form dan database udah sama)
-        \App\Models\Address::create([
-            'user_id'        => $user->id,
-            'receiver_name'  => $request->receiver_name,
-            'receiver_phone' => $request->receiver_phone,
-            'province_id'    => $request->province_id,
-            'province_name'  => $request->province_name, // Ini dapet dari hidden input JS
-            'city_id'        => $request->city_id,
-            'city_name'      => $request->city_name,     // Ini dapet dari hidden input JS
-            'district_id'    => $request->district_id,
-            'district_name'  => $request->district_name, // Ini dapet dari hidden input JS
-            'postal_code'    => $request->postal_code,
-            'full_address'   => $request->full_address,
-            'is_default'     => $request->has('is_default') ? true : false,
-        ]);
-
-        return redirect()->route('checkout')->with('success', 'Alamat berhasil ditambahkan');
+        $address->delete();
+        return response()->json(['success' => true, 'message' => 'Alamat dihapus']);
     }
 }

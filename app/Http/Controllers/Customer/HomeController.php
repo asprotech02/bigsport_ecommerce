@@ -49,7 +49,7 @@ class HomeController extends Controller
                                     ->take(8) 
                                     ->get();
 
-        return view('pages.customer.home', [
+        return view('customer.pages.home', [
             'discountProducts' => $discountProducts,
             'featuredProducts' => $featuredProducts,
             'gender' => 'Semua',

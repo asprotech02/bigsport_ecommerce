@@ -16,7 +16,7 @@ class RegisteredUserController extends Controller
 {
     public function create(): View
     {
-        return view('pages.customer.auth.register'); 
+        return view('customer.pages.auth.register'); 
     }
 
     public function store(Request $request): RedirectResponse

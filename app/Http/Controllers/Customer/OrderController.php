@@ -16,6 +16,6 @@ class OrderController extends Controller
             ->latest()
             ->get();
             
-        return view('pages.customer.order', compact('orders'));
+        return view('customer.pages.order', compact('orders'));
     }
 }

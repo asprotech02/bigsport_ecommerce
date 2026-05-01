@@ -15,7 +15,7 @@ class AuthenticatedSessionController extends Controller
 {
     public function create(): View
     {
-        return view('pages.customer.auth.login');
+        return view('customer.pages.auth.login');
     }
 
     public function store(LoginRequest $request): RedirectResponse

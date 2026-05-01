@@ -13,7 +13,7 @@ class WishlistController extends Controller
             $q->where('is_primary', true);
         }])->where('user_id', auth()->id())->get();
 
-        return view('pages.customer.wishlist', compact('wishlistItems'));
+        return view('customer.pages.wishlist', compact('wishlistItems'));
     }
 
     public function destroy($id)

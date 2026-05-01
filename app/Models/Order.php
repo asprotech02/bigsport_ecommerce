@@ -10,6 +10,9 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'address_id',
+        'shipping_address', // Tambahkan ini
+        'biteship_order_id', // Tambahkan ini
+        'waybill_id', // Tambahkan ini
         'promo_id',
         'invoice_number',
         'total_product_price',

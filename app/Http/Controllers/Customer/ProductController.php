@@ -159,7 +159,7 @@ class ProductController extends Controller
         // Paginate & simpan string query
         $products = $query->paginate(32)->withQueryString();
 
-        return view('pages.customer.product', compact('products', 'title'));
+        return view('customer.pages.product', compact('products', 'title'));
     }
 
     // Tambahkan fungsi ini di bawah fungsi index()
@@ -188,6 +188,6 @@ class ProductController extends Controller
             ->where('product_skus.product_id', $product->id)
             ->sum('quantity');
 
-        return view('pages.customer.detail_product', compact('product', 'primaryImage', 'totalSold'));
+        return view('customer.pages.detail_product', compact('product', 'primaryImage', 'totalSold'));
     }
 }

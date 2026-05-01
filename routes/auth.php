@@ -29,14 +29,14 @@ Route::middleware('guest')->group(function () {
 
     // --- LUPA PASSWORD (Form Input Email) ---
     Route::get('forgot_password', function () {
-        return view('pages.customer.auth.forgot_password'); // Sesuaikan nama file (-)
+        return view('customer.pages.auth.forgot_password'); // Sesuaikan nama file (-)
     })->name('password.request'); 
     
     Route::post('forgot_password', [PasswordResetController::class, 'store'])->name('password.email');
 
     // --- RESET PASSWORD (Link dari Email) ---
     Route::get('reset_password/{token}', function ($token) {
-        return view('pages.customer.auth.reset_password', ['token' => $token]); // Sesuaikan nama file (-)
+        return view('customer.pages.auth.reset_password', ['token' => $token]); // Sesuaikan nama file (-)
     })->name('password.reset');
 
     Route::post('reset_password', [NewPasswordController::class, 'store'])->name('password.store');
@@ -50,7 +50,7 @@ Route::middleware('auth')->group(function () {
     
     // --- VERIFIKASI EMAIL ---
     Route::get('/verify_email', function () {
-        return view('pages.customer.auth.verify_email'); // Sesuaikan nama file (-)
+        return view('customer.pages.auth.verify_email'); // Sesuaikan nama file (-)
     })->name('verification.notice');
 
     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {

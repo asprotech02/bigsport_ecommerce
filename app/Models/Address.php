@@ -17,6 +17,8 @@ class Address extends Model
         'district_id',
         'district_name',
         'postal_code',
+        'village_id',
+        'village_name',
         'full_address',
         'is_default'
     ];
