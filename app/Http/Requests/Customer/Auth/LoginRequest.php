@@ -39,7 +39,7 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required'    => 'Alamat email wajib diisi',
+            'email.required'    => 'Email wajib diisi',
             'email.email'       => 'Format email tidak valid',
             'password.required' => 'Password wajib diisi',
             'password.min'      => 'Password harus memiliki minimal 8 karakter',
@@ -61,7 +61,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => 'Alamat email yang Anda masukkan tidak terdaftar',
+                'email' => 'Email yang Anda masukkan tidak terdaftar',
             ])->errorBag('login');
         }
 
@@ -91,7 +91,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => 'Terlalu banyak percobaan login. Silakan coba lagi dalam ' . ceil($seconds / 60) . ' menit',
+            'email' => 'Terlalu banyak percobaan login silakan coba lagi dalam ' . ceil($seconds / 60) . ' menit',
         ])->errorBag('login');
     }
 

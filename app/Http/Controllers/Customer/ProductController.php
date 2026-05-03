@@ -93,8 +93,8 @@ class ProductController extends Controller
         // 5. TERAPKAN FILTER
         if ($search) {
             $query->where(function($q) use ($search) {
-                $q->where('name', 'LIKE', '%' . $search . '%') // <-- Cukup 'name'
-                  ->orWhere('description', 'LIKE', '%' . $search . '%') // <-- Cukup 'description'
+                $q->where('name', 'LIKE', '%' . $search . '%') 
+                  ->orWhere('description', 'LIKE', '%' . $search . '%') 
                   ->orWhereHas('brand', function($b) use ($search) {
                       $b->where('name', 'LIKE', '%' . $search . '%');
                   })
@@ -134,7 +134,6 @@ class ProductController extends Controller
         }
 
         // 6. SORTING (PENGURUTAN)
-        // <-- SUNTIKAN 2: Prioritaskan produk yang stoknya > 0 di atas, yang 0 di bawah
         $query->orderByRaw('CASE WHEN skus_sum_stock > 0 THEN 1 ELSE 0 END DESC');
         
         if ($sort == 'terbaru') {
@@ -144,11 +143,8 @@ class ProductController extends Controller
         } elseif ($sort == 'harga_terendah') {
             $query->orderByRaw('COALESCE(discount_price, base_price) ASC');
         } elseif ($sort == 'diskon') {
-            // Tambahkan filter agar hanya produk diskon yang tampil
             $query->whereNotNull('discount_price')
                 ->whereColumn('discount_price', '<', 'base_price');
-                
-            // Urutkan berdasarkan persentase diskon tertinggi
             $query->orderByRaw('((base_price - discount_price) / base_price) * 100 DESC');
         } elseif ($type == 'featured') {
             $query->orderBy('total_sold', 'DESC');
@@ -156,13 +152,11 @@ class ProductController extends Controller
             $query->latest();
         }
 
-        // Paginate & simpan string query
         $products = $query->paginate(32)->withQueryString();
 
         return view('customer.pages.product', compact('products', 'title'));
     }
 
-    // Tambahkan fungsi ini di bawah fungsi index()
     public function show($slug)
     {
         // Panggil produk beserta relasi tabel yang dibutuhkan
@@ -172,22 +166,33 @@ class ProductController extends Controller
                 'subcategory', 
                 'images', 
                 'skus', 
-                'reviews.user' // TAMBAHKAN INI UNTUK MENGAMBIL NAMA USER
+                'reviews.user' 
             ])
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
             ->where('slug', $slug)
             ->firstOrFail();
 
-        // Ambil gambar utama (is_primary = true)
+        // Ambil gambar utama
         $primaryImage = $product->images->where('is_primary', true)->first();
 
-        // Hitung total terjual (dummy atau real query)
+        // Hitung total terjual
         $totalSold = \Illuminate\Support\Facades\DB::table('order_items')
             ->join('product_skus', 'order_items.product_sku_id', '=', 'product_skus.id')
             ->where('product_skus.product_id', $product->id)
             ->sum('quantity');
 
-        return view('customer.pages.detail_product', compact('product', 'primaryImage', 'totalSold'));
+        // REVISI 2: Ambil Produk Rekomendasi berdasarkan kategori yang sama (Kecuali produk ini sendiri)
+        $recommendedProducts = Product::with(['brand', 'category', 'images' => function($q) {
+                $q->where('is_primary', true);
+            }])
+            ->withAvg('reviews', 'rating')
+            ->where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id) // Jangan tampilkan produk yang sedang dilihat
+            ->inRandomOrder() // Acak biar dinamis, atau bisa pakai ->latest()
+            ->take(10) // Tampilkan 4 rekomendasi
+            ->get();
+
+        return view('customer.pages.detail_product', compact('product', 'primaryImage', 'totalSold', 'recommendedProducts'));
     }
 }

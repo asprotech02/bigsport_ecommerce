@@ -13,14 +13,17 @@
                 <h3 class="fw-bold text-uppercase m-0" style="letter-spacing: 1.5px;">Wishlist Saya</h3>
             </div>
 
-            
-            @forelse($wishlistItems as $item)
             <div class="w-100">
-                <div class="d-none d-md-flex fw-bold border-bottom border-dark pb-3 mb-4 text-uppercase" style="font-size: 13px; letter-spacing: 1px;">
-                    <div class="col-6">Item</div>
-                    <div class="col-3 text-center">Harga</div>
-                    <div class="col-3 text-end">Aksi</div>
-                </div>
+                {{-- 🌟 FIX: Pindahkan Header Tabel ke LUAR loop (sebelum @forelse) --}}
+                @if($wishlistItems->count() > 0)
+                    <div class="d-none d-md-flex fw-bold border-bottom border-dark pb-3 mb-4 text-uppercase" style="font-size: 13px; letter-spacing: 1px;">
+                        <div class="col-6">Item</div>
+                        <div class="col-3 text-center">Harga</div>
+                        <div class="col-3 text-end">Aksi</div>
+                    </div>
+                @endif
+
+                @forelse($wishlistItems as $item)
                     @php
                         $product = $item->product;
                         $isDiscount = $product->discount_price && $product->discount_price < $product->base_price;

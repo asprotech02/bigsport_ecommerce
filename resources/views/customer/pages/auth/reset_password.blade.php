@@ -58,6 +58,8 @@
 
     @include('customer.components.footer')
     @include('customer.components.chatbot')
+
+    @push('scripts')
     <script>
         function togglePassword(inputId, iconId) {
             var input = document.getElementById(inputId);
@@ -78,4 +80,5 @@
             }
         }
     </script>
+    @endpush
 @endsection

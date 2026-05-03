@@ -11,6 +11,14 @@
     .selectable-card.active { border: 2px solid #000 !important; background-color: #fff !important; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .text-sale { color: #dc3545; }
     .ratio-1x1 { aspect-ratio: 1 / 1; overflow: hidden; }
+    
+    @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        50% { transform: translateX(5px); }
+        75% { transform: translateX(-5px); }
+        100% { transform: translateX(0); }
+    }
 </style>
 @endpush
 
@@ -54,10 +62,9 @@
                                         {{ $defaultAddress->receiver_name }} 
                                         <span class="fw-normal text-secondary ms-2">({{ $defaultAddress->receiver_phone }})</span>
                                     </p>
-                                    <p class="text-secondary mb-0" style="font-size: 14px; line-height: 1.6;">
+                                    <p class="text-secondary mb-0 small" style="line-height: 1.6;">
                                         {{ $defaultAddress->full_address }},<br>
-                                        {{ $defaultAddress->village_name }}, {{ $defaultAddress->district_name }}, {{ $defaultAddress->city_name }},<br>
-                                        {{ $defaultAddress->province_name }}, {{ $defaultAddress->postal_code }}
+                                        {{ $defaultAddress->village_name }}, {{ $defaultAddress->district_name }}, {{ $defaultAddress->city_name }}, {{ $defaultAddress->province_name }}, {{ $defaultAddress->postal_code }}
                                     </p>
                                 </div>
                             @else
@@ -121,9 +128,15 @@
                     <div class="mb-5" id="courier-section">
                         <h5 class="fw-bold mb-3 text-uppercase text-secondary" style="font-size: 12px; letter-spacing: 1px;">Pilih Ekspedisi</h5>
                         <div id="shipping-options-container">
-                            <div class="border p-4 text-center text-secondary rounded-0 bg-light-gray shadow-sm small">
-                                <div class="spinner-border spinner-border-sm me-2 text-dark"></div> Menghitung ongkos kirim...
-                            </div>
+                            @if($defaultAddress)
+                                <div class="border p-4 text-center text-secondary rounded-0 bg-light-gray shadow-sm small">
+                                    <div class="spinner-border spinner-border-sm me-2 text-dark"></div> Menghitung ongkos kirim...
+                                </div>
+                            @else
+                                <div class="border border-secondary-subtle p-3 text-center text-danger rounded-0 bg-light-gray shadow-sm small fw-bold">
+                                    <i class="bi bi-exclamation-circle me-1"></i> Silakan tambah alamat pengiriman terlebih dahulu.
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -187,6 +200,10 @@
                             </div>
                             <small id="promo-message" class="d-block mt-1"></small>
                         </div>
+                        
+                        <!-- Wadah pesan error elegan tanpa alert -->
+                        <div id="checkout-error-message" class="text-danger fw-bold text-center mb-3" style="display: none; font-size: 12px; letter-spacing: 0.5px;"></div>
+
                         <button type="submit" class="btn btn-black w-100 py-3 fw-bold text-uppercase shadow-sm">BAYAR SEKARANG</button>
                     </div>
                 </div>
@@ -208,16 +225,17 @@
                     <div class="p-4 border-bottom border-secondary-subtle address-option {{ $defaultAddress && $defaultAddress->id == $address->id ? 'bg-light' : '' }}">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <p class="fw-bold mb-0" style="font-size: 15px;">{{ $address->receiver_name }}</p>
+                            
                             <button type="button" class="btn btn-outline-dark btn-sm rounded-0 fw-bold px-3 py-1 btn-pilih-alamat {{ $defaultAddress && $defaultAddress->id == $address->id ? 'd-none' : '' }}" 
                                 data-id="{{ $address->id }}"
                                 data-name="{{ $address->receiver_name }}"
                                 data-phone="{{ $address->receiver_phone }}"
-                                data-village="{{ $address->village_name }}"
-                                data-fulladdress="{{ $address->full_address }}, {{ $address->village_name }}, {{ $address->district_name }}, {{ $address->city_name }}, {{ $address->province_name }}, {{ $address->postal_code }}">PILIH</button>
+                                data-street="{{ $address->full_address }}"
+                                data-region="{{ $address->village_name }}, {{ $address->district_name }}, {{ $address->city_name }}, {{ $address->province_name }}, {{ $address->postal_code }}">PILIH</button>
+                            
                             <span class="text-success fw-bold text-terpilih {{ $defaultAddress && $defaultAddress->id == $address->id ? '' : 'd-none' }}" style="font-size: 12px;"><i class="bi bi-check-circle-fill"></i> Terpilih</span>
                         </div>
                         <p class="text-secondary mb-1 small">{{ $address->receiver_phone }}</p>
-                        {{-- UBAH DI DALAM FORELSE --}}
                         <p class="text-secondary mb-0 small">
                             {{ $address->full_address }}, {{ $address->village_name }}, {{ $address->district_name }}, {{ $address->city_name }}, {{ $address->province_name }}, {{ $address->postal_code }}
                         </p>
@@ -234,7 +252,7 @@
 </div>
 
 @include('customer.components.footer')
-@endsection
+
 
 {{-- 2. BUNGKUS JS PAKAI PUSH SCRIPTS --}}
 @push('scripts')
@@ -263,27 +281,54 @@ document.addEventListener('DOMContentLoaded', function() {
         displayGrandTotal.innerText = formatRupiah(grandTotal > 0 ? grandTotal : 0);
     }
 
-    // --- 1. HANDLING PILIH ALAMAT ---
+    // --- 1. HANDLING PILIH ALAMAT (DENGAN MEMORI SESSION STORAGE) ---
+    function applySelectedAddress(btn, isInitialLoad = false) {
+        const id = btn.dataset.id;
+        const name = btn.dataset.name;
+        const phone = btn.dataset.phone;
+        const street = btn.dataset.street;
+        const region = btn.dataset.region;
+
+        // 1. Update UI Info Penerima di background (Halaman Checkout)
+        document.getElementById('selected-address-container').innerHTML = `
+            <div class="border p-4 rounded-0 bg-light-gray shadow-sm">
+                <input type="hidden" name="address_id" id="address-id" value="${id}">
+                <p class="fw-bold mb-1" style="font-size: 15px;">${name} <span class="fw-normal text-secondary ms-2">(${phone})</span></p>
+                <p class="text-secondary mb-0 small" style="line-height: 1.6;">
+                    ${street},<br>${region}
+                </p>
+            </div>`;
+
+        // 2. Update UI Modal (Pindahkan label "Terpilih")
+        document.querySelectorAll('.address-option').forEach(opt => {
+            opt.classList.remove('bg-light');
+            opt.querySelector('.btn-pilih-alamat').classList.remove('d-none');
+            opt.querySelector('.text-terpilih').classList.add('d-none');
+        });
+
+        const selectedOption = btn.closest('.address-option');
+        selectedOption.classList.add('bg-light');
+        btn.classList.add('d-none');
+        selectedOption.querySelector('.text-terpilih').classList.remove('d-none');
+
+        // 3. Simpan ke memori browser biar nggak ilang pas di-refresh
+        sessionStorage.setItem('checkout_saved_address_id', id);
+
+        // 4. Tutup Modal (hanya kalau dipanggil dari klik tombol, bukan dari auto-load)
+        if (!isInitialLoad) {
+            const modalEl = document.getElementById('modalPilihAlamat');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+        }
+
+        // 5. Hitung Ulang Ongkir
+        fetchShippingRates(id);
+    }
+
+    // Event Listener saat tombol "PILIH" diklik user
     document.querySelectorAll('.btn-pilih-alamat').forEach(btn => {
         btn.addEventListener('click', function() {
-            const id = this.dataset.id;
-            const name = this.dataset.name;
-            const phone = this.dataset.phone;
-            const addr = this.dataset.fulladdress;
-            const village = this.dataset.village; // 🌟 TAMBAHKAN INI
-
-            document.getElementById('selected-address-container').innerHTML = `
-                <div class="border p-4 rounded-0 bg-light-gray shadow-sm">
-                    <input type="hidden" name="address_id" id="address-id" value="${id}">
-                    <p class="fw-bold mb-1" style="font-size: 15px;">${name} <span class="fw-normal text-secondary ms-2">(${phone})</span></p>
-                    <p class="text-secondary mb-0 small" style="line-height: 1.6;">
-                        ${this.dataset.fulladdress.replace(', ', ',<br>' + village + ', ')} 
-                        <!-- Atau cara paling rapih, susun manual variabel addr di atas agar include village -->
-                    </p>
-                </div>`;
-
-            bootstrap.Modal.getInstance(document.getElementById('modalPilihAlamat')).hide();
-            fetchShippingRates(id);
+            applySelectedAddress(this, false);
         });
     });
 
@@ -364,7 +409,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     });
                 } else {
-                    shippingContainer.innerHTML = '<div class="alert alert-warning small">Kurir tidak tersedia untuk wilayah ini.</div>';
+                    // Munculkan pesan error dinamis, agar lu gak bingung misal API Limit abis dll.
+                    console.error("Biteship Error Response:", response.data);
+                    let errorMsg = response.data.message || 'Kurir tidak tersedia untuk wilayah ini.';
+                    shippingContainer.innerHTML = `<div class="border border-secondary-subtle p-3 text-center text-danger rounded-0 bg-light-gray shadow-sm small fw-bold"><i class="bi bi-exclamation-circle me-1"></i> ${errorMsg}</div>`;
                 }
             });
     }
@@ -383,7 +431,6 @@ document.addEventListener('DOMContentLoaded', function() {
             axios.post('{{ route("checkout.promo") }}', { promo_code: code, subtotal: baseSubtotal })
                 .then(res => {
                     if(res.data.success) {
-                        // Bungkus dengan parseInt agar .00 hilang dan formatRupiah jalan
                         currentDiscount = parseInt(res.data.discount_amount);
                         displayDiscount.innerText = "- " + formatRupiah(currentDiscount);
                         msg.innerText = res.data.message;
@@ -410,17 +457,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 6. HANDLING SUBMIT CHECKOUT & MIDTRANS SNAP ---
     const checkoutForm = document.getElementById('checkout-form');
+    const errorMsgBox = document.getElementById('checkout-error-message');
+
+    function showCheckoutError(message) {
+        errorMsgBox.innerText = message;
+        errorMsgBox.style.display = 'block';
+        errorMsgBox.style.animation = 'shake 0.4s';
+        setTimeout(() => errorMsgBox.style.animation = '', 400);
+    }
+
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // Mencegah reload halaman
+            e.preventDefault(); 
             
+            errorMsgBox.style.display = 'none';
+
             const btnSubmit = this.querySelector('button[type="submit"]');
             const originalText = btnSubmit.innerHTML;
             btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> MEMPROSES...';
             btnSubmit.disabled = true;
 
             const formData = new FormData(this);
-            // Tambahkan kode promo ke payload jika ada
             const promoInput = document.getElementById('promo-input').value;
             if(promoInput) {
                 formData.append('promo_code', promoInput);
@@ -429,55 +486,67 @@ document.addEventListener('DOMContentLoaded', function() {
             axios.post('{{ route("checkout.process") }}', formData)
                 .then(response => {
                     if (response.data.success) {
-                        // Jika transaksi Rp 0 (Gratis karena promo)
                         if(response.data.is_free) {
-                            // alert("Pesanan berhasil dibuat secara gratis!");
                             window.location.href = "{{ route('order_success') }}";
                             return;
                         }
 
-                        // Jika transaksi berbayar, panggil Popup Midtrans
                         window.snap.pay(response.data.snap_token, {
                             onSuccess: function(result){
-                                // Pembayaran sukses (kartu kredit/gopay langsung)
+                                // Reset memori session setelah pembayaran sukses
+                                sessionStorage.removeItem('checkout_saved_address_id');
                                 window.location.href = "{{ route('order_success') }}";
                             },
                             onPending: function(result){
-                                // Customer pilih Transfer Bank / Minimarket lalu klik "Lihat Cara Bayar"
-                                // alert("Pesanan berhasil dibuat. Silakan selesaikan pembayaran Anda");
-                                window.location.href = "{{ route('order') }}"; // Lempar ke halaman riwayat pesanan
+                                sessionStorage.removeItem('checkout_saved_address_id');
+                                window.location.href = "{{ route('order') }}"; 
                             },
                             onError: function(result){
-                                // alert("Pembayaran gagal. Silakan coba lagi.");
+                                showCheckoutError('Pembayaran gagal atau ditolak. Silakan coba metode lain.');
                                 btnSubmit.innerHTML = originalText;
                                 btnSubmit.disabled = false;
                             },
                             onClose: function(){
-                                // CUSTOMER KLIK TOMBOL "X" (TUTUP POPUP SEBELUM BAYAR)
-                                // alert("Anda menutup halaman pembayaran. Pesanan Anda telah disimpan sebagai 'Menunggu Pembayaran'.");
-                                
-                                // PENTING: Lempar keluar dari halaman checkout agar tidak error!
+                                sessionStorage.removeItem('checkout_saved_address_id');
                                 window.location.href = "{{ route('order') }}"; 
                             }
                         });
                     } else {
-                        alert('Gagal: ' + response.data.message);
+                        showCheckoutError(response.data.message || 'Terjadi kesalahan sistem.');
                         btnSubmit.innerHTML = originalText;
                         btnSubmit.disabled = false;
                     }
                 })
                 .catch(error => {
                     console.error(error);
-                    // alert('Terjadi kesalahan saat memproses pesanan.');
+                    showCheckoutError('Gagal terhubung ke server. Periksa koneksi internet Anda.');
                     btnSubmit.innerHTML = originalText;
                     btnSubmit.disabled = false;
                 });
         });
     }
 
-    // Init load
-    const initAddr = document.getElementById('address-id')?.value;
-    if(initAddr) fetchShippingRates(initAddr);
+    // --- CEK MEMORI SAAT HALAMAN DI-REFRESH / BARU DIBUKA ---
+    const savedAddressId = sessionStorage.getItem('checkout_saved_address_id');
+
+    if (savedAddressId) {
+        // Kalau user sebelumnya udah pernah milih alamat, otomatis jalankan perubahannya
+        const savedBtn = document.querySelector(`.btn-pilih-alamat[data-id="${savedAddressId}"]`);
+        
+        if (savedBtn) {
+            applySelectedAddress(savedBtn, true); // True = mode initial load (modal gak usah ditutup)
+        } else {
+            // Jaga-jaga kalau data error, panggil default
+            const initAddr = document.getElementById('address-id')?.value;
+            if(initAddr) fetchShippingRates(initAddr);
+        }
+    } else {
+        // Kalau baru pertama kali banget buka checkout, pakai alamat default dari Laravel
+        const initAddr = document.getElementById('address-id')?.value;
+        if(initAddr) fetchShippingRates(initAddr);
+    }
+
 });
 </script>
 @endpush
+@endsection

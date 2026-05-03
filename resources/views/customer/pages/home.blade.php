@@ -106,15 +106,16 @@
                     <!-- <a href="#" class="text-muted text-decoration-none" style="font-size: 12px; font-weight: 500;" data-bs-dismiss="modal">
                         Nanti saja, lanjutkan keliling toko
                     </a> -->
-
+                    
                 </div>
             </div>
         </div>
     </div>
     <!-- ========================================== -->
-
+    
+    @push('scripts')
     <!-- ========================================== -->
-    <script>
+    <!-- <script>
         const lastShown = localStorage.getItem('promoShownTime');
         const now = new Date().getTime();
 
@@ -127,29 +128,29 @@
                 localStorage.setItem('promoShownTime', now);
             });
         }
-    </script>
+    </script> -->
 
-
-    <!-- <script>
+<script>
     document.addEventListener("DOMContentLoaded", function() {
         
-        // CEK apakah modal sudah pernah ditampilkan
-        if (!sessionStorage.getItem('promoShownModern')) {
-            
-            var promoModal = new bootstrap.Modal(document.getElementById('promoModalModern'));
-            
-            setTimeout(function() {
-                promoModal.show();
-            }, 1000);
-
-            // SET setelah modal ditutup
-            document.getElementById('promoModalModern').addEventListener('hidden.bs.modal', function () {
-                sessionStorage.setItem('promoShownModern', 'true');
+    // CEK apakah modal sudah pernah ditampilkan
+    if (!sessionStorage.getItem('promoShownModern')) {
+        
+    var promoModal = new bootstrap.Modal(document.getElementById('promoModalModern'));
+    
+    setTimeout(function() {
+        promoModal.show();
+        }, 1000);
+        
+        // SET setelah modal ditutup
+        document.getElementById('promoModalModern').addEventListener('hidden.bs.modal', function () {
+            sessionStorage.setItem('promoShownModern', 'true');
             });
-        }
-
-    });
-    </script> -->
-    <!-- ========================================== -->
+            }
+            
+            });
+        </script>
+        <!-- ========================================== -->
+        @endpush
 
 @endsection

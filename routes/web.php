@@ -61,7 +61,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/login_edit', function () { return view('customer.pages.auth.login_edit'); })->name('login_edit');
     // 👆👆👆 ------------------------------------------ 👆👆👆
     // Route untuk mengambil data tracking via AJAX
-Route::get('/profile/order/{id}/tracking', [App\Http\Controllers\Customer\ProfileController::class, 'getTracking'])->name('profile.tracking');
+// Route::get('/profile/order/{id}/tracking', [App\Http\Controllers\Customer\ProfileController::class, 'getTracking'])->name('profile.tracking');
+Route::get('/profile/order/{id}/tracking', [App\Http\Controllers\Customer\ProfileController::class, 'getTracking'])->name('order.tracking');
+Route::get('/profile/order/{id}/invoice', [App\Http\Controllers\Customer\ProfileController::class, 'printInvoice'])->name('order.invoice');
     // Notification
     Route::get('/notification', function () { return view('customer.pages.notification'); })->name('notification');
 

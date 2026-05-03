@@ -12,7 +12,7 @@
             <div class="auth-card w-100" style="max-width: 500px;">
                 <h4 class="fw-bold mb-3 text-center">LUPA PASSWORD?</h4>
                 <p class="auth-subtitle mb-4 text-center">
-                    Masukkan alamat email yang terdaftar pada akun Anda <br> Kami akan mengirimkan tautan untuk mengatur ulang password Anda
+                    Masukkan email yang terdaftar pada akun Anda <br> Kami akan mengirimkan tautan untuk mengatur ulang password Anda
                 </p>
 
                 @if (session('status'))
@@ -43,4 +43,4 @@
 
     @include('customer.components.footer')
     @include('customer.components.chatbot')
-    @endsection
+@endsection

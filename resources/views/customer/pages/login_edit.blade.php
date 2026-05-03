@@ -97,7 +97,7 @@
     <!-- ICON CHATBOT -->
 
 
-
+    @push('scripts')
     <!-- ===================================================== -->
         <script>
             function togglePassword(inputId, iconId) {
@@ -120,4 +120,5 @@
             }
         </script>
     <!-- ===================================================== -->
+     @endpush
 @endsection

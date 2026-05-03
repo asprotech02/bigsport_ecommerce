@@ -38,7 +38,7 @@ class CartController extends Controller
             $existingCart->quantity += $request->quantity;
             $existingCart->save();
         } else {
-            // 🌟 TAMBAHKAN VARIABEL $newCartItem DI SINI
+            // 🌟 VARIABEL $newCartItem SUDAH BENAR DI SINI
             $newCartItem = Cart::create([
                 'user_id' => Auth::id(),
                 'product_sku_id' => $request->sku_id,
@@ -46,11 +46,25 @@ class CartController extends Controller
             ]);
         }
 
+        // JIKA TOMBOL "BELI SEKARANG" DIKLIK (Normal Redirect)
         if ($request->action == 'buy_now') {
             $cartId = $existingCart ? $existingCart->id : $newCartItem->id; 
             return redirect()->route('checkout', ['cart_ids' => [$cartId]]);
         }
 
+        // 🌟 FIX: Hitung jumlah entri keranjang unik untuk update badge navbar
+        $totalCart = Cart::where('user_id', Auth::id())->count();
+
+        // 🌟 FIX: Jika request datang dari JavaScript (Tombol "Tambah Keranjang")
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Produk berhasil ditambahkan ke keranjang',
+                'total' => $totalCart // Kirim total terbaru ke script JS
+            ]);
+        }
+
+        // Fallback (jaga-jaga kalau JS mati/gagal)
         return redirect()->back()->with('success', 'Produk berhasil ditambahkan ke keranjang');
     }
 

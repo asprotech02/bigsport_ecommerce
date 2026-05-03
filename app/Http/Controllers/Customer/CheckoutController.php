@@ -96,13 +96,13 @@ class CheckoutController extends Controller
         }
 
         try {
-            // MENGGUNAKAN POSTAL CODE (Sesuai dengan kode lu yang sebelumnya berhasil)
+            // 🌟 FIX 1: KEMBALIKAN KE POSTAL CODE (Agar Origin & Destination sepasang formatnya)
             $response = Http::withHeaders([
                 'authorization' => env('BITESHIP_API_KEY'),
                 'content-type'  => 'application/json'
             ])->post('https://api.biteship.com/v1/rates/couriers', [
-                'origin_postal_code'      => 15710, 
-                'destination_postal_code' => (int) $address->postal_code, // KEMBALI PAKAI POSTAL CODE
+                'origin_postal_code'      => 15710, // Kode pos toko lu
+                'destination_postal_code' => (int) $address->postal_code, // Kode pos pembeli
                 'couriers'                => 'jne,jnt,sicepat', 
                 'items'                   => $items
             ]);
@@ -115,7 +115,7 @@ class CheckoutController extends Controller
             
             return response()->json([
                 'success' => false, 
-                'message' => 'Biteship Error: ' . ($result['error'] ?? 'Kurir tidak tersedia')
+                'message' => 'Biteship Error: ' . ($result['error'] ?? 'Kurir tidak menjangkau kode pos ini')
             ]);
 
         } catch (\Exception $e) {
@@ -267,15 +267,19 @@ class CheckoutController extends Controller
                     'shipper_contact_phone' => $cleanSenderPhone,
                     'origin_contact_name'   => 'Big Sport Tangerang',
                     'origin_contact_phone'  => $cleanSenderPhone,
-                    'origin_address'        => 'Jl. Jenderal Sudirman No. 45, Tangerang',
-                    'origin_postal_code'    => 15710,
-                    'origin_area_id'        => 'IDNP10CL10TR10',
+                    'origin_address'        => 'Jl. HOS Cokroaminoto No.52, Larangan, Tangerang',
+                    
+                    // 🌟 FIX: Toko pakai Kode Pos
+                    'origin_postal_code'    => 15710, 
 
                     'destination_contact_name'  => $address->receiver_name,
                     'destination_contact_phone' => $cleanReceiverPhone,
                     'destination_address'       => $address->full_address,
+                    
+                    // 🌟 FIX: Pembeli WAJIB diseimbangkan pakai Kode Pos juga
                     'destination_postal_code'   => (int) $address->postal_code,
-                    'destination_area_id'       => $address->district_id,
+                    // Kita matikan pengiriman destination_area_id agar Biteship tidak bingung
+                    // 'destination_area_id'    => $address->district_id, 
 
                     'courier_company' => strtolower($request->courier_company),
                     'courier_type'    => strtolower($request->courier_type),
@@ -297,17 +301,15 @@ class CheckoutController extends Controller
                         'waybill_id' => $biteshipData['courier']['waybill_id'] ?? null
                     ]);
                 } else {
-                    // --- THE BYPASS (ANTI-NULL SYSTEM) ---
-                    // Jika API Sandbox nolak karena rute (biasanya kode 40002021), 
-                    // kita generate Dummy ID agar aplikasi tidak stuck di NULL.
+                    // Jika API Sandbox nolak karena rute (biasanya kode 40002021)
                     $dummyBiteshipId = 'bts_dummy_' . uniqid(); 
                     
                     $order->update([
                         'biteship_order_id' => $dummyBiteshipId,
-                        'waybill_id' => 'RESI-' . strtoupper(Str::random(10)) // Kasih dummy resi sekalian
+                        'waybill_id' => 'RESI-' . strtoupper(Str::random(10)) 
                     ]);
                     
-                    \Log::warning('Biteship Sandbox Reject (' . $biteshipResponse->status() . '). Bypass Activated. Dummy ID: ' . $dummyBiteshipId);
+                    Log::warning('Biteship Sandbox Reject (' . $biteshipResponse->status() . '). Bypass Activated. Dummy ID: ' . $dummyBiteshipId);
                 }
             }
 

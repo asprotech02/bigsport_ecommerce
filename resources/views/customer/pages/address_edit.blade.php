@@ -92,12 +92,16 @@
     @include('customer.components.footer')
     @include('customer.components.chatbot')
 
+    @push('styles')
     <style>
         .form-check-input:checked { background-color: #000 !important; border-color: #000 !important; }
         .form-check-input:focus { border-color: #000 !important; box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.25) !important; }
         .auth-input:focus { border-color: #000; box-shadow: none; }
     </style>
+    @endpush
 
+
+    @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -114,6 +118,10 @@
                         options += `<option value="${prov.id}" data-name="${prov.name}">${prov.name}</option>`;
                     });
                     provinceSelect.innerHTML = options;
+                })
+                .catch(() => {
+                    // 🌟 UX ELEGAN: Gagal tanpa alert
+                    provinceSelect.innerHTML = '<option value="">-- Gagal Memuat Provinsi --</option>';
                 });
 
             // --- 2. LOAD KOTA ---
@@ -133,6 +141,9 @@
                             });
                             citySelect.innerHTML = options;
                             citySelect.disabled = false;
+                        })
+                        .catch(() => {
+                            citySelect.innerHTML = '<option value="">-- Gagal Memuat Kota --</option>';
                         });
                 }
             });
@@ -153,6 +164,9 @@
                             });
                             districtSelect.innerHTML = options;
                             districtSelect.disabled = false;
+                        })
+                        .catch(() => {
+                            districtSelect.innerHTML = '<option value="">-- Gagal Memuat Kecamatan --</option>';
                         });
                 }
             });
@@ -172,6 +186,9 @@
                             });
                             villageSelect.innerHTML = options;
                             villageSelect.disabled = false;
+                        })
+                        .catch(() => {
+                            villageSelect.innerHTML = '<option value="">-- Gagal Memuat Kelurahan --</option>';
                         });
                 }
             });
@@ -195,4 +212,5 @@
             });
         });
     </script>
+    @endpush
 @endsection

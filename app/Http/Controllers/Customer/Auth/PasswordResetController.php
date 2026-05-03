@@ -14,7 +14,7 @@ class PasswordResetController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
         ], [
-            'email.required' => 'Alamat email wajib diisi',
+            'email.required' => 'Email wajib diisi',
             'email.email' => 'Format email tidak valid',
         ]);
 

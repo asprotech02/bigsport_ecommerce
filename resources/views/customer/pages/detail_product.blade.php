@@ -6,6 +6,44 @@
         @include('customer.components.navbar')
     </header>
 
+    @php
+        // 🌟 FIX LOGIKA STOK: Pindahkan perhitungan ke paling atas biar bisa dipakai di seluruh bagian halaman
+        $standardSizes = [];
+        $isKids = str_contains(strtolower($product->gender), 'anak');
+
+        if ($product->category->name == 'Sepatu') {
+            if ($isKids) {
+                $standardSizes = ['19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'];
+            } else {
+                $standardSizes = ['31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'];
+            }
+        } elseif ($product->category->name == 'Pakaian') {
+            if ($isKids) {
+                    $standardSizes = ['S', 'M', 'L', 'XL'];
+            } else {
+                    $standardSizes = ['S', 'M', 'L', 'XL', 'XXL'];
+            }
+        } else {
+            $standardSizes = ['All Size'];
+        }
+
+        $skuLookup = [];
+        $totalValidStock = 0; 
+        
+        foreach($product->skus as $sku) {
+            $skuLookup[$sku->size] = [
+                'id' => $sku->id,
+                'stock' => $sku->stock
+            ];
+        }
+
+        foreach($standardSizes as $size) {
+            if(isset($skuLookup[$size]) && $skuLookup[$size]['stock'] > 0) {
+                $totalValidStock += $skuLookup[$size]['stock'];
+            }
+        }
+    @endphp
+
     <section class="py-4 py-lg-5 bg-white">
         <div class="container">
             
@@ -45,11 +83,12 @@
                                 <i class="bi bi-chevron-left text-white fs-5"></i>
                             </button>
 
-                            <div class="ratio ratio-1x1 w-100" id="main-img-wrapper" style="overflow: hidden;">
+                            <div class="ratio ratio-1x1 w-100 position-relative" id="main-img-wrapper" style="overflow: hidden;">
                                 <img src="{{ asset('storage/' . ($primaryImage ? $primaryImage->image_path : 'default.jpg')) }}" 
                                      id="main-product-img" 
                                      class="w-100 h-100 object-fit-cover" 
                                      style="transition: transform 0.1s ease-out, opacity 0.3s ease-in-out;">
+                                {{-- Badge overlay telah dihapus dari sini sesuai request --}}
                             </div>
 
                             <button class="btn rounded-0 position-absolute end-0 top-50 translate-middle-y me-2 me-md-3 border-0 d-flex justify-content-center align-items-center gallery-nav-btn" 
@@ -109,7 +148,7 @@
                             </div>
                         </div>
 
-                        <form action="{{ route('cart.add') }}" method="POST">
+                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-cart-form">
                             @csrf
                             
                             <div class="mb-4">
@@ -119,25 +158,6 @@
                                 </div>
 
                                 <input type="hidden" name="sku_id" id="selected-sku-id" value="">
-
-                                @php
-                                    $standardSizes = [];
-                                    if ($product->category->name == 'Sepatu') {
-                                        $standardSizes = ['38', '39', '40', '41', '42', '43', '44'];
-                                    } elseif ($product->category->name == 'Pakaian') {
-                                        $standardSizes = ['S', 'M', 'L', 'XL', 'XXL'];
-                                    } else {
-                                        $standardSizes = ['All Size'];
-                                    }
-
-                                    $skuLookup = [];
-                                    foreach($product->skus as $sku) {
-                                        $skuLookup[$sku->size] = [
-                                            'id' => $sku->id,
-                                            'stock' => $sku->stock
-                                        ];
-                                    }
-                                @endphp
 
                                 <div class="d-flex flex-wrap gap-2 mt-2" id="size-button-container">
                                     @foreach($standardSizes as $size)
@@ -184,16 +204,24 @@
                             </div>
 
                             <div class="row g-2 mt-4">
-                                <div class="col-12 col-sm-6">
-                                    <button type="submit" name="action" value="buy_now" class="btn btn-outline-dark w-100 rounded-0 fw-bold text-uppercase d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; letter-spacing: 1px; border-width: 2px;">
-                                        BELI SEKARANG
-                                    </button>
-                                </div>
-                                <div class="col-12 col-sm-6">
-                                    <button type="submit" name="action" value="add_cart" class="btn btn-action-main m-0 w-100 d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; padding: 0;">
-                                        TAMBAH KE KERANJANG
-                                    </button>
-                                </div>
+                                @if($totalValidStock > 0)
+                                    <div class="col-12 col-sm-6">
+                                        <button type="submit" name="action" value="buy_now" class="btn btn-outline-dark w-100 rounded-0 fw-bold text-uppercase d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; letter-spacing: 1px; border-width: 2px;">
+                                            BELI SEKARANG
+                                        </button>
+                                    </div>
+                                    <div class="col-12 col-sm-6">
+                                        <button type="submit" name="action" value="add_cart" class="btn btn-action-main m-0 w-100 d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; padding: 0;">
+                                            TAMBAH KE KERANJANG
+                                        </button>
+                                    </div>
+                                @else
+                                    <div class="col-12">
+                                        <button type="button" class="btn btn-secondary w-100 rounded-0 fw-bold text-uppercase d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; letter-spacing: 1px; opacity: 0.7; cursor: not-allowed;" disabled>
+                                            MAAF, STOK HABIS
+                                        </button>
+                                    </div>
+                                @endif
                             </div>
                         </form>
                         <div class="mt-4 pt-3">
@@ -290,7 +318,7 @@
                                     <div class="border-bottom border-secondary-subtle pb-4 mb-4">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <div class="fw-bold fs-6">
-                                                {{ $review->user->name }} 
+                                                {{ $review->user?->name ?? 'Pengguna Anonim' }} 
                                                 <i class="bi bi-patch-check-fill text-success ms-1" style="font-size: 12px;" title="Pembeli Terverifikasi"></i>
                                             </div>
                                             <div class="text-secondary" style="font-size: 12px;">
@@ -334,6 +362,30 @@
         </div>
     </section>
 
+    <!-- SECTION REKOMENDASI PRODUK -->
+    @if(isset($recommendedProducts) && $recommendedProducts->count() > 0)
+    <section class="py-5 bg-white border-secondary-subtle">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.5px;">PRODUK REKOMENDASI</h4>
+                <a href="{{ route('product.index', ['category' => $product->category->name]) }}" class="link-lihat-semua">CEK SEMUA</a>
+            </div>
+            
+            <div class="d-flex flex-nowrap overflow-x-auto gap-4 pb-4 align-items-stretch" style="scrollbar-width: thin; -webkit-overflow-scrolling: touch;">
+                @foreach($recommendedProducts as $recommendation)
+                <div class="flex-shrink-0 d-flex" style="width: 280px;">
+                    <div class="w-100 h-100 product-card-stretcher">
+                        @include('customer.components.product_card', ['product' => $recommendation])
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            
+        </div>
+    </section>
+    @endif
+    <!-- END SECTION REKOMENDASI PRODUK -->
+
     @include('customer.components.footer')
     @include('customer.components.chatbot')
     
@@ -342,16 +394,25 @@
             <div class="modal-content rounded-0 border-dark" style="border-width: 2px;">
                 <div class="modal-header border-bottom border-dark rounded-0 px-4 py-3">
                     <h5 class="modal-title fw-bold text-uppercase" id="sizeGuideModalLabel" style="font-size: 15px; letter-spacing: 1px;">
-                        Panduan Ukuran {{ $product->category->name }} {{ $product->brand->name }} ({{ $product->gender }})
+                        Panduan Ukuran {{ $product->category->name }} ({{ $product->gender }})
                     </h5>
                     <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
                 <div class="modal-body p-4 p-md-5">
+                    @php
+                        // Cek apakah produk ini khusus anak-anak berdasarkan kolom gender
+                        $isKids = str_contains(strtolower($product->gender), 'anak');
+                    @endphp
+
+                    <!-- ========================================== -->
+                    <!-- KATEGORI SEPATU -->
+                    <!-- ========================================== -->
                     @if($product->category->name == 'Sepatu')
                         <p class="text-secondary mb-4" style="font-size: 14px; line-height: 1.6;">
-                            Gunakan tabel di bawah ini untuk menentukan ukuran yang paling tepat berdasarkan panjang kaki (dalam centimeter). Jika ukuran Anda berada di antara dua size, kami menyarankan memilih ukuran yang lebih besar.
+                            Gunakan tabel panduan di bawah ini untuk menentukan ukuran sepatu yang tepat berdasarkan panjang kaki (dalam centimeter).
                         </p>
+                        
                         <div class="table-responsive">
                             <table class="table table-bordered border-dark text-center align-middle mb-0" style="font-size: 13px;">
                                 <thead class="bg-light-gray fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">
@@ -363,21 +424,36 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @if($product->brand->name == 'Adidas')
-                                        <tr><td class="fw-bold">39 1/3</td><td>6</td><td>6.5</td><td class="fw-bold bg-light">24.5 cm</td></tr>
-                                        <tr><td class="fw-bold">40</td><td>6.5</td><td>7</td><td class="fw-bold bg-light">25.0 cm</td></tr>
-                                        <tr><td class="fw-bold">41 1/3</td><td>7.5</td><td>8</td><td class="fw-bold bg-light">26.0 cm</td></tr>
-                                        <tr><td class="fw-bold">42</td><td>8</td><td>8.5</td><td class="fw-bold bg-light">26.5 cm</td></tr>
-                                    @elseif($product->brand->name == 'Nike')
-                                        <tr><td class="fw-bold">39</td><td>6</td><td>6.5</td><td class="fw-bold bg-light">24.5 cm</td></tr>
-                                        <tr><td class="fw-bold">40</td><td>6</td><td>7</td><td class="fw-bold bg-light">25.0 cm</td></tr>
-                                        <tr><td class="fw-bold">41</td><td>7</td><td>8</td><td class="fw-bold bg-light">26.0 cm</td></tr>
-                                        <tr><td class="fw-bold">42</td><td>7.5</td><td>8.5</td><td class="fw-bold bg-light">26.5 cm</td></tr>
+                                    @if($isKids)
+                                        <!-- TABEL SEPATU ANAK-ANAK (19 - 30) -->
+                                        <tr><td class="fw-bold">19</td><td>3K</td><td>4C</td><td class="fw-bold bg-light">11.5 cm</td></tr>
+                                        <tr><td class="fw-bold">20</td><td>4K</td><td>5C</td><td class="fw-bold bg-light">12.0 cm</td></tr>
+                                        <tr><td class="fw-bold">21</td><td>5K</td><td>5.5C</td><td class="fw-bold bg-light">12.5 cm</td></tr>
+                                        <tr><td class="fw-bold">22</td><td>5.5K</td><td>6C</td><td class="fw-bold bg-light">13.0 cm</td></tr>
+                                        <tr><td class="fw-bold">23</td><td>6K</td><td>6.5C</td><td class="fw-bold bg-light">14.0 cm</td></tr>
+                                        <tr><td class="fw-bold">24</td><td>7K</td><td>7.5C</td><td class="fw-bold bg-light">14.5 cm</td></tr>
+                                        <tr><td class="fw-bold">25</td><td>7.5K</td><td>8C</td><td class="fw-bold bg-light">15.0 cm</td></tr>
+                                        <tr><td class="fw-bold">26</td><td>8.5K</td><td>9C</td><td class="fw-bold bg-light">16.0 cm</td></tr>
+                                        <tr><td class="fw-bold">27</td><td>9K</td><td>10C</td><td class="fw-bold bg-light">16.5 cm</td></tr>
+                                        <tr><td class="fw-bold">28</td><td>10K</td><td>10.5C</td><td class="fw-bold bg-light">17.0 cm</td></tr>
+                                        <tr><td class="fw-bold">29</td><td>11K</td><td>11.5C</td><td class="fw-bold bg-light">18.0 cm</td></tr>
+                                        <tr><td class="fw-bold">30</td><td>11.5K</td><td>12C</td><td class="fw-bold bg-light">18.5 cm</td></tr>
                                     @else
-                                        <tr><td class="fw-bold">39</td><td>6</td><td>7</td><td class="fw-bold bg-light">25.0 cm</td></tr>
-                                        <tr><td class="fw-bold">40</td><td>6.5</td><td>7.5</td><td class="fw-bold bg-light">25.5 cm</td></tr>
-                                        <tr><td class="fw-bold">41</td><td>7</td><td>8</td><td class="fw-bold bg-light">26.5 cm</td></tr>
-                                        <tr><td class="fw-bold">42</td><td>7.5</td><td>8.5</td><td class="fw-bold bg-light">27.0 cm</td></tr>
+                                        <!-- TABEL SEPATU UNIVERSAL DEWASA (31 - 44) -->
+                                        <tr><td class="fw-bold">31</td><td>12.5K</td><td>13C</td><td class="fw-bold bg-light">19.0 cm</td></tr>
+                                        <tr><td class="fw-bold">32</td><td>13K</td><td>1Y</td><td class="fw-bold bg-light">19.5 cm</td></tr>
+                                        <tr><td class="fw-bold">33</td><td>1</td><td>1.5Y</td><td class="fw-bold bg-light">20.0 cm</td></tr>
+                                        <tr><td class="fw-bold">34</td><td>2</td><td>2.5Y</td><td class="fw-bold bg-light">21.0 cm</td></tr>
+                                        <tr><td class="fw-bold">35</td><td>2.5</td><td>3</td><td class="fw-bold bg-light">22.0 cm</td></tr>
+                                        <tr><td class="fw-bold">36</td><td>3.5</td><td>4</td><td class="fw-bold bg-light">22.5 cm</td></tr>
+                                        <tr><td class="fw-bold">37</td><td>4.5</td><td>5</td><td class="fw-bold bg-light">23.5 cm</td></tr>
+                                        <tr><td class="fw-bold">38</td><td>5.5</td><td>6</td><td class="fw-bold bg-light">24.0 cm</td></tr>
+                                        <tr><td class="fw-bold">39</td><td>6</td><td>6.5</td><td class="fw-bold bg-light">24.5 cm</td></tr>
+                                        <tr><td class="fw-bold">40</td><td>6.5</td><td>7</td><td class="fw-bold bg-light">25.0 cm</td></tr>
+                                        <tr><td class="fw-bold">41</td><td>7.5</td><td>8</td><td class="fw-bold bg-light">26.0 cm</td></tr>
+                                        <tr><td class="fw-bold">42</td><td>8</td><td>8.5</td><td class="fw-bold bg-light">26.5 cm</td></tr>
+                                        <tr><td class="fw-bold">43</td><td>9</td><td>9.5</td><td class="fw-bold bg-light">27.5 cm</td></tr>
+                                        <tr><td class="fw-bold">44</td><td>9.5</td><td>10</td><td class="fw-bold bg-light">28.0 cm</td></tr>
                                     @endif
                                 </tbody>
                             </table>
@@ -391,64 +467,91 @@
                             </ol>
                         </div>
 
+
+                    <!-- ========================================== -->
+                    <!-- KATEGORI PAKAIAN -->
+                    <!-- ========================================== -->
                     @elseif($product->category->name == 'Pakaian')
                         <p class="text-secondary mb-4" style="font-size: 14px; line-height: 1.6;">
-                            Gunakan panduan di bawah ini untuk mengukur tubuh Anda dan menentukan ukuran pakaian yang sesuai. Ukuran dapat memiliki toleransi perbedaan 1-2 cm.
+                            Gunakan panduan ukuran di bawah ini untuk menentukan pakaian yang sesuai. Ukuran memiliki toleransi perbedaan 1-2 cm dari ukuran aslinya.
                         </p>
+                        
                         @if($product->subcategory->name == 'Celana')
+                            <!-- TABEL CELANA -->
                             <div class="table-responsive">
                                 <table class="table table-bordered border-dark text-center align-middle mb-0" style="font-size: 13px;">
                                     <thead class="bg-light-gray fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">
                                         <tr>
                                             <th scope="col" class="py-3 bg-dark text-white">Size</th>
+                                            @if($isKids)
+                                                <th scope="col" class="py-3">Perkiraan Umur</th>
+                                            @endif
                                             <th scope="col" class="py-3">Lingkar Pinggang (CM)</th>
-                                            <th scope="col" class="py-3">Lingkar Paha (CM)</th>
                                             <th scope="col" class="py-3">Panjang (CM)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td class="fw-bold bg-light">S (28-29)</td><td>72 - 76 cm</td><td>54 cm</td><td>98 cm</td></tr>
-                                        <tr><td class="fw-bold bg-light">M (30-31)</td><td>77 - 81 cm</td><td>56 cm</td><td>100 cm</td></tr>
-                                        <tr><td class="fw-bold bg-light">L (32-33)</td><td>82 - 86 cm</td><td>58 cm</td><td>102 cm</td></tr>
-                                        <tr><td class="fw-bold bg-light">XL (34-35)</td><td>87 - 91 cm</td><td>60 cm</td><td>104 cm</td></tr>
+                                        @if($isKids)
+                                            <!-- Celana Anak-anak -->
+                                            <tr><td class="fw-bold bg-light">S</td><td>4 - 5 Tahun</td><td>50 - 58 cm</td><td>65 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">M</td><td>6 - 7 Tahun</td><td>54 - 62 cm</td><td>70 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">L</td><td>8 - 9 Tahun</td><td>58 - 66 cm</td><td>75 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">XL</td><td>10 - 11 Tahun</td><td>62 - 70 cm</td><td>80 cm</td></tr>
+                                        @else
+                                            <!-- Celana Dewasa Universal -->
+                                            <tr><td class="fw-bold bg-light">S (28-29)</td><td>72 - 76 cm</td><td>98 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">M (30-31)</td><td>77 - 81 cm</td><td>100 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">L (32-33)</td><td>82 - 86 cm</td><td>102 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">XL (34-35)</td><td>87 - 91 cm</td><td>104 cm</td></tr>
+                                        @endif
                                     </tbody>
                                 </table>
                             </div>
                         @else
+                            <!-- TABEL BAJU / ATASAN -->
                             <div class="table-responsive">
                                 <table class="table table-bordered border-dark text-center align-middle mb-0" style="font-size: 13px;">
                                     <thead class="bg-light-gray fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">
                                         <tr>
                                             <th scope="col" class="py-3 bg-dark text-white">Size</th>
+                                            @if($isKids)
+                                                <th scope="col" class="py-3">Perkiraan Umur</th>
+                                            @endif
                                             <th scope="col" class="py-3">Lebar Dada (CM)</th>
                                             <th scope="col" class="py-3">Panjang Baju (CM)</th>
-                                            @if($product->subcategory->name == 'Hoodie')
-                                                <th scope="col" class="py-3">Panjang Lengan (CM)</th>
-                                            @endif
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @if($product->brand->name == 'Adidas' || $product->brand->name == 'Nike')
-                                            <tr><td class="fw-bold bg-light">S</td><td>48 - 50 cm</td><td>68 - 70 cm</td> @if($product->subcategory->name == 'Hoodie') <td>62 cm</td> @endif </tr>
-                                            <tr><td class="fw-bold bg-light">M</td><td>51 - 53 cm</td><td>71 - 73 cm</td> @if($product->subcategory->name == 'Hoodie') <td>63 cm</td> @endif </tr>
-                                            <tr><td class="fw-bold bg-light">L</td><td>54 - 56 cm</td><td>74 - 76 cm</td> @if($product->subcategory->name == 'Hoodie') <td>64 cm</td> @endif </tr>
-                                            <tr><td class="fw-bold bg-light">XL</td><td>57 - 60 cm</td><td>77 - 79 cm</td> @if($product->subcategory->name == 'Hoodie') <td>65 cm</td> @endif </tr>
+                                        @if($isKids)
+                                            <!-- Baju Anak-anak -->
+                                            <tr><td class="fw-bold bg-light">S</td><td>4 - 5 Tahun</td><td>36 cm</td><td>48 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">M</td><td>6 - 7 Tahun</td><td>38 cm</td><td>51 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">L</td><td>8 - 9 Tahun</td><td>40 cm</td><td>54 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">XL</td><td>10 - 11 Tahun</td><td>42 cm</td><td>57 cm</td></tr>
                                         @else
-                                            <tr><td class="fw-bold bg-light">S</td><td>46 cm</td><td>66 cm</td> @if($product->subcategory->name == 'Hoodie') <td>60 cm</td> @endif </tr>
-                                            <tr><td class="fw-bold bg-light">M</td><td>48 cm</td><td>68 cm</td> @if($product->subcategory->name == 'Hoodie') <td>61 cm</td> @endif </tr>
-                                            <tr><td class="fw-bold bg-light">L</td><td>50 cm</td><td>70 cm</td> @if($product->subcategory->name == 'Hoodie') <td>62 cm</td> @endif </tr>
-                                            <tr><td class="fw-bold bg-light">XL</td><td>52 cm</td><td>72 cm</td> @if($product->subcategory->name == 'Hoodie') <td>63 cm</td> @endif </tr>
+                                            <!-- Baju Dewasa Universal -->
+                                            <tr><td class="fw-bold bg-light">S</td><td>48 cm</td><td>68 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">M</td><td>50 cm</td><td>70 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">L</td><td>52 cm</td><td>72 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">XL</td><td>55 cm</td><td>75 cm</td></tr>
+                                            <tr><td class="fw-bold bg-light">XXL</td><td>58 cm</td><td>78 cm</td></tr>
                                         @endif
                                     </tbody>
                                 </table>
                             </div>
                         @endif
 
+
+                    <!-- ========================================== -->
+                    <!-- KATEGORI AKSESORIS / LAINNYA -->
+                    <!-- ========================================== -->
                     @else
                         <div class="text-center py-4">
                             <i class="bi bi-info-circle text-secondary mb-3 d-block" style="font-size: 32px;"></i>
                             <h6 class="fw-bold text-uppercase">ALL SIZE (SATU UKURAN)</h6>
-                            <p class="text-secondary" style="font-size: 14px;">Produk aksesoris ini dirancang untuk ukuran yang fleksibel (All Size / Adjustable) sehingga muat untuk berbagai bentuk dan ukuran tubuh.</p>
+                            <p class="text-secondary" style="font-size: 14px;">
+                                Produk aksesoris ini dirancang untuk ukuran yang fleksibel (All Size / Adjustable) sehingga muat untuk berbagai bentuk dan ukuran.
+                            </p>
                         </div>
                     @endif
                 </div>
@@ -460,6 +563,19 @@
         </div>
     </div>
 
+    @push('styles')
+    <style>
+        .product-card-stretcher > div, 
+        .product-card-stretcher > a, 
+        .product-card-stretcher > article {
+            height: 100% !important;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+    @endpush
+
+    @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -495,6 +611,9 @@
 
                 qtyInput.value = 1;
                 qtyWarning.style.setProperty('display', 'none', 'important');
+                
+                const existingWarning = document.getElementById('dynamic-size-warning');
+                if (existingWarning) existingWarning.remove();
             }
 
             sizeButtons.forEach(button => {
@@ -509,7 +628,7 @@
                     qtyInput.value = currentQty + 1;
                     qtyWarning.style.setProperty('display', 'none', 'important');
                 } else {
-                    qtyWarning.innerText = "Maksimal pembelian untuk ukuran ini adalah " + currentMaxStock + " pcs.";
+                    qtyWarning.innerText = "Maksimal pembelian untuk ukuran ini adalah " + currentMaxStock + " pcs";
                     qtyWarning.style.setProperty('display', 'block', 'important');
                 }
             });
@@ -536,7 +655,6 @@
             let isZoomed = false;
             const images = Array.from(thumbs).map(t => t.getAttribute('data-full-src'));
 
-            // Fungsi Toggle Zoom
             function toggleZoom() {
                 isZoomed = !isZoomed;
                 if (isZoomed) {
@@ -557,9 +675,8 @@
                 if (isZoomed) toggleZoom();
             }
 
-            // Fungsi Ganti Gambar
             function updateMainImage(index) {
-                resetZoom(); // Pastikan zoom ter-reset saat ganti gambar
+                resetZoom(); 
                 mainImg.style.opacity = '0';
                 setTimeout(() => {
                     mainImg.src = images[index];
@@ -580,7 +697,6 @@
                 currentIndex = index;
             }
 
-            // Event Listeners Galeri
             thumbs.forEach((thumb, index) => {
                 thumb.addEventListener('click', () => updateMainImage(index));
             });
@@ -593,7 +709,6 @@
                 updateMainImage((currentIndex - 1 + images.length) % images.length);
             });
 
-            // Event Listeners Zoom & Pan
             btnZoom.addEventListener('click', toggleZoom);
             
             mainImg.addEventListener('click', function() {
@@ -614,6 +729,68 @@
                 if (isZoomed) toggleZoom();
             });
 
+            // ==========================================
+            // 3. LOGIKA ADD TO CART (TANPA RELOAD & TANPA ALERT)
+            // ==========================================
+            const cartForm = document.getElementById('add-to-cart-form');
+            
+            if (cartForm) {
+                cartForm.addEventListener('submit', function(e) {
+                    const submitter = e.submitter; 
+
+                    if (submitter && submitter.value === 'add_cart') {
+                        e.preventDefault(); 
+                        
+                        if (!skuInput.value) {
+                            const sizeContainer = document.getElementById('size-button-container');
+                            let warning = document.getElementById('dynamic-size-warning');
+                            
+                            if (!warning) {
+                                warning = document.createElement('span');
+                                warning.id = 'dynamic-size-warning';
+                                warning.className = 'text-danger fw-bold d-block mt-1';
+                                warning.style.fontSize = '11px';
+                                warning.innerText = 'Silakan pilih ukuran terlebih dahulu';
+                                sizeContainer.insertAdjacentElement('afterend', warning);
+                            }
+                            
+                            sizeContainer.style.animation = 'shake 0.5s';
+                            setTimeout(() => sizeContainer.style.animation = '', 500);
+                            return;
+                        }
+
+                        const formData = new FormData(cartForm);
+                        formData.append('action', 'add_cart'); 
+
+                        fetch(cartForm.getAttribute('action'), {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json' 
+                            },
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                let cartBadge = document.getElementById('cart-badge');
+                                if (cartBadge) {
+                                    cartBadge.innerText = data.total > 99 ? '99+' : data.total;
+                                    cartBadge.classList.remove('d-none');
+                                    
+                                    cartBadge.closest('a').style.animation = 'bounce 0.3s ease';
+                                    setTimeout(() => cartBadge.closest('a').style.animation = '', 300);
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Add to cart failed:', error);
+                        });
+                    }
+                });
+            }
+
         });
     </script>
+    @endpush
 @endsection

@@ -36,9 +36,9 @@ class AddressController extends Controller
         Address::where('user_id', $user->id)->update(['is_default' => false]);
     }
 
-    // 🔥 TRIK SAKTI: Cari ID Biteship berdasarkan nama Kecamatan + Kota
-    // Kita gabungkan nama wilayah agar pencarian Biteship akurat
-    $searchQuery = $request->district_name . ', ' . $request->city_name;
+    // 🔥 TRIK SAKTI YANG DIPERTAJAM: Cari ID Biteship
+    // Kita gabungkan KODE POS agar pencarian Biteship 100% akurat tanpa meleset
+    $searchQuery = $request->postal_code . ', ' . $request->district_name . ', ' . $request->city_name;
     
     $response = \Illuminate\Support\Facades\Http::withHeaders([
         'authorization' => env('BITESHIP_API_KEY'),
@@ -58,12 +58,11 @@ class AddressController extends Controller
         'user_id'        => $user->id,
         'receiver_name'  => $request->receiver_name,
         'receiver_phone' => $request->receiver_phone,
-        'province_id'    => $request->province_id, // ID Emsifa (Angka)
+        'province_id'    => $request->province_id, 
         'province_name'  => $request->province_name,
-        'city_id'        => $request->city_id,     // ID Emsifa (Angka)
+        'city_id'        => $request->city_id,     
         'city_name'      => $request->city_name,
-        // 🔥 Simpan ID Biteship (IDNP...) ke kolom district_id jika ditemukan, 
-        // kalau tidak ketemu, baru pakai fallback ID emsifa.
+        // 🔥 Simpan ID Biteship (IDNP...) ke kolom district_id
         'district_id'    => $biteshipAreaId ?? $request->district_id, 
         'district_name'  => $request->district_name,
         'village_id'     => $request->village_id,

@@ -21,8 +21,27 @@
             $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
             $imagePath = $primaryImage ? asset('storage/' . $primaryImage->image_path) : asset('assets/images/default.jpg');
 
-            // 4. Cek Stok (Sesuai relasi tabel SKU lu)
-            $totalStock = $product->skus_sum_stock ?? $product->skus->sum('stock');
+            // 4. FIX LOGIKA STOK CARD PRODUK: Hanya hitung ukuran yang valid
+            $standardSizes = [];
+            $isKids = str_contains(strtolower($product->gender ?? ''), 'anak');
+            $catName = $product->category->name ?? '';
+
+            if ($catName == 'Sepatu') {
+                $standardSizes = $isKids ? ['19','20','21','22','23','24','25','26','27','28','29','30'] : ['31','32','33','34','35','36','37','38','39','40','41','42','43','44'];
+            } elseif ($catName == 'Pakaian') {
+                $standardSizes = $isKids ? ['S', 'M', 'L', 'XL'] : ['S', 'M', 'L', 'XL', 'XXL'];
+            } else {
+                $standardSizes = ['All Size'];
+            }
+
+            $totalValidStock = 0;
+            if ($product->skus) {
+                foreach($product->skus as $sku) {
+                    if(in_array($sku->size, $standardSizes) && $sku->stock > 0) {
+                        $totalValidStock += $sku->stock;
+                    }
+                }
+            }
         @endphp
 
         <button class="btn-wishlist toggle-wishlist" data-product-id="{{ $product->id }}">
@@ -33,7 +52,8 @@
              alt="{{ $product->name }}" 
              class="product-img">
 
-        @if($totalStock <= 0)
+        {{-- 🌟 FIX: Tampilkan badge jika totalValidStock habis --}}
+        @if($totalValidStock <= 0)
             <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background-color: rgba(255,255,255,0.6); z-index: 5;">
                 <span class="badge bg-dark py-2 px-3 rounded-0 shadow-sm" style="font-size: 14px; letter-spacing: 1px;">STOK HABIS</span>
             </div>

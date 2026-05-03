@@ -84,7 +84,8 @@
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn btn-black w-100 mb-3">DAFTAR</button>
+                            {{-- FIX: Tambahkan ID dan status awal "disabled" pada tombol --}}
+                            <button type="submit" id="btnRegister" class="btn btn-black w-100 mb-3" disabled>DAFTAR</button>
 
                             <div class="d-flex align-items-center my-3">
                                 <hr class="flex-grow-1 text-muted">
@@ -110,7 +111,10 @@
     @include('customer.components.footer')
     @include('customer.components.chatbot')
     
+
+    @push('scripts')
     <script>
+        // Logika Toggle Eye Password
         function togglePassword(inputId, iconId) {
             var input = document.getElementById(inputId);
             var icon = document.getElementById(iconId);
@@ -118,5 +122,24 @@
             icon.classList.toggle("bi-eye");
             icon.classList.toggle("bi-eye-slash");
         }
+
+        // FIX: Logika Checkbox untuk mengaktifkan tombol Daftar
+        document.addEventListener('DOMContentLoaded', function() {
+            const termsCheck = document.getElementById('termsCheck');
+            const btnRegister = document.getElementById('btnRegister');
+
+            // Saat halaman pertama dimuat, pastikan tombol disable jika checkbox belum dicentang
+            btnRegister.disabled = !termsCheck.checked;
+
+            // Tambahkan event listener saat checkbox di-klik
+            termsCheck.addEventListener('change', function() {
+                if (this.checked) {
+                    btnRegister.disabled = false; // Aktifkan tombol
+                } else {
+                    btnRegister.disabled = true; // Nonaktifkan tombol
+                }
+            });
+        });
     </script>
+    @endpush
 @endsection

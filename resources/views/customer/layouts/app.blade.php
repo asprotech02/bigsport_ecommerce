@@ -40,12 +40,27 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    // 1. Logika untuk merubah warna icon love
                     if (data.status === 'added') {
                         icon.classList.remove('bi-heart');
                         icon.classList.add('bi-heart-fill', 'text-danger');
                     } else {
                         icon.classList.remove('bi-heart-fill', 'text-danger');
                         icon.classList.add('bi-heart');
+                    }
+
+                    // 2. 🌟 FIX: Logika untuk merubah angka di Badge Navbar secara real-time
+                    let badge = document.getElementById('wishlist-badge');
+                    
+                    if (badge) {
+                        if (data.total > 0) {
+                            // Jika ada isinya, update angkanya dan pastikan badge tidak disembunyikan
+                            badge.innerText = data.total > 99 ? '99+' : data.total;
+                            badge.classList.remove('d-none');
+                        } else {
+                            // Jika totalnya 0 (kosong), sembunyikan badge-nya
+                            badge.classList.add('d-none');
+                        }
                     }
                 })
                 .catch(error => console.error('Error:', error));

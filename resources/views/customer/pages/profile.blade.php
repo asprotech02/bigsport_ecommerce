@@ -34,10 +34,17 @@
                             <div class="mb-5">
                                 <h6 class="fw-bold mb-3 text-dark">Detail Pengguna</h6>
                                 <div class="profile-info-text mb-2">{{ $user->name ?? 'Belum diatur' }}</div>
+                                
+                                {{-- FIX: Ganti date_of_birth menjadi birthday sesuai database --}}
                                 <div class="profile-info-text mb-2">
-                                    {{ $user->date_of_birth ? \Carbon\Carbon::parse($user->date_of_birth)->translatedFormat('d F Y') : 'Tanggal lahir belum diatur' }}
+                                    {{ $user->birthday ? \Carbon\Carbon::parse($user->birthday)->translatedFormat('d F Y') : 'Tanggal lahir belum diatur' }}
                                 </div>
-                                <div class="profile-info-text mb-4">{{ $user->gender ?? 'Jenis kelamin belum diatur' }}</div>
+                                
+                                {{-- FIX: Logika pengkondisian untuk Laki-laki / Perempuan --}}
+                                <div class="profile-info-text mb-4">
+                                    {{ $user->gender == 'L' ? 'Laki-laki' : ($user->gender == 'P' ? 'Perempuan' : 'Jenis kelamin belum diatur') }}
+                                </div>
+                                
                                 <a href="{{ route('profile_edit') }}" class="btn btn-black btn-sm px-4 py-2">Edit</a>
                             </div>
                             <div>
@@ -164,7 +171,6 @@
                                                     </div>
                                                 @endforeach
 
-                                                {{-- Ganti bagian div footer kartu pesanan Anda dengan ini --}}
                                                 <div class="d-flex flex-column flex-sm-row justify-content-between mt-4 pt-3 border-top border-secondary-subtle gap-2 align-items-sm-center">
                                                     <div>
                                                         <p class="text-secondary mb-1" style="font-size: 12px;">Total Belanja</p>
@@ -172,7 +178,6 @@
                                                     </div>
                                                     
                                                     <div class="d-flex gap-2 justify-content-end">
-                                                        {{-- Tombol Lanjut Bayar (Sudah ada di kode Anda) --}}
                                                         @if($order->payment_status == 'unpaid' && $order->snap_token)
                                                             <button type="button" class="btn btn-black fw-bold text-uppercase btn-lanjut-bayar" 
                                                                     style="border-radius: 0; font-size: 12px; padding: 10px 20px;" 
@@ -181,15 +186,22 @@
                                                             </button>
                                                         @endif
 
-                                                        {{-- TOMBAL BARU: Lihat Status Pesanan --}}
+                                                        {{-- 🌟 FIX: Tambahkan Tombol Cetak Invoice --}}
+                                                        @if(in_array($order->status, ['processing', 'shipped', 'completed']))
+                                                            <a href="{{ route('order.invoice', $order->id) }}" 
+                                                               class="btn btn-outline-danger fw-bold text-uppercase rounded-0 d-flex align-items-center gap-1" 
+                                                               style="font-size: 12px; padding: 10px 20px;">
+                                                                <i class="bi bi-file-earmark-pdf"></i> Cetak Invoice
+                                                            </a>
+                                                        @endif
+
                                                         @if($order->payment_status == 'paid')
                                                             <button type="button" onclick="loadTrackingData({{ $order->id }})" 
                                                                     class="btn btn-outline-dark fw-bold text-uppercase rounded-0" 
                                                                     style="font-size: 12px; padding: 10px 20px;">
-                                                                Lihat Status Pesanan
+                                                                Lacak Pesanan
                                                             </button>
                                                         @else
-                                                            {{-- Tombol Detail opsional jika belum bayar agar UI tetap simetris --}}
                                                             <button type="button" class="btn btn-outline-secondary fw-bold text-uppercase rounded-0" 
                                                                     style="font-size: 12px; padding: 10px 20px; border-color: #ddd;" disabled>
                                                                 Menunggu Pembayaran
@@ -317,26 +329,26 @@
     <script>
 
         document.addEventListener('DOMContentLoaded', function() {
-    // 1. Ambil parameter dari URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab');
+            // 1. Ambil parameter dari URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
 
-    // 2. Jika parameter tab adalah 'orders'
-    if (tabParam === 'orders') {
-        const orderTabTrigger = document.getElementById('tab-pesanan');
-        
-        if (orderTabTrigger) {
-            console.log("Membuka tab pesanan...");
-            
-            // 🔥 Trik jitu: Pakai constructor Tab Bootstrap agar animasi fade-nya jalan
-            const tab = new bootstrap.Tab(orderTabTrigger);
-            tab.show();
-            
-            // Scroll ke atas sedikit biar user langsung liat judul "Pesanan Saya"
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-});
+            // 2. Jika parameter tab adalah 'orders'
+            if (tabParam === 'orders') {
+                const orderTabTrigger = document.getElementById('tab-pesanan');
+                
+                if (orderTabTrigger) {
+                    console.log("Membuka tab pesanan...");
+                    
+                    // 🔥 Trik jitu: Pakai constructor Tab Bootstrap agar animasi fade-nya jalan
+                    const tab = new bootstrap.Tab(orderTabTrigger);
+                    tab.show();
+                    
+                    // Scroll ke atas sedikit biar user langsung liat judul "Pesanan Saya"
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', function() {
             // Logic Midtrans
@@ -405,96 +417,96 @@
 
         moment.locale('id');
 
-    function loadTrackingData(orderId) {
-        // Pindah ke tab Status secara visual
-        const statusTab = new bootstrap.Tab(document.querySelector('a[href="#content-status"]'));
-        statusTab.show();
+        function loadTrackingData(orderId) {
+            // Pindah ke tab Status secara visual
+            const statusTab = new bootstrap.Tab(document.querySelector('a[href="#content-status"]'));
+            statusTab.show();
 
-        // Siapkan tampilan UI (Tampilkan loading, sembunyikan yang lain)
-        document.getElementById('tracking-header').style.display = 'none';
-        document.getElementById('tracking-timeline-container').style.display = 'none';
-        document.getElementById('tracking-error').style.display = 'none';
-        document.getElementById('tracking-loading').style.display = 'block';
+            // Siapkan tampilan UI (Tampilkan loading, sembunyikan yang lain)
+            document.getElementById('tracking-header').style.display = 'none';
+            document.getElementById('tracking-timeline-container').style.display = 'none';
+            document.getElementById('tracking-error').style.display = 'none';
+            document.getElementById('tracking-loading').style.display = 'block';
 
-        // Panggil API buatan lu (ProfileController -> getTracking)
-        axios.get(`/profile/order/${orderId}/tracking`)
-            .then(response => {
-                document.getElementById('tracking-loading').style.display = 'none';
+            // Panggil API buatan lu (ProfileController -> getTracking)
+            axios.get(`/profile/order/${orderId}/tracking`)
+                .then(response => {
+                    document.getElementById('tracking-loading').style.display = 'none';
 
-                if (response.data.success) {
-                    const data = response.data.data;
-                    
-                    // Isi Header Status
-                    document.getElementById('track-courier-name').innerText = data.courier.company || 'Kurir Standar';
-                    document.getElementById('track-waybill-id').innerText = data.courier.waybill_id || 'Menunggu Resi';
-                    document.getElementById('track-current-status').innerText = data.status || 'Diproses';
+                    if (response.data.success) {
+                        const data = response.data.data;
+                        
+                        // Isi Header Status
+                        document.getElementById('track-courier-name').innerText = data.courier.company || 'Kurir Standar';
+                        document.getElementById('track-waybill-id').innerText = data.courier.waybill_id || 'Menunggu Resi';
+                        document.getElementById('track-current-status').innerText = data.status || 'Diproses';
 
-                    // Isi Timeline History
-                    const historyContainer = document.getElementById('tracking-history-list');
-                    historyContainer.innerHTML = ''; // Bersihkan dulu
+                        // Isi Timeline History
+                        const historyContainer = document.getElementById('tracking-history-list');
+                        historyContainer.innerHTML = ''; // Bersihkan dulu
 
-                    if (data.history && data.history.length > 0) {
-                        // Looping data history dari yang paling baru
-                        data.history.forEach((item, index) => {
-                            const isLatest = index === 0; // Item paling atas
-                            
-                            // Format waktu: "25 Apr 2026, 09:30 WIB"
-                            const timeFormatted = moment(item.updated_at).format('DD MMM YYYY, HH:mm') + ' WIB';
-
-                            // Tentukan desain (Titik tebal untuk status terbaru, titik bolong untuk yang lama)
-                            const dotStyle = isLatest 
-                                ? 'bg-dark rounded-circle flex-shrink-0 mt-1 border border-white' 
-                                : 'bg-white rounded-circle flex-shrink-0 mt-1 border border-dark';
-                            
-                            const dotSize = isLatest 
-                                ? 'width: 16px; height: 16px; border-width: 3px !important; box-shadow: 0 0 0 2px #000;'
-                                : 'width: 16px; height: 16px; border-width: 2px !important;';
+                        if (data.history && data.history.length > 0) {
+                            // Looping data history dari yang paling baru
+                            data.history.forEach((item, index) => {
+                                const isLatest = index === 0; // Item paling atas
                                 
-                            const textOpacity = isLatest ? '' : 'opacity-75';
+                                // Format waktu: "25 Apr 2026, 09:30 WIB"
+                                const timeFormatted = moment(item.updated_at).format('DD MMM YYYY, HH:mm') + ' WIB';
 
-                            const htmlRow = `
-                                <div class="d-flex position-relative mb-5" style="z-index: 2;">
-                                    <div class="${dotStyle}" style="${dotSize}"></div>
-                                    <div class="ms-4 ${textOpacity}">
-                                        <h6 class="fw-bold text-uppercase mb-1" style="font-size: 14px;">${item.status}</h6>
-                                        <p class="text-secondary mb-1" style="font-size: 13px;">${item.note}</p>
-                                        <span class="${isLatest ? 'fw-bold text-dark' : 'text-secondary fw-bold'}" style="font-size: 12px;">
-                                            ${timeFormatted}
-                                        </span>
+                                // Tentukan desain (Titik tebal untuk status terbaru, titik bolong untuk yang lama)
+                                const dotStyle = isLatest 
+                                    ? 'bg-dark rounded-circle flex-shrink-0 mt-1 border border-white' 
+                                    : 'bg-white rounded-circle flex-shrink-0 mt-1 border border-dark';
+                                
+                                const dotSize = isLatest 
+                                    ? 'width: 16px; height: 16px; border-width: 3px !important; box-shadow: 0 0 0 2px #000;'
+                                    : 'width: 16px; height: 16px; border-width: 2px !important;';
+                                    
+                                const textOpacity = isLatest ? '' : 'opacity-75';
+
+                                const htmlRow = `
+                                    <div class="d-flex position-relative mb-5" style="z-index: 2;">
+                                        <div class="${dotStyle}" style="${dotSize}"></div>
+                                        <div class="ms-4 ${textOpacity}">
+                                            <h6 class="fw-bold text-uppercase mb-1" style="font-size: 14px;">${item.status}</h6>
+                                            <p class="text-secondary mb-1" style="font-size: 13px;">${item.note}</p>
+                                            <span class="${isLatest ? 'fw-bold text-dark' : 'text-secondary fw-bold'}" style="font-size: 12px;">
+                                                ${timeFormatted}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            `;
-                            historyContainer.insertAdjacentHTML('beforeend', htmlRow);
-                        });
+                                `;
+                                historyContainer.insertAdjacentHTML('beforeend', htmlRow);
+                            });
+                        } else {
+                            historyContainer.innerHTML = '<p class="text-secondary ms-4">Belum ada riwayat perjalanan paket.</p>';
+                        }
+
+                        // Tampilkan element
+                        document.getElementById('tracking-header').style.display = 'block';
+                        document.getElementById('tracking-timeline-container').style.display = 'block';
+
                     } else {
-                        historyContainer.innerHTML = '<p class="text-secondary ms-4">Belum ada riwayat perjalanan paket.</p>';
+                        // Muncul jika success = false (contoh: resi belum di-pick up)
+                        document.getElementById('tracking-error-text').innerText = response.data.message;
+                        document.getElementById('tracking-error').style.display = 'block';
                     }
-
-                    // Tampilkan element
-                    document.getElementById('tracking-header').style.display = 'block';
-                    document.getElementById('tracking-timeline-container').style.display = 'block';
-
-                } else {
-                    // Muncul jika success = false (contoh: resi belum di-pick up)
-                    document.getElementById('tracking-error-text').innerText = response.data.message;
+                })
+                .catch(error => {
+                    document.getElementById('tracking-loading').style.display = 'none';
+                    
+                    // Menangkap pesan error asli dari server
+                    let errorMsg = 'Gagal menghubungi server.';
+                    if (error.response) {
+                        // Jika server Laravel membalas dengan error (misal 404 atau 500)
+                        errorMsg = `Error ${error.response.status}: Route tidak ditemukan atau ada masalah di Controller.`;
+                        console.error("Detail Error:", error.response.data);
+                    }
+                    
+                    document.getElementById('tracking-error-text').innerText = errorMsg;
                     document.getElementById('tracking-error').style.display = 'block';
-                }
-            })
-            .catch(error => {
-                document.getElementById('tracking-loading').style.display = 'none';
-                
-                // Menangkap pesan error asli dari server
-                let errorMsg = 'Gagal menghubungi server.';
-                if (error.response) {
-                    // Jika server Laravel membalas dengan error (misal 404 atau 500)
-                    errorMsg = `Error ${error.response.status}: Route tidak ditemukan atau ada masalah di Controller.`;
-                    console.error("Detail Error:", error.response.data);
-                }
-                
-                document.getElementById('tracking-error-text').innerText = errorMsg;
-                document.getElementById('tracking-error').style.display = 'block';
-            });
-    }
+                });
+        }
     </script>
     @endpush
 @endsection

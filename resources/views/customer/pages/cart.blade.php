@@ -132,6 +132,7 @@
     @include('customer.components.footer')
     @include('customer.components.chatbot')
     
+    @push('styles')
     <style>
         /* Mengubah warna checkbox saat dicentang menjadi hitam */
         .form-check-input:checked {
@@ -145,18 +146,16 @@
             /* box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.25) !important; */
         }
     </style>
-    {{-- Import Axios untuk AJAX --}}
+    @endpush
+
+    @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // Setup CSRF Token Laravel untuk Axios
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         if(csrfToken) {
             axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-        } else {
-            console.warn("CSRF meta tag tidak ditemukan. Tambahkan <meta name='csrf-token' content='{{ csrf_token() }}'> di head layout.app lo.");
         }
 
-        // Deklarasi global biar bisa dipanggil tombol onclick
         let calculateTotalGlobal;
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -204,7 +203,7 @@
             calculateTotalGlobal();
         });
 
-        // FUNGSI AJAX UPDATE QTY TANPA RELOAD
+        // FUNGSI AJAX UPDATE QTY TANPA RELOAD & TANPA ALERT
         function updateQty(id, delta, btnElement) {
             const row = btnElement.closest('.cart-item-row');
             const input = row.querySelector('.qty-input');
@@ -214,7 +213,6 @@
             let newQty = currentQty + delta;
             
             if(newQty >= 1) {
-                // Kasih efek redup biar keliatan lagi loading
                 input.style.opacity = '0.5';
 
                 axios.patch(`/cart/${id}`, {
@@ -222,32 +220,35 @@
                 })
                 .then(response => {
                     if(response.data.success) {
-                        // 1. Update angka jumlah di kotak
                         input.value = response.data.new_qty;
-                        // 2. Update harga subtotal di pinggir kanan
                         subtotalText.innerText = response.data.item_subtotal;
-                        // 3. Update total akhir belanjaan
-                        if(typeof calculateTotalGlobal === 'function') {
-                            calculateTotalGlobal();
-                        }
+                        if(typeof calculateTotalGlobal === 'function') calculateTotalGlobal();
                     }
                 })
                 .catch(error => {
                     console.error("Error AJAX:", error);
-                    // alert('Gagal update qty. Pastikan CSRF Token aman.');
+                    // 🌟 UX ELEGAN: Ubah teks jadi merah 1 detik kalau gagal, lalu balik ke angka semula
+                    input.value = currentQty;
+                    input.classList.remove('text-dark');
+                    input.classList.add('text-danger');
+                    
+                    setTimeout(() => {
+                        input.classList.remove('text-danger');
+                        input.classList.add('text-dark');
+                    }, 1000);
                 })
                 .finally(() => {
-                    // Balikin terang lagi
                     input.style.opacity = '1';
                 });
             }
         }
 
-        // Hapus item (tetap pakai form submit biasa biar barisnya hilang sempurna)
+        // Hapus item
         function deleteItem(id) {
             const form = document.getElementById('delete-form');
             form.action = form.action.replace('ID_PLACEHOLDER', id);
             form.submit();
         }
     </script>
+    @endpush
 @endsection
