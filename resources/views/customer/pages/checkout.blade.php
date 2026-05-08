@@ -70,7 +70,7 @@
                             @else
                                 <div class="border p-4 text-center">
                                     <p class="text-secondary mb-3">Anda belum memiliki alamat pengiriman.</p>
-                                    <a href="{{ route('address_edit') }}" class="btn btn-outline-dark btn-sm rounded-0 fw-bold">TAMBAH ALAMAT</a>
+                                    <a href="{{ route('address_form') }}" class="btn btn-outline-dark btn-sm rounded-0 fw-bold">TAMBAH ALAMAT</a>
                                 </div>
                             @endif
                         </div>
@@ -82,8 +82,10 @@
                         <div class="border p-0 rounded-0">
                             @foreach($cartItems as $item)
                                 @php
-                                    $product = $item->productSku->product;
-                                    $price = $product->discount_price ?? $product->base_price;
+                                    $sku = $item->productSku;
+                                    $product = $sku->product;
+                                    // 🌟 FIX: Tarik harga dari relasi SKU
+                                    $price = $sku->discount_price ?? $sku->base_price;
                                     $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
                                 @endphp
                                 <div class="d-flex align-items-start p-4 {{ !$loop->last ? 'border-bottom border-secondary-subtle' : '' }}">
@@ -93,7 +95,9 @@
                                     <div class="ms-4 flex-grow-1">
                                         <p class="fw-bold mb-1 text-uppercase text-dark" style="font-size: 14px;">{{ $product->brand->name }}</p>
                                         <p class="fw-bold mb-1 text-uppercase" style="font-size: 15px;">{{ $product->name }}</p>
-                                        <p class="text-secondary mb-2 small">Gender: {{ $product->gender }} | Ukuran: {{ $item->productSku->size }}</p>
+                                        
+                                        <p class="text-secondary mb-2 small">Gender: {{ $product->gender }} | Ukuran: {{ $sku->size }} @if($sku->color) | Warna: {{ $sku->color }} @endif</p>
+                                        
                                         <div class="d-flex justify-content-between align-items-center mt-2">
                                             <span class="fw-bold text-dark fs-6">Rp {{ number_format($price, 0, ',', '.') }}</span>
                                             <span class="text-dark fw-bold small">x{{ $item->quantity }}</span>
@@ -245,7 +249,7 @@
                 @endforelse
             </div>
             <div class="modal-footer border-top border-dark rounded-0">
-                <a href="{{ route('address_edit') }}" class="btn btn-black w-100 rounded-0 fw-bold text-uppercase py-2">Tambah Alamat Baru</a>
+                <a href="{{ route('address_form') }}" class="btn btn-black w-100 rounded-0 fw-bold text-uppercase py-2">Tambah Alamat Baru</a>
             </div>
         </div>
     </div>
@@ -518,8 +522,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .catch(error => {
-                    console.error(error);
-                    showCheckoutError('Gagal terhubung ke server. Periksa koneksi internet Anda.');
+                    console.error("FULL ERROR:", error);
+                    let errorMsg = 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
+
+                    // 🌟 BARIS INI AKAN MEMBONGKAR ERROR ASLI DARI LARAVEL
+                    if (error.response) {
+                        errorMsg = `Server Error (${error.response.status}): Cek tab Console (F12) untuk detailnya.`;
+                        console.error("PESAN DARI LARAVEL:", error.response.data);
+                    }
+
+                    showCheckoutError(errorMsg);
                     btnSubmit.innerHTML = originalText;
                     btnSubmit.disabled = false;
                 });

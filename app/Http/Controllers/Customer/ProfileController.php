@@ -15,27 +15,24 @@ class ProfileController extends Controller
     public function index()
     {
         $user = Auth::user();
-
-        $addresses = Address::where('user_id', $user->id)
-            ->orderByDesc('is_default')
-            ->get();
-
-        $orders = Order::where('user_id', $user->id)
-            ->with(['items.sku.product.images', 'items.sku.product.brand'])
+        $addresses = Address::where('user_id', $user->id)->orderByDesc('is_default')->get();
+        
+        // 🌟 FIX: Pastikan memuat relasi shippingDetail agar resi bisa dibaca di View[cite: 2]
+        $orders = Order::with(['items.sku.product.images', 'items.sku.product.brand', 'shippingDetail'])
+            ->where('user_id', $user->id)
             ->latest()
             ->get();
 
         return view('customer.pages.profile', compact('user', 'orders', 'addresses'));
     }
 
-    /**
-     * 1. Fungsi Mengambil Tracking Live dari API Biteship
-     */
     public function getTracking($id)
     {
-        $order = Order::where('user_id', Auth::id())->findOrFail($id);
+        // 🌟 FIX: Panggil shippingDetail[cite: 2]
+        $order = Order::with('shippingDetail')->where('user_id', Auth::id())->findOrFail($id);
+        $shipping = $order->shippingDetail;
 
-        if (!$order->waybill_id || !$order->courier_company) {
+        if (!$shipping || !$shipping->tracking_number || !$shipping->courier_company) {
             return response()->json([
                 'success' => false,
                 'message' => 'Resi belum tersedia untuk pesanan ini.'
@@ -43,10 +40,9 @@ class ProfileController extends Controller
         }
 
         try {
-            // 🌟 FIX 1: Tambahkan withoutVerifying() untuk mem-bypass error SSL cURL di Localhost Laragon
             $response = Http::withoutVerifying()->withHeaders([
                 'authorization' => env('BITESHIP_API_KEY')
-            ])->get("https://api.biteship.com/v1/trackings/{$order->waybill_id}/couriers/{$order->courier_company}");
+            ])->get("https://api.biteship.com/v1/trackings/{$shipping->tracking_number}/couriers/{$shipping->courier_company}");
 
             $result = $response->json();
 
@@ -55,8 +51,8 @@ class ProfileController extends Controller
                     'success' => true,
                     'data' => [
                         'courier' => [
-                            'company' => strtoupper($result['courier']['company'] ?? $order->courier_company),
-                            'waybill_id' => $result['waybill_id'] ?? $order->waybill_id
+                            'company' => strtoupper($result['courier']['company'] ?? $shipping->courier_company),
+                            'waybill_id' => $result['waybill_id'] ?? $shipping->tracking_number
                         ],
                         'status' => $result['status'] ?? 'Diproses',
                         'history' => $result['history'] ?? []
@@ -64,18 +60,10 @@ class ProfileController extends Controller
                 ]);
             }
 
-            // 🌟 FIX 2: Tampilkan pesan error langsung dari Biteship jika resi tidak valid
-            return response()->json([
-                'success' => false,
-                'message' => 'Biteship: ' . ($result['error'] ?? 'Data tracking tidak ditemukan.')
-            ]);
+            return response()->json(['success' => false, 'message' => 'Biteship: ' . ($result['error'] ?? 'Data tracking tidak ditemukan.')]);
 
         } catch (\Exception $e) {
-            // 🌟 FIX 3: Tampilkan pesan sistem asli agar kita tau errornya apa (Bukan cuma "Gagal menghubungi...")
-            return response()->json([
-                'success' => false,
-                'message' => 'System Error: ' . $e->getMessage()
-            ]);
+            return response()->json(['success' => false, 'message' => 'System Error: ' . $e->getMessage()]);
         }
     }
 
@@ -100,5 +88,59 @@ class ProfileController extends Controller
         
         // Return download PDF dengan nama file dinamis
         return $pdf->download('INVOICE-' . $order->invoice_number . '.pdf');
+    }
+
+    /**
+     * Memproses update data profil pengguna
+     */
+    public function updateProfile(\Illuminate\Http\Request $request)
+    {
+        // 1. Validasi inputan form
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'birthday' => 'required|date',
+            'gender'   => 'required|in:L,P',
+        ]);
+
+        // 2. Ambil data user yang sedang login
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        // 3. Update data ke database
+        $user->update([
+            'name'     => $request->name,
+            'birthday' => $request->birthday,
+            'gender'   => $request->gender,
+        ]);
+
+        // 4. Balikin ke halaman profil bawaan SPA lu
+        return redirect()->route('profile')->with('success', 'Profil berhasil diperbarui!');
+    }
+
+
+    /**
+     * Memproses penggantian password dari dalam halaman profil (User Login)
+     */
+    public function updatePassword(\Illuminate\Http\Request $request)
+    {
+        // 1. Validasi inputan
+        $request->validate([
+            'old_password' => ['required', function ($attribute, $value, $fail) {
+                if (!\Illuminate\Support\Facades\Hash::check($value, auth()->user()->password)) {
+                    $fail('Password lama yang Anda masukkan salah');
+                }
+            }],
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+        ], [
+            'password.required' => 'Password baru wajib diisi',
+            'password.confirmed' => 'Konfirmasi password tidak cocok',
+        ]);
+
+        // 2. Update Password ke Database
+        auth()->user()->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password)
+        ]);
+
+        // 3. (Opsional) Keluarkan pesan sukses & kembalikan ke profil
+        return redirect()->route('profile')->with('success', 'Password berhasil diperbarui!');
     }
 }

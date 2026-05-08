@@ -15,9 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->foreignId('order_item_id')->constrained()->onDelete('cascade'); // 🌟 Syarat harus pernah beli
             $table->integer('rating');
             $table->text('comment')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

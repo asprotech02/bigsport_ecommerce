@@ -7,39 +7,45 @@
     </header>
 
     @php
-        // 🌟 FIX LOGIKA STOK: Pindahkan perhitungan ke paling atas biar bisa dipakai di seluruh bagian halaman
+        // 🌟 FIX LOGIKA STOK, HARGA & MATRIX WARNA:
         $standardSizes = [];
         $isKids = str_contains(strtolower($product->gender), 'anak');
 
         if ($product->category->name == 'Sepatu') {
-            if ($isKids) {
-                $standardSizes = ['19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'];
-            } else {
-                $standardSizes = ['31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'];
-            }
+            $standardSizes = $isKids ? ['19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'] : ['31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'];
         } elseif ($product->category->name == 'Pakaian') {
-            if ($isKids) {
-                    $standardSizes = ['S', 'M', 'L', 'XL'];
-            } else {
-                    $standardSizes = ['S', 'M', 'L', 'XL', 'XXL'];
-            }
+            $standardSizes = $isKids ? ['S', 'M', 'L', 'XL'] : ['S', 'M', 'L', 'XL', 'XXL'];
         } else {
             $standardSizes = ['All Size'];
         }
 
-        $skuLookup = [];
+        $skus = $product->skus;
+        
+        // Ekstrak Warna dan Ukuran yang tersedia
+        $availableColors = $skus->pluck('color')->filter()->unique()->values();
+        $hasColors = $availableColors->count() > 0;
+        
+        // Saring ukuran agar berurutan sesuai $standardSizes lu
+        $availableSizes = collect($standardSizes)->filter(function($size) use ($skus) {
+            return $skus->where('size', $size)->count() > 0;
+        })->values();
+
         $totalValidStock = 0; 
         
-        foreach($product->skus as $sku) {
-            $skuLookup[$sku->size] = [
-                'id' => $sku->id,
-                'stock' => $sku->stock
-            ];
-        }
+        // 🌟 AUTO-SELECT: Cari SKU pertama yang ada stok tersedia buat patokan
+        $defaultSku = $skus->where('available_stock', '>', 0)->first();
+        
+        $defaultBasePrice = $defaultSku ? $defaultSku->base_price : ($skus->first()->base_price ?? 0);
+        $defaultDiscountPrice = $defaultSku ? $defaultSku->discount_price : ($skus->first()->discount_price ?? null);
+        
+        // Variabel untuk dilempar ke JS agar otomatis terpilih
+        $defaultColor = $defaultSku ? $defaultSku->color : null;
+        $defaultSize = $defaultSku ? $defaultSku->size : null;
 
-        foreach($standardSizes as $size) {
-            if(isset($skuLookup[$size]) && $skuLookup[$size]['stock'] > 0) {
-                $totalValidStock += $skuLookup[$size]['stock'];
+        // Hitung total stok valid
+        foreach($skus as $sku) {
+            if(in_array($sku->size, $standardSizes) && $sku->available_stock > 0) {
+                $totalValidStock += $sku->available_stock;
             }
         }
     @endphp
@@ -88,7 +94,6 @@
                                      id="main-product-img" 
                                      class="w-100 h-100 object-fit-cover" 
                                      style="transition: transform 0.1s ease-out, opacity 0.3s ease-in-out;">
-                                {{-- Badge overlay telah dihapus dari sini sesuai request --}}
                             </div>
 
                             <button class="btn rounded-0 position-absolute end-0 top-50 translate-middle-y me-2 me-md-3 border-0 d-flex justify-content-center align-items-center gallery-nav-btn" 
@@ -105,26 +110,36 @@
                         </h2>
                         <p class="text-dark fw-bold mb-2" style="font-size: 14px;">{{ $product->gender }}</p>
                         
-                        <div class="mb-3">
-                            @if($product->discount_price && $product->discount_price < $product->base_price)
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <h3 class="fw-bolder mb-0 text-danger" style="font-size: 26px;">
-                                        Rp {{ number_format($product->discount_price, 0, ',', '.') }}
+                        <div class="mb-3" id="price-container">
+                            @if($defaultDiscountPrice)
+                                <div class="d-flex align-items-center gap-2 flex-wrap" id="discount-view">
+                                    <h3 class="fw-bolder mb-0 text-danger" id="current-price" style="font-size: 26px;">
+                                        Rp {{ number_format($defaultDiscountPrice, 0, ',', '.') }}
                                     </h3>
-                                    <span class="text-secondary text-decoration-line-through" style="font-size: 16px;">
-                                        Rp {{ number_format($product->base_price, 0, ',', '.') }}
+                                    <span class="text-secondary text-decoration-line-through" id="original-price" style="font-size: 16px;">
+                                        Rp {{ number_format($defaultBasePrice, 0, ',', '.') }}
                                     </span>
                                     @php
-                                        $percent = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
+                                        $percent = round((($defaultBasePrice - $defaultDiscountPrice) / $defaultBasePrice) * 100);
                                     @endphp
-                                    <span class="badge bg-danger rounded-0 px-2 py-1" style="font-size: 12px; letter-spacing: 0.5px;">
+                                    <span class="badge bg-danger rounded-0 px-2 py-1" id="discount-badge" style="font-size: 12px; letter-spacing: 0.5px;">
                                         {{ $percent }}% OFF
                                     </span>
                                 </div>
+                                <div id="normal-view" style="display: none;">
+                                    <h3 class="fw-bolder mb-0" id="normal-price" style="font-size: 26px;"></h3>
+                                </div>
                             @else
-                                <h3 class="fw-bolder mb-0" style="font-size: 26px;">
-                                    Rp {{ number_format($product->base_price, 0, ',', '.') }}
-                                </h3>
+                                <div class="d-flex align-items-center gap-2 flex-wrap" id="discount-view" style="display: none !important;">
+                                    <h3 class="fw-bolder mb-0 text-danger" id="current-price" style="font-size: 26px;"></h3>
+                                    <span class="text-secondary text-decoration-line-through" id="original-price" style="font-size: 16px;"></span>
+                                    <span class="badge bg-danger rounded-0 px-2 py-1" id="discount-badge" style="font-size: 12px; letter-spacing: 0.5px;"></span>
+                                </div>
+                                <div id="normal-view">
+                                    <h3 class="fw-bolder mb-0" id="normal-price" style="font-size: 26px;">
+                                        Rp {{ number_format($defaultBasePrice, 0, ',', '.') }}
+                                    </h3>
+                                </div>
                             @endif
                         </div>
                         
@@ -150,38 +165,36 @@
 
                         <form action="{{ route('cart.add') }}" method="POST" id="add-to-cart-form">
                             @csrf
-                            
+                            <input type="hidden" name="sku_id" id="selected-sku-id" value="">
+
+                            @if($hasColors)
+                            <div class="mb-4">
+                                <span class="fw-bold d-block mb-2" style="font-size: 14px;">Warna</span>
+                                <div class="d-flex flex-wrap gap-2" id="color-button-container">
+                                    @foreach($availableColors as $color)
+                                        <button type="button" class="btn btn-outline-dark rounded-0 px-3 py-1 fw-bold color-btn" 
+                                                data-color="{{ $color }}" style="font-size: 12px;">
+                                            {{ $color }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+
                             <div class="mb-4">
                                 <div class="mb-2">
                                     <span class="fw-bold d-block" style="font-size: 14px;">Ukuran</span>
                                     <a href="#" data-bs-toggle="modal" data-bs-target="#sizeGuideModal" class="text-dark fw-bold text-decoration-none mt-1 d-inline-block" style="font-size: 11px; border-bottom: 1px solid #000;">Panduan Size</a>
                                 </div>
 
-                                <input type="hidden" name="sku_id" id="selected-sku-id" value="">
-
                                 <div class="d-flex flex-wrap gap-2 mt-2" id="size-button-container">
-                                    @foreach($standardSizes as $size)
-                                        @php
-                                            $skuData = $skuLookup[$size] ?? null;
-                                            $hasStock = $skuData && $skuData['stock'] > 0;
-                                        @endphp
-
-                                        @if($hasStock)
-                                            <button type="button" 
-                                                    class="btn btn-outline-dark rounded-0 px-2 py-1 fw-bold size-btn" 
-                                                    style="font-size: 12px; min-width: 35px;"
-                                                    data-sku-id="{{ $skuData['id'] }}"
-                                                    data-stock="{{ $skuData['stock'] }}">
-                                                {{ $size }}
-                                            </button>
-                                        @else
-                                            <button type="button" 
-                                                    class="btn btn-outline-secondary bg-light text-muted rounded-0 px-2 py-1 fw-bold size-btn disabled" 
-                                                    style="font-size: 12px; min-width: 35px; border-style: dashed;" 
-                                                    disabled>
-                                                {{ $size }}
-                                            </button>
-                                        @endif
+                                    @foreach($availableSizes as $size)
+                                        <button type="button" 
+                                                class="btn btn-outline-dark rounded-0 px-2 py-1 fw-bold size-btn" 
+                                                style="font-size: 12px; min-width: 35px;"
+                                                data-size="{{ $size }}">
+                                            {{ $size }}
+                                        </button>
                                     @endforeach
                                 </div>
 
@@ -206,13 +219,13 @@
                             <div class="row g-2 mt-4">
                                 @if($totalValidStock > 0)
                                     <div class="col-12 col-sm-6">
-                                        <button type="submit" name="action" value="buy_now" class="btn btn-outline-dark w-100 rounded-0 fw-bold text-uppercase d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; letter-spacing: 1px; border-width: 2px;">
-                                            BELI SEKARANG
+                                        <button type="submit" name="action" value="buy_now" id="btn-buy-now" class="btn btn-outline-dark w-100 rounded-0 fw-bold text-uppercase d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; letter-spacing: 1px; border-width: 2px;">
+                                            PILIH VARIAN
                                         </button>
                                     </div>
                                     <div class="col-12 col-sm-6">
-                                        <button type="submit" name="action" value="add_cart" class="btn btn-action-main m-0 w-100 d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; padding: 0;">
-                                            TAMBAH KE KERANJANG
+                                        <button type="submit" name="action" value="add_cart" id="btn-add-cart" class="btn btn-action-main m-0 w-100 d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; padding: 0;">
+                                            PILIH VARIAN
                                         </button>
                                     </div>
                                 @else
@@ -362,7 +375,6 @@
         </div>
     </section>
 
-    <!-- SECTION REKOMENDASI PRODUK -->
     @if(isset($recommendedProducts) && $recommendedProducts->count() > 0)
     <section class="py-5 bg-white border-secondary-subtle">
         <div class="container">
@@ -384,8 +396,6 @@
         </div>
     </section>
     @endif
-    <!-- END SECTION REKOMENDASI PRODUK -->
-
     @include('customer.components.footer')
     @include('customer.components.chatbot')
     
@@ -401,13 +411,9 @@
                 
                 <div class="modal-body p-4 p-md-5">
                     @php
-                        // Cek apakah produk ini khusus anak-anak berdasarkan kolom gender
                         $isKids = str_contains(strtolower($product->gender), 'anak');
                     @endphp
 
-                    <!-- ========================================== -->
-                    <!-- KATEGORI SEPATU -->
-                    <!-- ========================================== -->
                     @if($product->category->name == 'Sepatu')
                         <p class="text-secondary mb-4" style="font-size: 14px; line-height: 1.6;">
                             Gunakan tabel panduan di bawah ini untuk menentukan ukuran sepatu yang tepat berdasarkan panjang kaki (dalam centimeter).
@@ -425,7 +431,6 @@
                                 </thead>
                                 <tbody>
                                     @if($isKids)
-                                        <!-- TABEL SEPATU ANAK-ANAK (19 - 30) -->
                                         <tr><td class="fw-bold">19</td><td>3K</td><td>4C</td><td class="fw-bold bg-light">11.5 cm</td></tr>
                                         <tr><td class="fw-bold">20</td><td>4K</td><td>5C</td><td class="fw-bold bg-light">12.0 cm</td></tr>
                                         <tr><td class="fw-bold">21</td><td>5K</td><td>5.5C</td><td class="fw-bold bg-light">12.5 cm</td></tr>
@@ -439,7 +444,6 @@
                                         <tr><td class="fw-bold">29</td><td>11K</td><td>11.5C</td><td class="fw-bold bg-light">18.0 cm</td></tr>
                                         <tr><td class="fw-bold">30</td><td>11.5K</td><td>12C</td><td class="fw-bold bg-light">18.5 cm</td></tr>
                                     @else
-                                        <!-- TABEL SEPATU UNIVERSAL DEWASA (31 - 44) -->
                                         <tr><td class="fw-bold">31</td><td>12.5K</td><td>13C</td><td class="fw-bold bg-light">19.0 cm</td></tr>
                                         <tr><td class="fw-bold">32</td><td>13K</td><td>1Y</td><td class="fw-bold bg-light">19.5 cm</td></tr>
                                         <tr><td class="fw-bold">33</td><td>1</td><td>1.5Y</td><td class="fw-bold bg-light">20.0 cm</td></tr>
@@ -467,17 +471,12 @@
                             </ol>
                         </div>
 
-
-                    <!-- ========================================== -->
-                    <!-- KATEGORI PAKAIAN -->
-                    <!-- ========================================== -->
                     @elseif($product->category->name == 'Pakaian')
                         <p class="text-secondary mb-4" style="font-size: 14px; line-height: 1.6;">
                             Gunakan panduan ukuran di bawah ini untuk menentukan pakaian yang sesuai. Ukuran memiliki toleransi perbedaan 1-2 cm dari ukuran aslinya.
                         </p>
                         
                         @if($product->subcategory->name == 'Celana')
-                            <!-- TABEL CELANA -->
                             <div class="table-responsive">
                                 <table class="table table-bordered border-dark text-center align-middle mb-0" style="font-size: 13px;">
                                     <thead class="bg-light-gray fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">
@@ -492,13 +491,11 @@
                                     </thead>
                                     <tbody>
                                         @if($isKids)
-                                            <!-- Celana Anak-anak -->
                                             <tr><td class="fw-bold bg-light">S</td><td>4 - 5 Tahun</td><td>50 - 58 cm</td><td>65 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">M</td><td>6 - 7 Tahun</td><td>54 - 62 cm</td><td>70 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">L</td><td>8 - 9 Tahun</td><td>58 - 66 cm</td><td>75 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">XL</td><td>10 - 11 Tahun</td><td>62 - 70 cm</td><td>80 cm</td></tr>
                                         @else
-                                            <!-- Celana Dewasa Universal -->
                                             <tr><td class="fw-bold bg-light">S (28-29)</td><td>72 - 76 cm</td><td>98 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">M (30-31)</td><td>77 - 81 cm</td><td>100 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">L (32-33)</td><td>82 - 86 cm</td><td>102 cm</td></tr>
@@ -508,7 +505,6 @@
                                 </table>
                             </div>
                         @else
-                            <!-- TABEL BAJU / ATASAN -->
                             <div class="table-responsive">
                                 <table class="table table-bordered border-dark text-center align-middle mb-0" style="font-size: 13px;">
                                     <thead class="bg-light-gray fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">
@@ -523,13 +519,11 @@
                                     </thead>
                                     <tbody>
                                         @if($isKids)
-                                            <!-- Baju Anak-anak -->
                                             <tr><td class="fw-bold bg-light">S</td><td>4 - 5 Tahun</td><td>36 cm</td><td>48 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">M</td><td>6 - 7 Tahun</td><td>38 cm</td><td>51 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">L</td><td>8 - 9 Tahun</td><td>40 cm</td><td>54 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">XL</td><td>10 - 11 Tahun</td><td>42 cm</td><td>57 cm</td></tr>
                                         @else
-                                            <!-- Baju Dewasa Universal -->
                                             <tr><td class="fw-bold bg-light">S</td><td>48 cm</td><td>68 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">M</td><td>50 cm</td><td>70 cm</td></tr>
                                             <tr><td class="fw-bold bg-light">L</td><td>52 cm</td><td>72 cm</td></tr>
@@ -541,10 +535,6 @@
                             </div>
                         @endif
 
-
-                    <!-- ========================================== -->
-                    <!-- KATEGORI AKSESORIS / LAINNYA -->
-                    <!-- ========================================== -->
                     @else
                         <div class="text-center py-4">
                             <i class="bi bi-info-circle text-secondary mb-3 d-block" style="font-size: 32px;"></i>
@@ -580,69 +570,195 @@
         document.addEventListener('DOMContentLoaded', function() {
             
             // ==========================================
-            // 1. LOGIKA STOK & KUANTITAS
+            // 🌟 LOGIKA MATRIX FILTER SHOPEE (AUTO-SELECT)
             // ==========================================
-            const sizeButtons = document.querySelectorAll('.size-btn:not(.disabled)');
-            const stockContainer = document.getElementById('stock-status-container');
-            const stockDisplay = document.getElementById('stock-display');
-            const skuInput = document.getElementById('selected-sku-id');
-            const qtyInput = document.getElementById('qty-input');
-            const btnMinus = document.getElementById('btn-qty-minus');
-            const btnPlus = document.getElementById('btn-qty-plus');
-            const qtyWarning = document.getElementById('qty-warning');
-
+            const skus = @json($product->skus);
+            const hasColors = {{ $hasColors ? 'true' : 'false' }};
+            const defaultBasePrice = {{ $defaultBasePrice }};
+            const defaultDiscountPrice = {{ $defaultDiscountPrice ?? 'null' }};
+            
+            // 🌟 AUTO-SELECT VARIAN DARI PHP
+            let selectedColor = {!! json_encode($defaultColor) !!};
+            let selectedSize = {!! json_encode($defaultSize) !!};
             let currentMaxStock = 0;
 
-            function selectSize(button) {
-                sizeButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
+            const colorBtns = document.querySelectorAll('.color-btn');
+            const sizeBtns = document.querySelectorAll('.size-btn');
+            const btnCart = document.getElementById('btn-add-cart');
+            const btnBuy = document.getElementById('btn-buy-now');
+            const skuInput = document.getElementById('selected-sku-id');
 
-                currentMaxStock = parseInt(button.getAttribute('data-stock'));
-                skuInput.value = button.getAttribute('data-sku-id');
-
-                stockContainer.style.display = 'block';
-                stockDisplay.innerText = currentMaxStock + ' Pcs';
-
-                if (currentMaxStock <= 5) {
-                    stockDisplay.classList.replace('text-dark', 'text-danger');
+            function updatePriceDisplay(basePrice, discPrice) {
+                const formatter = new Intl.NumberFormat('id-ID');
+                if (discPrice && parseInt(discPrice) > 0) {
+                    document.getElementById('discount-view').style.setProperty('display', 'flex', 'important');
+                    document.getElementById('normal-view').style.display = 'none';
+                    document.getElementById('current-price').innerText = 'Rp ' + formatter.format(discPrice);
+                    document.getElementById('original-price').innerText = 'Rp ' + formatter.format(basePrice);
+                    const percent = Math.round(((basePrice - discPrice) / basePrice) * 100);
+                    document.getElementById('discount-badge').innerText = percent + '% OFF';
                 } else {
-                    stockDisplay.classList.replace('text-danger', 'text-dark');
+                    document.getElementById('discount-view').style.setProperty('display', 'none', 'important');
+                    document.getElementById('normal-view').style.display = 'block';
+                    document.getElementById('normal-price').innerText = 'Rp ' + formatter.format(basePrice);
                 }
-
-                qtyInput.value = 1;
-                qtyWarning.style.setProperty('display', 'none', 'important');
-                
-                const existingWarning = document.getElementById('dynamic-size-warning');
-                if (existingWarning) existingWarning.remove();
             }
 
-            sizeButtons.forEach(button => {
-                button.addEventListener('click', function() { selectSize(this); });
+            function updateVariantMatrix() {
+                // 1. FILTER TOMBOL WARNA BERDASARKAN UKURAN YANG DIPILIH
+                colorBtns.forEach(btn => {
+                    const c = btn.dataset.color;
+                    let stockForThisColor = 0;
+                    if (selectedSize) {
+                        const sku = skus.find(s => s.color === c && s.size === selectedSize);
+                        stockForThisColor = sku ? sku.available_stock : 0;
+                    } else {
+                        stockForThisColor = skus.filter(s => s.color === c).reduce((sum, s) => sum + s.available_stock, 0);
+                    }
+
+                    if (stockForThisColor <= 0) {
+                        btn.classList.add('disabled', 'btn-outline-secondary', 'text-muted');
+                        btn.classList.remove('btn-outline-dark');
+                        btn.style.borderStyle = 'dashed';
+                        btn.disabled = true;
+                        if (selectedColor === c) selectedColor = null; 
+                    } else {
+                        btn.classList.remove('disabled', 'btn-outline-secondary', 'text-muted');
+                        btn.classList.add('btn-outline-dark');
+                        btn.style.borderStyle = 'solid';
+                        btn.disabled = false;
+                    }
+
+                    if (selectedColor === c) {
+                        btn.classList.add('active', 'bg-dark', 'text-white');
+                    } else {
+                        btn.classList.remove('active', 'bg-dark', 'text-white');
+                    }
+                });
+
+                // 2. FILTER TOMBOL UKURAN BERDASARKAN WARNA YANG DIPILIH
+                sizeBtns.forEach(btn => {
+                    const sz = btn.dataset.size;
+                    let stockForThisSize = 0;
+                    if (selectedColor) {
+                        const sku = skus.find(s => s.size === sz && s.color === selectedColor);
+                        stockForThisSize = sku ? sku.available_stock : 0;
+                    } else {
+                        stockForThisSize = skus.filter(s => s.size === sz).reduce((sum, s) => sum + s.available_stock, 0);
+                    }
+
+                    if (stockForThisSize <= 0) {
+                        btn.classList.add('disabled', 'btn-outline-secondary', 'text-muted');
+                        btn.classList.remove('btn-outline-dark');
+                        btn.style.borderStyle = 'dashed';
+                        btn.disabled = true;
+                        if (selectedSize === sz) selectedSize = null; 
+                    } else {
+                        btn.classList.remove('disabled', 'btn-outline-secondary', 'text-muted');
+                        btn.classList.add('btn-outline-dark');
+                        btn.style.borderStyle = 'solid';
+                        btn.disabled = false;
+                    }
+
+                    if (selectedSize === sz) {
+                        btn.classList.add('active', 'bg-dark', 'text-white');
+                    } else {
+                        btn.classList.remove('active', 'bg-dark', 'text-white');
+                    }
+                });
+
+                // 3. CEK KOMBINASI FINAL
+                let finalSku = null;
+                if (hasColors) {
+                    if (selectedColor && selectedSize) {
+                        finalSku = skus.find(s => s.color === selectedColor && s.size === selectedSize);
+                    }
+                } else {
+                    if (selectedSize) {
+                        finalSku = skus.find(s => s.size === selectedSize);
+                    }
+                }
+
+                // 4. UPDATE UI & HARGA
+                if (finalSku) {
+                    skuInput.value = finalSku.id;
+                    updatePriceDisplay(finalSku.base_price, finalSku.discount_price);
+                    
+                    document.getElementById('stock-status-container').style.display = 'block';
+                    document.getElementById('stock-display').innerText = finalSku.available_stock + ' Pcs';
+                    currentMaxStock = finalSku.available_stock;
+
+                    if(btnCart && btnBuy) {
+                        btnCart.disabled = false;
+                        btnCart.innerText = 'TAMBAH KE KERANJANG';
+                        btnBuy.disabled = false;
+                        btnBuy.innerText = 'BELI SEKARANG';
+                    }
+                } else {
+                    skuInput.value = '';
+                    document.getElementById('stock-status-container').style.display = 'none';
+                    currentMaxStock = 0;
+
+                    if(btnCart && btnBuy) {
+                        btnCart.disabled = true;
+                        btnCart.innerText = 'PILIH VARIAN';
+                        btnBuy.disabled = true;
+                        btnBuy.innerText = 'PILIH VARIAN';
+                    }
+
+                    updatePriceDisplay(defaultBasePrice, defaultDiscountPrice);
+                }
+                
+                document.getElementById('qty-input').value = 1;
+                document.getElementById('qty-warning').style.setProperty('display', 'none', 'important');
+            }
+
+            // --- EVENT LISTENER TOMBOL ---
+            colorBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const c = this.dataset.color;
+                    selectedColor = (selectedColor === c) ? null : c; 
+                    updateVariantMatrix();
+                });
             });
 
-            if (sizeButtons.length > 0) { selectSize(sizeButtons[0]); }
+            sizeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const sz = this.dataset.size;
+                    selectedSize = (selectedSize === sz) ? null : sz; 
+                    updateVariantMatrix();
+                });
+            });
 
-            btnPlus.addEventListener('click', function() {
-                let currentQty = parseInt(qtyInput.value);
+            // Jalankan validasi pertama kali (Otomatis memilih SKU dari PHP)
+            updateVariantMatrix();
+
+            // ==========================================
+            // KONTROL KUANTITAS (+ / -)
+            // ==========================================
+            document.getElementById('btn-qty-plus').addEventListener('click', function() {
+                if (!skuInput.value) return; 
+                let currentQty = parseInt(document.getElementById('qty-input').value);
                 if (currentQty < currentMaxStock) {
-                    qtyInput.value = currentQty + 1;
-                    qtyWarning.style.setProperty('display', 'none', 'important');
+                    document.getElementById('qty-input').value = currentQty + 1;
+                    document.getElementById('qty-warning').style.setProperty('display', 'none', 'important');
                 } else {
-                    qtyWarning.innerText = "Maksimal pembelian untuk ukuran ini adalah " + currentMaxStock + " pcs";
-                    qtyWarning.style.setProperty('display', 'block', 'important');
+                    document.getElementById('qty-warning').innerText = "Maksimal pembelian " + currentMaxStock + " pcs";
+                    document.getElementById('qty-warning').style.setProperty('display', 'block', 'important');
                 }
             });
 
-            btnMinus.addEventListener('click', function() {
-                let currentQty = parseInt(qtyInput.value);
+            document.getElementById('btn-qty-minus').addEventListener('click', function() {
+                if (!skuInput.value) return;
+                let currentQty = parseInt(document.getElementById('qty-input').value);
                 if (currentQty > 1) {
-                    qtyInput.value = currentQty - 1;
-                    qtyWarning.style.setProperty('display', 'none', 'important');
+                    document.getElementById('qty-input').value = currentQty - 1;
+                    document.getElementById('qty-warning').style.setProperty('display', 'none', 'important');
                 }
             });
 
             // ==========================================
-            // 2. LOGIKA GALERI & INTERACTIVE ZOOM
+            // LOGIKA GALERI & INTERACTIVE ZOOM
             // ==========================================
             const mainImg = document.getElementById('main-product-img');
             const imgWrapper = document.getElementById('main-img-wrapper');
@@ -730,63 +846,31 @@
             });
 
             // ==========================================
-            // 3. LOGIKA ADD TO CART (TANPA RELOAD & TANPA ALERT)
+            // 🌟 LOGIKA ADD TO CART (RELOAD CEPAT NORMAL)
             // ==========================================
             const cartForm = document.getElementById('add-to-cart-form');
             
             if (cartForm) {
                 cartForm.addEventListener('submit', function(e) {
-                    const submitter = e.submitter; 
-
-                    if (submitter && submitter.value === 'add_cart') {
-                        e.preventDefault(); 
+                    if (!skuInput.value) {
+                        e.preventDefault(); // Hentikan reload jika belum memilih varian lengkap
                         
-                        if (!skuInput.value) {
-                            const sizeContainer = document.getElementById('size-button-container');
-                            let warning = document.getElementById('dynamic-size-warning');
-                            
-                            if (!warning) {
-                                warning = document.createElement('span');
-                                warning.id = 'dynamic-size-warning';
-                                warning.className = 'text-danger fw-bold d-block mt-1';
-                                warning.style.fontSize = '11px';
-                                warning.innerText = 'Silakan pilih ukuran terlebih dahulu';
-                                sizeContainer.insertAdjacentElement('afterend', warning);
-                            }
-                            
-                            sizeContainer.style.animation = 'shake 0.5s';
-                            setTimeout(() => sizeContainer.style.animation = '', 500);
-                            return;
+                        const sizeContainer = document.getElementById('size-button-container');
+                        let warning = document.getElementById('dynamic-size-warning');
+                        
+                        if (!warning) {
+                            warning = document.createElement('span');
+                            warning.id = 'dynamic-size-warning';
+                            warning.className = 'text-danger fw-bold d-block mt-1';
+                            warning.style.fontSize = '11px';
+                            warning.innerText = 'Silakan pilih varian warna & ukuran terlebih dahulu';
+                            sizeContainer.insertAdjacentElement('afterend', warning);
                         }
-
-                        const formData = new FormData(cartForm);
-                        formData.append('action', 'add_cart'); 
-
-                        fetch(cartForm.getAttribute('action'), {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                'Accept': 'application/json' 
-                            },
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                let cartBadge = document.getElementById('cart-badge');
-                                if (cartBadge) {
-                                    cartBadge.innerText = data.total > 99 ? '99+' : data.total;
-                                    cartBadge.classList.remove('d-none');
-                                    
-                                    cartBadge.closest('a').style.animation = 'bounce 0.3s ease';
-                                    setTimeout(() => cartBadge.closest('a').style.animation = '', 300);
-                                }
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Add to cart failed:', error);
-                        });
+                        
+                        sizeContainer.style.animation = 'shake 0.5s';
+                        setTimeout(() => sizeContainer.style.animation = '', 500);
                     }
+                    // Jika SKU sudah terisi, biarkan form berjalan normal (reload otomatis ke cart.add)
                 });
             }
 

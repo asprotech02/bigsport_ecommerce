@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            // boolean 0 = biasa, 1 = produk pilihan. Default 0.
-            $table->boolean('is_featured')->default(false)->after('discount_price');
+        Schema::create('brands', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->timestamps();
+            $table->softDeletes(); // Opsional, sesuaikan dengan ERD Anda jika pakai deleted_at
         });
     }
 
@@ -22,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('brands');
     }
 };

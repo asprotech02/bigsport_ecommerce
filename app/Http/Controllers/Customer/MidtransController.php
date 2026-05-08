@@ -1,96 +1,277 @@
 <?php
 
+
+
 namespace App\Http\Controllers\Customer;
 
+
+
 use App\Http\Controllers\Controller;
+
 use Illuminate\Http\Request;
+
+use Illuminate\Support\Facades\DB; // 🌟 PENTING UNTUK TRANSACTION
+
 use App\Models\Order;
-use App\Models\OrderItem; // 🌟 WAJIB IMPORT
-use App\Models\ProductSku; // 🌟 WAJIB IMPORT
-use Illuminate\Support\Facades\Log; 
+
+use App\Models\OrderItem;
+
+use App\Models\ProductSku;
+
+use App\Models\Payment;
+
+use Illuminate\Support\Facades\Log;
+
+
 
 class MidtransController extends Controller
+
 {
+
     public function callback(Request $request)
+
     {
-        // 1. CATAT SEMUA DATA YANG MASUK KE LOG
+
         Log::info('--- WEBHOOK MIDTRANS MASUK ---');
+
         Log::info($request->all());
 
+
+
         $serverKey = config('midtrans.server_key');
-        
+
         if (!$serverKey) {
+
             Log::error('GAGAL: Server Key Midtrans di .env kosong!');
+
             return response()->json(['message' => 'Server Key missing'], 500);
+
         }
+
+
 
         $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
-        // 2. VALIDASI KEAMANAN
-        if ($hashed == $request->signature_key) {
-            Log::info('Keamanan Valid! Memproses Order: ' . $request->order_id);
-            
-            $order = Order::where('invoice_number', $request->order_id)->first();
 
-            if ($order) {
+
+        if ($hashed == $request->signature_key) {
+
+           
+
+            DB::beginTransaction(); // 🛡️ MULAI TRANSAKSI KETAT
+
+            try {
+
+                // 🛡️ LOCK ORDER: Kunci orderan biar gak tumpang tindih kalau webhook Midtrans masuk berkali-kali
+
+                $order = Order::where('invoice_number', $request->order_id)->lockForUpdate()->first();
+
+
+
+                if (!$order) {
+
+                    throw new \Exception("Order tidak ditemukan di sistem.");
+
+                }
+
+
+
                 $transactionStatus = $request->transaction_status;
+
                 $paymentType = $request->payment_type;
 
-                // Mempercantik nama Metode Pembayaran
+                $bankName = null;
+
+
+
                 if ($paymentType == 'bank_transfer' && isset($request->va_numbers[0]['bank'])) {
+
                     $bankName = strtoupper($request->va_numbers[0]['bank']);
-                    $paymentType = $paymentType . ' (' . $bankName . ')'; 
-                } 
-                elseif ($paymentType == 'echannel') {
+
+                    $paymentType = 'bank_transfer (' . $bankName . ')';
+
+                } elseif ($paymentType == 'echannel') {
+
+                    $bankName = 'MANDIRI';
+
                     $paymentType = 'bank_transfer (MANDIRI)';
-                }
-                elseif ($paymentType == 'cstore' && isset($request->store)) {
+
+                } elseif ($paymentType == 'cstore' && isset($request->store)) {
+
                     $storeName = strtoupper($request->store);
-                    $paymentType = $paymentType . ' (' . $storeName . ')';
+
+                    $bankName = $storeName;
+
+                    $paymentType = 'cstore (' . $storeName . ')';
+
                 }
 
-                // 🌟 JIKA PEMBAYARAN SUKSES
+
+
+                // 🛡️ IDEMPOTENCY CHECK (MENCEGAH PROSES BERULANG)
+
+                // Jika order sudah dalam status akhir (paid/failed/expired/refunded), webhook ini cuma sampah nyasar, abaikan saja!
+
+                if (in_array($order->payment_status, ['paid', 'failed', 'expired', 'refunded'])) {
+
+                    Log::info("IDEMPOTENCY: Order {$order->invoice_number} sudah diproses ({$order->payment_status}). Webhook diabaikan.");
+
+                    DB::commit();
+
+                    return response()->json(['message' => 'Sudah diproses sebelumnya']);
+
+                }
+
+
+
+                Payment::updateOrCreate(
+
+                    ['order_id' => $order->id],
+
+                    [
+
+                        'midtrans_transaction_id' => $request->transaction_id,
+
+                        'payment_type' => $paymentType,
+
+                        'payment_status' => $transactionStatus,
+
+                        'bank_name' => $bankName,
+
+                        'gross_amount' => $request->gross_amount,
+
+                    ]
+
+                );
+
+
+
+                $orderItems = OrderItem::where('order_id', $order->id)->get();
+
+
+
+                // 🌟 1. PEMBAYARAN LUNAS (SUKSES)
+
                 if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
-                    
-                    // 🛡️ Perlindungan: Pastikan stok HANYA dipotong jika status sebelumnya belum 'paid'
-                    if ($order->payment_status !== 'paid') {
-                        $order->update([
-                            'payment_status' => 'paid',
-                            'status' => 'processing',
-                            'payment_type' => $paymentType 
-                        ]);
 
-                        // 🔥 LOGIKA POTONG STOK OTOMATIS 🔥
-                        $orderItems = OrderItem::where('order_id', $order->id)->get();
-                        
-                        foreach ($orderItems as $item) {
-                            // Cari Sku terkait, lalu kurangi (decrement) stoknya sesuai quantity yang dibeli
-                            ProductSku::where('id', $item->product_sku_id)
-                                ->decrement('stock', $item->quantity);
-                        }
+                    $order->update([
 
-                        Log::info('SUKSES: Order ' . $request->order_id . ' PAID. Stok Berhasil Dikurangi.');
+                        'payment_status' => 'paid',
+
+                        'status' => 'confirmed',
+
+                        'payment_type' => $paymentType
+
+                    ]);
+
+
+
+                    // 🔥 RESOLUSI STOK (SUKSES): Kurangi fisik (stock) DAN lepaskan gembok (reserved_stock)
+
+                    foreach ($orderItems as $item) {
+
+                        ProductSku::where('id', $item->product_sku_id)
+
+                            ->lockForUpdate() // Kunci row sku saat ngurangin stok
+
+                            ->update([
+
+                                'stock' => DB::raw("stock - {$item->quantity}"),
+
+                                'reserved_stock' => DB::raw("reserved_stock - {$item->quantity}")
+
+                            ]);
+
                     }
-                } 
-                // 🌟 JIKA PEMBAYARAN GAGAL / BATAL / KEDALUWARSA
-                elseif ($transactionStatus == 'cancel' || $transactionStatus == 'deny' || $transactionStatus == 'expire') {
-                    $order->update([
-                        'payment_status' => 'failed',
-                        'status' => 'cancelled',
-                        'payment_type' => $paymentType 
-                    ]);
-                    Log::info('DIBATALKAN: Order ' . $request->order_id . ' gagal/expired.');
-                } 
-                // 🌟 JIKA PEMBAYARAN PENDING (Menunggu dibayar)
-                elseif ($transactionStatus == 'pending') {
-                    $order->update([
-                        'payment_status' => 'unpaid',
-                        'payment_type' => $paymentType 
-                    ]);
+
+                    Log::info("SUKSES: Order {$request->order_id} LUNAS. Stok berhasil diselesaikan.");
+
                 }
+
+               
+
+                // 🌟 2. KEDALUWARSA / GAGAL / DITOLAK
+
+                elseif (in_array($transactionStatus, ['expire', 'cancel', 'deny'])) {
+
+                    $newPaymentStatus = ($transactionStatus == 'expire') ? 'expired' : 'failed';
+
+                    $order->update([
+
+                        'payment_status' => $newPaymentStatus,
+
+                        'status' => 'cancelled',
+
+                        'payment_type' => $paymentType
+
+                    ]);
+
+
+
+                    // 🔥 RESOLUSI STOK (GAGAL): Kembalikan stok ke pasar (Hanya kurangi reserved_stock)
+
+                    foreach ($orderItems as $item) {
+
+                        ProductSku::where('id', $item->product_sku_id)
+
+                            ->lockForUpdate()
+
+                            ->update([
+
+                                'reserved_stock' => DB::raw("reserved_stock - {$item->quantity}")
+
+                            ]);
+
+                    }
+
+                    Log::info("BATAL: Order {$request->order_id} {$transactionStatus}. Reserved Stock dikembalikan ke toko.");
+
+                }
+
+               
+
+                // 🌟 3. PENDING (MENUNGGU PEMBAYARAN)
+
+                elseif ($transactionStatus == 'pending') {
+
+                    $order->update([
+
+                        'payment_status' => 'pending',
+
+                        'payment_type' => $paymentType
+
+                    ]);
+
+                }
+
+
+
+                DB::commit(); // 🛡️ SIMPAN PERUBAHAN
+
+                return response()->json(['message' => 'Callback diproses dengan sukses']);
+
+
+
+            } catch (\Exception $e) {
+
+                DB::rollBack();
+
+                Log::error("WEBHOOK ERROR: " . $e->getMessage());
+
+                return response()->json(['message' => 'Terjadi kesalahan sistem'], 500);
+
             }
 
-            return response()->json(['message' => 'Callback received successfully']);
+
+
+        } else {
+
+            Log::error('Signature Key Midtrans Tidak Valid untuk Order: ' . $request->order_id);
+
+            return response()->json(['message' => 'Invalid signature'], 403);
+
         }
+
     }
+
 }

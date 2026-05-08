@@ -11,17 +11,24 @@
                     ->exists();
             }
 
-            // 2. Hitung Diskon
+            // 🌟 FIX: Ambil SKU pertama yang ada stok tersedia, atau SKU pertama jika kosong semua
+            $activeSku = $product->skus->where('available_stock', '>', 0)->first() ?? $product->skus->first();
+            
+            // Tarik harga dari SKU tersebut
+            $basePrice = $activeSku ? $activeSku->base_price : 0;
+            $discountPrice = $activeSku ? $activeSku->discount_price : null;
+
+            // 2. Hitung Diskon dari harga SKU
             $discountPercentage = 0;
-            if ($product->discount_price && $product->base_price > 0) {
-                $discountPercentage = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
+            if ($discountPrice && $basePrice > 0) {
+                $discountPercentage = round((($basePrice - $discountPrice) / $basePrice) * 100);
             }
 
-            // 3. Ambil Gambar (Sesuai format di halaman lain)
+            // 3. Ambil Gambar 
             $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
             $imagePath = $primaryImage ? asset('storage/' . $primaryImage->image_path) : asset('assets/images/default.jpg');
 
-            // 4. FIX LOGIKA STOK CARD PRODUK: Hanya hitung ukuran yang valid
+            // 4. Hitung Stok Valid
             $standardSizes = [];
             $isKids = str_contains(strtolower($product->gender ?? ''), 'anak');
             $catName = $product->category->name ?? '';
@@ -37,8 +44,8 @@
             $totalValidStock = 0;
             if ($product->skus) {
                 foreach($product->skus as $sku) {
-                    if(in_array($sku->size, $standardSizes) && $sku->stock > 0) {
-                        $totalValidStock += $sku->stock;
+                    if(in_array($sku->size, $standardSizes) && $sku->available_stock > 0) {
+                        $totalValidStock += $sku->available_stock;
                     }
                 }
             }
@@ -52,7 +59,6 @@
              alt="{{ $product->name }}" 
              class="product-img">
 
-        {{-- 🌟 FIX: Tampilkan badge jika totalValidStock habis --}}
         @if($totalValidStock <= 0)
             <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background-color: rgba(255,255,255,0.6); z-index: 5;">
                 <span class="badge bg-dark py-2 px-3 rounded-0 shadow-sm" style="font-size: 14px; letter-spacing: 1px;">STOK HABIS</span>
@@ -81,19 +87,19 @@
         </div>
 
         <div class="product-price d-flex align-items-center gap-2 flex-wrap mb-2">
-            @if($product->discount_price)
+            @if($discountPrice)
                 <span class="fw-bold text-danger" style="font-size: 18px;">
-                    Rp. {{ number_format($product->discount_price, 0, ',', '.') }}
+                    Rp. {{ number_format($discountPrice, 0, ',', '.') }}
                 </span>
                 <span class="text-secondary text-decoration-line-through" style="font-size: 14px;">
-                    Rp. {{ number_format($product->base_price, 0, ',', '.') }}
+                    Rp. {{ number_format($basePrice, 0, ',', '.') }}
                 </span>
                 <span class="badge rounded-0" style="background-color: #ffebee; color: #ff5252; font-size: 12px; font-weight: bold;">
                     {{ $discountPercentage }}% OFF
                 </span>
             @else
                 <span class="fw-bold text-dark" style="font-size: 18px;">
-                    Rp. {{ number_format($product->base_price, 0, ',', '.') }}
+                    Rp. {{ number_format($basePrice, 0, ',', '.') }}
                 </span>
             @endif
         </div>

@@ -9,13 +9,13 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
-        Schema::create('product_skus', function (Blueprint $table) {
+        Schema::create('promo_user', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->string('size'); // Misal: 39, 40, 41
-            $table->integer('stock')->default(0);
+            $table->foreignId('promo_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->timestamp('used_at')->useCurrent();
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_skus');
+        Schema::dropIfExists('promo_user');
     }
 };

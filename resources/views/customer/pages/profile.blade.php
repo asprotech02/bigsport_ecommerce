@@ -34,24 +34,28 @@
                             <div class="mb-5">
                                 <h6 class="fw-bold mb-3 text-dark">Detail Pengguna</h6>
                                 <div class="profile-info-text mb-2">{{ $user->name ?? 'Belum diatur' }}</div>
-                                
-                                {{-- FIX: Ganti date_of_birth menjadi birthday sesuai database --}}
                                 <div class="profile-info-text mb-2">
                                     {{ $user->birthday ? \Carbon\Carbon::parse($user->birthday)->translatedFormat('d F Y') : 'Tanggal lahir belum diatur' }}
                                 </div>
-                                
-                                {{-- FIX: Logika pengkondisian untuk Laki-laki / Perempuan --}}
                                 <div class="profile-info-text mb-4">
                                     {{ $user->gender == 'L' ? 'Laki-laki' : ($user->gender == 'P' ? 'Perempuan' : 'Jenis kelamin belum diatur') }}
                                 </div>
-                                
-                                <a href="{{ route('profile_edit') }}" class="btn btn-black btn-sm px-4 py-2">Edit</a>
+                                <a href="{{ route('profile_edit') }}" class="btn btn-dark btn-sm px-4 py-2">Edit</a>
                             </div>
                             <div>
                                 <h6 class="fw-bold mb-3 text-dark">Detail Login</h6>
-                                <div class="profile-info-text mb-2">{{ $user->email }}</div>
-                                <div class="profile-info-text mb-4">*************</div>
-                                <a href="{{ route('login_edit') }}" class="btn btn-black btn-sm px-4 py-2">Edit</a>
+                                
+                                {{-- Seksi Email --}}
+                                <div class="mb-4">
+                                    <div class="profile-info-text mb-2">{{ $user->email }}</div>
+                                    <a href="{{ route('email_edit') }}" class="btn btn-dark btn-sm px-4 py-2">Edit Email</a>
+                                </div>
+
+                                {{-- Seksi Password --}}
+                                <div class="mb-2">
+                                    <div class="profile-info-text mb-2">*************</div>
+                                    <a href="{{ route('password_edit') }}" class="btn btn-dark btn-sm px-4 py-2">Edit Password</a>
+                                </div>
                             </div>
                         </div>
 
@@ -79,9 +83,10 @@
                                         </div>
 
                                         <div class="d-flex gap-3 align-items-center">
-                                            <a href="{{ route('address_edit', $addr->id) }}" class="text-dark fw-bold text-decoration-none" style="font-size: 12px; letter-spacing: 0.5px;">
-                                                <i class="bi bi-pencil-square me-1"></i> EDIT
-                                            </a>
+                                            {{-- Link di halaman profile.blade.php --}}
+<a href="{{ route('address.edit', $addr->id) }}" class="text-dark fw-bold text-decoration-none" style="font-size: 12px; letter-spacing: 0.5px;">
+    <i class="bi bi-pencil-square me-1"></i> EDIT
+</a>
                                             <div class="action-buttons d-flex gap-3 align-items-center">
                                                 @if(!$addr->is_default)
                                                     <div class="vr" style="height: 15px; width: 1px;"></div>
@@ -100,7 +105,7 @@
                             </div>
 
                             <div class="mt-5">
-                                <a href="{{ route('address_edit') }}" class="btn btn-black w-100 rounded-0 py-3 fw-bold text-uppercase" style="letter-spacing: 1px; font-size: 14px;">
+                                <a href="{{ route('address_form') }}" class="btn btn-dark w-100 rounded-0 py-3 fw-bold text-uppercase" style="letter-spacing: 1px; font-size: 14px;">
                                     Tambah Alamat Baru
                                 </a>
                             </div>
@@ -115,107 +120,162 @@
                             <ul class="nav border-bottom border-secondary-subtle mb-4 gap-3 gap-md-4 d-flex flex-nowrap overflow-x-auto thumbnail-scroll" id="orderTabs" role="tablist">
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 active text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#semua" type="button">Semua</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#belum-bayar" type="button">Belum Bayar</button></li>
-                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dikemas" type="button">Dikemas</button></li>
-                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dikirim" type="button">Dikirim</button></li>
+                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#diproses" type="button">Diproses</button></li>
+                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dikirim-siap" type="button">Dikirim / Diambil</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#selesai" type="button">Selesai</button></li>
+                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dibatalkan" type="button">Dibatalkan</button></li>
                             </ul>
 
                             @php
                                 $orderList = $orders ?? collect(); 
+                                
+                                function getCustomerStatus($order) {
+                                    if ($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired'])) {
+                                        return ['label' => 'Pesanan Dibatalkan', 'class' => 'text-secondary'];
+                                    }
+                                    if ($order->payment_status == 'unpaid') {
+                                        return ['label' => 'Menunggu Pembayaran', 'class' => 'text-danger'];
+                                    }
+                                    switch($order->status) {
+                                        case 'processing': return ['label' => 'Sedang Dikemas', 'class' => 'text-warning text-dark'];
+                                        case 'ready_for_pickup': return ['label' => 'Siap Diambil', 'class' => 'text-info text-dark'];
+                                        case 'shipped': return ['label' => 'Dalam Pengiriman', 'class' => 'text-primary'];
+                                        case 'completed': return ['label' => 'Pesanan Selesai', 'class' => 'text-success'];
+                                        default: return ['label' => 'Menunggu Konfirmasi', 'class' => 'text-warning text-dark'];
+                                    }
+                                }
+
                                 $tabData = [
-                                    'semua' => $orderList,
-                                    'belum-bayar' => $orderList->where('payment_status', 'unpaid'),
-                                    'dikemas' => $orderList->whereIn('status', ['pending', 'processing'])->where('payment_status', 'paid'),
-                                    'dikirim' => $orderList->where('status', 'shipped'),
-                                    'selesai' => $orderList->where('status', 'completed'),
+                                    'semua' => ['data' => $orderList, 'empty' => 'Belum ada pesanan sama sekali.'],
+                                    'belum-bayar' => ['data' => $orderList->where('payment_status', 'unpaid')->whereNotIn('status', ['cancelled']), 'empty' => 'Tidak ada pesanan yang menunggu pembayaran.'],
+                                    'diproses' => ['data' => $orderList->where('payment_status', 'paid')->whereIn('status', ['pending', 'processing']), 'empty' => 'Tidak ada pesanan yang sedang dikemas/diproses.'],
+                                    'dikirim-siap' => ['data' => $orderList->whereIn('status', ['shipped', 'ready_for_pickup']), 'empty' => 'Tidak ada pesanan dalam perjalanan atau siap diambil.'],
+                                    'selesai' => ['data' => $orderList->where('status', 'completed'), 'empty' => 'Belum ada riwayat pesanan yang selesai.'],
+                                    'dibatalkan' => ['data' => $orderList->filter(function($o) { return $o->status == 'cancelled' || in_array($o->payment_status, ['failed', 'expired']); }), 'empty' => 'Tidak ada pesanan yang dibatalkan.'],
                                 ];
                             @endphp
 
                             <div class="tab-content" id="orderTabsContent">
-                                @foreach($tabData as $tabId => $tabOrders)
+                                @foreach($tabData as $tabId => $tabInfo)
                                     <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $tabId }}" role="tabpanel">
-                                        @forelse($tabOrders as $order)
-                                            <div class="border border-dark rounded-0 p-3 p-md-4 mb-4">
-                                                <div class="d-flex flex-column flex-md-row justify-content-between border-bottom border-secondary-subtle pb-3 mb-3 gap-2">
-                                                    <div class="d-flex align-items-center gap-3">
-                                                        <span class="fw-bold text-uppercase" style="font-size: 13px;">{{ \Carbon\Carbon::parse($order->created_at)->translatedFormat('d M Y') }}</span>
-                                                        @if($order->payment_status == 'unpaid') <span class="badge bg-danger rounded-0 text-uppercase px-2 py-1" style="letter-spacing: 0.5px; font-weight: 600;">BELUM BAYAR</span>
-                                                        @elseif($order->status == 'pending' || $order->status == 'processing') <span class="badge bg-info text-dark rounded-0 text-uppercase px-2 py-1" style="letter-spacing: 0.5px; font-weight: 600;">DIKEMAS</span>
-                                                        @elseif($order->status == 'shipped') <span class="badge bg-primary rounded-0 text-uppercase px-2 py-1" style="letter-spacing: 0.5px; font-weight: 600;">DIKIRIM</span>
-                                                        @elseif($order->status == 'completed') <span class="badge bg-success rounded-0 text-uppercase px-2 py-1" style="letter-spacing: 0.5px; font-weight: 600;">SELESAI</span>
-                                                        @else <span class="badge bg-secondary rounded-0 text-uppercase px-2 py-1">{{ $order->status }}</span>
+                                        @forelse($tabInfo['data'] as $order)
+                                            @php
+                                                $statusData = getCustomerStatus($order);
+                                                $isPickup = $order->shippingDetail && $order->shippingDetail->courier_company === 'pickup';
+                                            @endphp
+
+                                            <div class="border border-secondary-subtle rounded-0 mb-4 bg-white shadow-sm">
+                                                
+                                                <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-secondary-subtle bg-light">
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                        <i class="bi bi-shop fs-5 d-none d-sm-inline"></i>
+                                                        <span class="fw-bold text-uppercase" style="font-size: 14px;">Big Sport Tangerang</span>
+                                                        
+                                                        @if($isPickup)
+                                                            <span class="badge bg-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px; letter-spacing: 0.5px;"><i class="bi bi-shop-window me-1"></i> AMBIL DI TOKO</span>
+                                                        @else
+                                                            <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px; letter-spacing: 0.5px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
                                                         @endif
-                                                        <span class="text-secondary d-none d-sm-inline" style="font-size: 13px;">#{{ $order->invoice_number }}</span>
+                                                    </div>
+                                                    <div class="text-end text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px;">
+                                                        <span class="{{ $statusData['class'] }}">{{ $statusData['label'] }}</span>
                                                     </div>
                                                 </div>
-                                                
-                                                @foreach($order->items as $item)
+
+                                                <div class="p-3">
                                                     @php
+                                                        $firstItem = $order->items->first();
+                                                        $otherItemsCount = $order->items->count() - 1;
                                                         $imagePath = null;
-                                                        if ($item->sku && $item->sku->product && $item->sku->product->images->isNotEmpty()) {
-                                                            $primaryImg = $item->sku->product->images->where('is_primary', true)->first() ?? $item->sku->product->images->first();
+                                                        if ($firstItem && $firstItem->sku && $firstItem->sku->product && $firstItem->sku->product->images->isNotEmpty()) {
+                                                            $primaryImg = $firstItem->sku->product->images->where('is_primary', true)->first() ?? $firstItem->sku->product->images->first();
                                                             if ($primaryImg) $imagePath = 'storage/' . $primaryImg->image_path;
                                                         }
                                                     @endphp
-                                                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3 gap-md-4 mb-3">
-                                                        <div class="ratio ratio-1x1 border border-secondary-subtle flex-shrink-0 bg-light" style="width: 80px;">
-                                                            @if($imagePath) <img src="{{ asset($imagePath) }}" class="object-fit-cover w-100 h-100" alt="{{ $item->product_name }}">
-                                                            @else <div class="w-100 h-100 d-flex align-items-center justify-content-center text-secondary bg-light" style="font-size: 10px;"><i class="bi bi-image text-muted fs-4"></i></div>
+                                                    
+                                                    @if($firstItem)
+                                                    <div class="d-flex align-items-start py-2">
+                                                        <div class="ratio ratio-1x1 border border-secondary-subtle flex-shrink-0 bg-light me-3" style="width: 80px;">
+                                                            @if($imagePath) 
+                                                                <img src="{{ asset($imagePath) }}" class="object-fit-cover w-100 h-100" alt="{{ $firstItem->product_name }}">
+                                                            @else 
+                                                                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-secondary bg-light"><i class="bi bi-image text-muted fs-4"></i></div>
                                                             @endif
                                                         </div>
                                                         <div class="flex-grow-1">
-                                                            <h6 class="fw-bold text-uppercase mb-1" style="font-size: 15px;">{{ $item->product_name }}</h6>
-                                                            <p class="text-secondary mb-0" style="font-size: 13px;">Ukuran: {{ $item->product_size ?? '-' }}</p>
-                                                            <p class="text-secondary mt-1 mb-0" style="font-size: 12px;">{{ $item->quantity }} Barang x Rp {{ number_format($item->price_at_purchase, 0, ',', '.') }}</p>
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <h6 class="fw-bold mb-1 pe-3" style="font-size: 15px; line-height: 1.4;">{{ $firstItem->product_name }}</h6>
+                                                                <span class="fw-bold text-nowrap" style="font-size: 14px;">Rp {{ number_format($firstItem->price_at_purchase, 0, ',', '.') }}</span>
+                                                            </div>
+                                                            <p class="text-secondary mb-1" style="font-size: 13px;">Variasi: {{ $firstItem->product_size ?? '-' }}</p>
+                                                            <p class="text-secondary mb-0" style="font-size: 13px;">x{{ $firstItem->quantity }}</p>
                                                         </div>
                                                     </div>
-                                                @endforeach
+                                                    @endif
 
-                                                <div class="d-flex flex-column flex-sm-row justify-content-between mt-4 pt-3 border-top border-secondary-subtle gap-2 align-items-sm-center">
-                                                    <div>
-                                                        <p class="text-secondary mb-1" style="font-size: 12px;">Total Belanja</p>
-                                                        <h5 class="fw-bold mb-0">Rp {{ number_format($order->grand_total, 0, ',', '.') }}</h5>
+                                                    @if($otherItemsCount > 0)
+                                                        <div class="mt-2 pt-2 border-top border-light text-secondary text-center" style="font-size: 12px; font-weight: 600;">
+                                                            Tampilkan {{ $otherItemsCount }} produk lainnya <i class="bi bi-chevron-down ms-1"></i>
+                                                        </div>
+                                                    @endif
+                                                </div>
+
+                                                <div class="bg-light p-3 border-top border-secondary-subtle">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="text-secondary" style="font-size: 12px;">No. Pesanan: <span class="fw-bold text-dark">#{{ $order->invoice_number }}</span></span>
+                                                        <div class="text-end">
+                                                            <span class="text-secondary me-2" style="font-size: 13px;">Total Pesanan:</span>
+                                                            <h4 class="fw-bold text-danger d-inline-block m-0" style="font-size: 20px;">Rp {{ number_format($order->grand_total, 0, ',', '.') }}</h4>
+                                                        </div>
                                                     </div>
                                                     
-                                                    <div class="d-flex gap-2 justify-content-end">
-                                                        @if($order->payment_status == 'unpaid' && $order->snap_token)
-                                                            <button type="button" class="btn btn-black fw-bold text-uppercase btn-lanjut-bayar" 
-                                                                    style="border-radius: 0; font-size: 12px; padding: 10px 20px;" 
-                                                                    data-token="{{ $order->snap_token }}">
-                                                                Lanjut Bayar
+                                                    <div class="d-flex gap-2 justify-content-end flex-wrap mt-2">
+                                                        {{-- 🌟 FIX: Pastikan route detail order diarahkan dengan benar jika ada route-nya --}}
+                                                        <a href="{{ route('order.detail', $order->id) }}" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 12px; padding: 8px 20px;">
+                                                            Detail Pesanan
+                                                        </a>
+
+                                                        @if($order->payment_status == 'unpaid' && $order->status != 'cancelled')
+                                                            <button type="button" class="btn btn-danger fw-bold text-uppercase btn-lanjut-bayar rounded-0" style="font-size: 12px; padding: 8px 20px;" data-token="{{ $order->snap_token }}">
+                                                                Bayar Sekarang
                                                             </button>
                                                         @endif
 
-                                                        {{-- 🌟 FIX: Tambahkan Tombol Cetak Invoice --}}
-                                                        @if(in_array($order->status, ['processing', 'shipped', 'completed']))
-                                                            <a href="{{ route('order.invoice', $order->id) }}" 
-                                                               class="btn btn-outline-danger fw-bold text-uppercase rounded-0 d-flex align-items-center gap-1" 
-                                                               style="font-size: 12px; padding: 10px 20px;">
-                                                                <i class="bi bi-file-earmark-pdf"></i> Cetak Invoice
-                                                            </a>
-                                                        @endif
-
-                                                        @if($order->payment_status == 'paid')
-                                                            <button type="button" onclick="loadTrackingData({{ $order->id }})" 
-                                                                    class="btn btn-outline-dark fw-bold text-uppercase rounded-0" 
-                                                                    style="font-size: 12px; padding: 10px 20px;">
+                                                        @if($order->status == 'shipped' && !$isPickup)
+                                                            {{-- 🌟 FIX: Ganti href jadi onclick agar AJAX Tracking berfungsi! --}}
+                                                            <button type="button" onclick="loadTrackingData({{ $order->id }})" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 12px; padding: 8px 20px;">
                                                                 Lacak Pesanan
                                                             </button>
-                                                        @else
-                                                            <button type="button" class="btn btn-outline-secondary fw-bold text-uppercase rounded-0" 
-                                                                    style="font-size: 12px; padding: 10px 20px; border-color: #ddd;" disabled>
-                                                                Menunggu Pembayaran
+                                                            <button type="button" class="btn btn-success fw-bold text-uppercase rounded-0" style="font-size: 12px; padding: 8px 20px;">
+                                                                Pesanan Diterima
                                                             </button>
+                                                        @endif
+
+                                                        @if($order->status == 'ready_for_pickup' && $isPickup)
+                                                            <button type="button" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 12px; padding: 8px 20px;">
+                                                                <i class="bi bi-qr-code me-1"></i> QR Code Pengambilan
+                                                            </button>
+                                                        @endif
+
+                                                        @if($order->status == 'completed')
+                                                            <button type="button" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 12px; padding: 8px 20px;">
+                                                                Beri Ulasan
+                                                            </button>
+                                                            <a href="{{ route('product.index') }}" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 12px; padding: 8px 20px;">
+                                                                Beli Lagi
+                                                            </a>
                                                         @endif
                                                     </div>
                                                 </div>
                                             </div>
                                         @empty
-                                            <div class="text-center py-5">
-                                                <i class="bi bi-bag-x display-1 text-secondary opacity-50 mb-3 d-block"></i>
-                                                <h5 class="fw-bold text-uppercase">Belum Ada Pesanan</h5>
-                                                <p class="text-secondary mb-4">Tidak ada pesanan di kategori ini.</p>
-                                                <a href="{{ route('product.index') }}" class="btn btn-black rounded-0 fw-bold px-4 py-2">MULAI BELANJA</a>
+                                            <div class="text-center py-5 bg-white border border-secondary-subtle">
+                                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                                    <i class="bi bi-receipt display-5 text-secondary opacity-50"></i>
+                                                </div>
+                                                <h6 class="fw-bold text-uppercase mb-2">Tidak Ada Data</h6>
+                                                <p class="text-secondary mb-4" style="font-size: 14px;">{{ $tabInfo['empty'] }}</p>
+                                                <a href="{{ route('product.index') }}" class="btn btn-dark rounded-0 fw-bold px-4 py-2 text-uppercase" style="font-size: 12px; letter-spacing: 1px;">Mulai Belanja</a>
                                             </div>
                                         @endforelse
                                     </div>
@@ -223,60 +283,58 @@
                             </div>
                         </div>
 
-                        {{-- TAB: STATUS PESANAN --}}
+                        {{-- 🌟 FIX: TAB STATUS PESANAN (HTML WADAH YANG HILANG DARI KODINGAN LU) --}}
                         <div class="tab-pane fade" id="content-status" role="tabpanel">
                             <div class="mb-4">
                                 <h3 class="fw-bold text-uppercase m-0" style="font-size: 24px; letter-spacing: 1px;">Status Pesanan</h3>
+                                <button type="button" class="btn btn-link text-dark p-0 mt-2 text-decoration-none fw-bold" style="font-size: 13px;" onclick="new bootstrap.Tab(document.querySelector('#tab-pesanan')).show();">
+                                    <i class="bi bi-arrow-left me-1"></i> Kembali ke Pesanan
+                                </button>
                             </div>
 
-                            <!-- Container Header Status -->
-                            <div class="border border-dark p-4 mb-5 rounded-0" id="tracking-header" style="display: none;">
-                                <div class="row g-3">
-                                    <div class="col-6 col-md-3 border-end-md border-secondary-subtle">
-                                        <p class="text-secondary mb-1" style="font-size: 12px; text-transform: uppercase;">Kurir</p>
-                                        <p class="fw-bold mb-0 text-uppercase" style="font-size: 14px;" id="track-courier-name">-</p>
+                            <div id="tracking-loading" class="text-center py-5 border border-secondary-subtle bg-light" style="display: none;">
+                                <div class="spinner-border text-dark mb-3" role="status"></div>
+                                <h6 class="fw-bold text-uppercase mb-1" style="font-size: 14px; letter-spacing: 1px;">Mencari Data Resi...</h6>
+                                <p class="text-secondary mb-0" style="font-size: 13px;">Tunggu sebentar, kami sedang menghubungi pihak kurir.</p>
+                            </div>
+
+                            <div id="tracking-error" class="text-center py-5 border border-secondary-subtle bg-light" style="display: none;">
+                                <i class="bi bi-exclamation-triangle text-danger display-4 mb-3 d-block"></i>
+                                <h6 class="fw-bold text-uppercase mb-2">Gagal Melacak</h6>
+                                <p class="text-secondary mb-0" id="tracking-error-text" style="font-size: 14px;"></p>
+                            </div>
+
+                            <div id="tracking-header" class="border border-secondary-subtle p-4 mb-4 bg-light shadow-sm" style="display: none;">
+                                <div class="row align-items-center text-center text-md-start">
+                                    <div class="col-12 col-md-4 mb-3 mb-md-0 border-end-md border-secondary-subtle">
+                                        <p class="text-secondary mb-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Ekspedisi Kurir</p>
+                                        <h5 class="fw-bold m-0 text-dark" id="track-courier-name">-</h5>
                                     </div>
-                                    <div class="col-6 col-md-4 border-end-md border-secondary-subtle">
-                                        <p class="text-secondary mb-1" style="font-size: 12px; text-transform: uppercase;">No. Resi</p>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <p class="fw-bold mb-0" style="font-size: 14px;" id="track-waybill-id">-</p>
-                                            <button class="btn p-0 border-0 text-secondary hover-text-dark" title="Salin Resi"><i class="bi bi-copy"></i></button>
-                                        </div>
+                                    <div class="col-12 col-md-4 mb-3 mb-md-0 border-end-md border-secondary-subtle">
+                                        <p class="text-secondary mb-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Nomor Resi</p>
+                                        <h5 class="fw-bold m-0 text-dark" style="letter-spacing: 1px;" id="track-waybill-id">-</h5>
                                     </div>
-                                    <div class="col-12 col-md-5">
-                                        <p class="text-secondary mb-1" style="font-size: 12px; text-transform: uppercase;">Status Saat Ini</p>
-                                        <p class="fw-bold text-success mb-0 text-uppercase" style="font-size: 14px;" id="track-current-status">-</p>
+                                    <div class="col-12 col-md-4">
+                                        <p class="text-secondary mb-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Status Saat Ini</p>
+                                        <h5 class="fw-bold m-0 text-success text-uppercase" id="track-current-status">-</h5>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Area Loading -->
-                            <div id="tracking-loading" class="text-center py-5" style="display: none;">
-                                <div class="spinner-border text-dark mb-3" role="status"></div>
-                                <p class="fw-bold text-uppercase">Mengambil data perjalanan paket...</p>
-                            </div>
-
-                            <!-- Pesan Error -->
-                            <div id="tracking-error" class="alert alert-danger rounded-0 border border-dark" style="display: none;">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span id="tracking-error-text">Terjadi kesalahan.</span>
-                            </div>
-
-                            <!-- Container Timeline -->
-                            <div class="position-relative ms-3 ms-md-4" id="tracking-timeline-container" style="display: none;">
-                                <!-- Garis Vertikal -->
-                                <div class="position-absolute bg-dark" style="left: 7px; top: 10px; bottom: 30px; width: 2px; z-index: 1;"></div>
-                                
-                                <!-- List History akan di-inject ke sini oleh JavaScript -->
-                                <div id="tracking-history-list"></div>
+                            <div id="tracking-timeline-container" class="border border-secondary-subtle p-4 p-md-5 bg-white shadow-sm" style="display: none;">
+                                <h6 class="fw-bold text-uppercase mb-4 pb-3 border-bottom border-dark" style="font-size: 15px; letter-spacing: 1px;">Riwayat Perjalanan Paket</h6>
+                                <div id="tracking-history-list" class="position-relative ms-3 border-start border-2 border-dark pb-2 mt-4">
+                                    </div>
                             </div>
                         </div>
+                        {{-- END TAB STATUS PESANAN --}}
 
                         {{-- TAB: KONTAK KAMI --}}
                         <div class="tab-pane fade" id="content-kontak" role="tabpanel">
                             <div class="mb-4"><h3 class="fw-bold text-uppercase m-0" style="font-size: 24px; letter-spacing: 1px;">Hubungi Kami</h3><p class="text-secondary mt-1" style="font-size: 13px;">Kami siap membantu Anda.</p></div>
                             <div class="row g-5">
                                 <div class="col-12 col-xl-5">
-                                    <div class="bg-light-gray p-4 p-md-5 border border-secondary-subtle rounded-0 h-100">
+                                    <div class="bg-light p-4 p-md-5 border border-secondary-subtle rounded-0 h-100">
                                         <h5 class="fw-bold text-uppercase mb-4" style="font-size: 16px;">Informasi Kontak</h5>
                                         <div class="d-flex align-items-start mb-4"><i class="bi bi-geo-alt fs-5 me-3 text-dark"></i><div><h6 class="fw-bold mb-1" style="font-size: 13px;">Alamat Toko Utama</h6><p class="text-secondary mb-0" style="font-size: 12px;">Jl. Jenderal Sudirman No. 45, Tangerang</p></div></div>
                                         <div class="d-flex align-items-start mb-4"><i class="bi bi-envelope fs-5 me-3 text-dark"></i><div><h6 class="fw-bold mb-1" style="font-size: 13px;">Email</h6><p class="text-secondary mb-0" style="font-size: 12px;">support@bigsport.com</p></div></div>
@@ -285,10 +343,10 @@
                                 </div>
                                 <div class="col-12 col-xl-7">
                                     <form action="#"><div class="row g-3">
-                                        <div class="col-md-6"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Nama</label><input type="text" class="form-control rounded-0 border-dark p-3" placeholder="John Doe"></div>
-                                        <div class="col-md-6"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Email</label><input type="email" class="form-control rounded-0 border-dark p-3" placeholder="john@example.com"></div>
-                                        <div class="col-12"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Pesan</label><textarea class="form-control rounded-0 border-dark p-3" rows="5" placeholder="Pesan Anda..."></textarea></div>
-                                        <div class="col-12 mt-4"><button type="submit" class="btn btn-action-main w-100 m-0">KIRIM PESAN</button></div>
+                                        <div class="col-md-6"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Nama</label><input type="text" class="form-control rounded-0 border-dark p-3 shadow-none" placeholder="John Doe"></div>
+                                        <div class="col-md-6"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Email</label><input type="email" class="form-control rounded-0 border-dark p-3 shadow-none" placeholder="john@example.com"></div>
+                                        <div class="col-12"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Pesan</label><textarea class="form-control rounded-0 border-dark p-3 shadow-none" rows="5" placeholder="Pesan Anda..."></textarea></div>
+                                        <div class="col-12 mt-4"><button type="submit" class="btn btn-dark w-100 rounded-0 py-3 fw-bold text-uppercase">KIRIM PESAN</button></div>
                                     </div></form>
                                 </div>
                             </div>
@@ -299,14 +357,14 @@
                             <h3 class="fw-bold mb-5 text-uppercase" style="letter-spacing: 0.5px;">INFORMASI LOKASI TOKO</h3>
                             @php
                                 $locations = [
-                                    ['title' => 'Bigsport Tangerang Selatan', 'addr' => 'Jl. HOS Cokroaminoto No.52, Larangan', 'map' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.2111151819176!2d106.7421777!3d-6.2358797!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f1c3428125af%3A0x948466498a5b6768!2sBigsport%20Tangerang%20Selatan!5e0!3m2!1sen!2sid!4v1776976900153!5m2!1sen!2sid', 'link' => 'https://maps.app.goo.gl/rnMiEKk4Zsj1QvNY7'],
-                                    ['title' => 'Bigsport Citra Raya', 'addr' => 'QG7F+2JW, Cikupa, Tangerang', 'map' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.199776241046!2d106.5240772!3d-6.2373785!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e4207ddf6ae715b%3A0x2c489afb42e19571!2sBig%20Sport%20Tangerang!5e0!3m2!1sen!2sid!4v1776977167727!5m2!1sen!2sid', 'link' => 'https://maps.app.goo.gl/5LmwmRAtm3d8YrQdA'],
+                                    ['title' => 'Bigsport Tangerang Selatan', 'addr' => 'Jl. HOS Cokroaminoto No.52, Larangan', 'map' => 'https://maps.google.com/maps?q=Bigsport+Tangerang+Selatan&t=&z=13&ie=UTF8&iwloc=&output=embed', 'link' => '#'],
+                                    ['title' => 'Bigsport Citra Raya', 'addr' => 'QG7F+2JW, Cikupa, Tangerang', 'map' => 'https://maps.google.com/maps?q=Cikupa+Tangerang&t=&z=13&ie=UTF8&iwloc=&output=embed', 'link' => '#'],
                                 ];
                             @endphp
                             @foreach($locations as $loc)
                                 <div class="row g-4 mb-5 border-bottom pb-4">
                                     <div class="col-12 col-lg-6"><div class="rounded overflow-hidden border border-secondary-subtle"><iframe src="{{ $loc['map'] }}" width="100%" height="250" style="border:0;" loading="lazy"></iframe></div></div>
-                                    <div class="col-12 col-lg-6 d-flex flex-column justify-content-center"><h5 class="fw-bold text-dark mb-3">{{ $loc['title'] }}</h5><p class="profile-info-text mb-4">{{ $loc['addr'] }}</p><a href="{{ $loc['link'] }}" target="_blank" class="btn btn-black px-4 py-2 fw-bold w-100">Buka di Google Maps</a></div>
+                                    <div class="col-12 col-lg-6 d-flex flex-column justify-content-center"><h5 class="fw-bold text-dark mb-3">{{ $loc['title'] }}</h5><p class="profile-info-text mb-4">{{ $loc['addr'] }}</p><a href="{{ $loc['link'] }}" target="_blank" class="btn btn-outline-dark rounded-0 px-4 py-3 fw-bold w-100 text-uppercase" style="letter-spacing: 1px;"><i class="bi bi-map me-2"></i>Buka di Google Maps</a></div>
                                 </div>
                             @endforeach
                         </div>
@@ -326,32 +384,28 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
-    <script>
+    
+    <style>
+        .border-end-md { border-right: 1px solid #dee2e6; }
+        @media (max-width: 768px) { .border-end-md { border-right: none; border-bottom: 1px solid #dee2e6; padding-bottom: 15px; } }
+    </style>
 
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. Ambil parameter dari URL
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
 
-            // 2. Jika parameter tab adalah 'orders'
             if (tabParam === 'orders') {
                 const orderTabTrigger = document.getElementById('tab-pesanan');
-                
                 if (orderTabTrigger) {
-                    console.log("Membuka tab pesanan...");
-                    
-                    // 🔥 Trik jitu: Pakai constructor Tab Bootstrap agar animasi fade-nya jalan
                     const tab = new bootstrap.Tab(orderTabTrigger);
                     tab.show();
-                    
-                    // Scroll ke atas sedikit biar user langsung liat judul "Pesanan Saya"
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             }
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Logic Midtrans
             document.querySelectorAll('.btn-lanjut-bayar').forEach(btn => {
                 btn.addEventListener('click', function() {
                     let token = this.getAttribute('data-token');
@@ -360,7 +414,7 @@
                     this.disabled = true;
                     
                     window.snap.pay(token, {
-                        onSuccess: () => { window.location.reload(); }, // Langsung reload tanpa alert
+                        onSuccess: () => { window.location.reload(); },
                         onPending: () => { btn.innerHTML = originalText; btn.disabled = false; },
                         onError: () => { btn.innerHTML = originalText; btn.disabled = false; },
                         onClose: () => { btn.innerHTML = originalText; btn.disabled = false; }
@@ -369,37 +423,17 @@
             });
         });
 
-        // AJAX Set Utama (Tanpa Alert)
         function setMainAddress(id) {
             fetch(`/address/${id}/set-main`, {
                 method: 'PATCH',
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
             }).then(res => res.json()).then(data => {
                 if (data.success) {
-                    const selectedCard = document.getElementById(`address-card-${id}`);
-                    const list = document.getElementById('address-list');
-                    
-                    document.querySelectorAll('.address-card').forEach(card => {
-                        card.classList.replace('border-dark', 'border-secondary-subtle');
-                        card.style.borderWidth = '1px';
-                        const b = card.querySelector('.badge-utama'); if (b) b.remove();
-                        const act = card.querySelector('.action-buttons');
-                        const cid = card.getAttribute('data-id');
-                        if (cid != id && act.innerHTML.trim() == "") {
-                            act.innerHTML = `<div class="vr" style="height: 15px; width: 1px;"></div><button onclick="setMainAddress(${cid})" class="bg-transparent border-0 p-0 text-dark fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">SET UTAMA</button><div class="vr" style="height: 15px; width: 1px;"></div><button onclick="deleteAddress(${cid})" class="bg-transparent border-0 p-0 text-danger fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">HAPUS</button>`;
-                        }
-                    });
-                    
-                    selectedCard.classList.replace('border-secondary-subtle', 'border-dark');
-                    selectedCard.style.borderWidth = '2px';
-                    selectedCard.querySelector('.address-content').insertAdjacentHTML('afterbegin', '<span class="badge bg-dark text-white rounded-0 position-absolute top-0 end-0 px-3 py-2 badge-utama" style="font-size: 10px; letter-spacing: 1px;">UTAMA</span>');
-                    selectedCard.querySelector('.action-buttons').innerHTML = '';
-                    list.prepend(selectedCard);
+                    window.location.reload(); // Paling aman refresh buat sinkronin UI
                 }
             });
         }
 
-        // AJAX Hapus Alamat (Tanpa Confirm & Alert)
         function deleteAddress(id) {
             fetch(`/address/${id}`, {
                 method: 'DELETE',
@@ -407,10 +441,12 @@
             }).then(res => res.json()).then(data => {
                 if (data.success) {
                     const card = document.getElementById(`address-card-${id}`);
-                    card.style.transition = '0.3s'; 
-                    card.style.opacity = '0';
-                    card.style.transform = 'scale(0.95)'; // Tambahan efek visual biar smooth
-                    setTimeout(() => card.remove(), 300);
+                    if(card) {
+                        card.style.transition = '0.3s'; 
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.95)'; 
+                        setTimeout(() => card.remove(), 300);
+                    }
                 }
             });
         }
@@ -418,17 +454,18 @@
         moment.locale('id');
 
         function loadTrackingData(orderId) {
-            // Pindah ke tab Status secara visual
-            const statusTab = new bootstrap.Tab(document.querySelector('a[href="#content-status"]'));
+            // Pindah ke tab Status Pesanan
+            const statusTab = new bootstrap.Tab(document.querySelector('#tab-status'));
             statusTab.show();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            // Siapkan tampilan UI (Tampilkan loading, sembunyikan yang lain)
+            // Reset UI
             document.getElementById('tracking-header').style.display = 'none';
             document.getElementById('tracking-timeline-container').style.display = 'none';
             document.getElementById('tracking-error').style.display = 'none';
             document.getElementById('tracking-loading').style.display = 'block';
 
-            // Panggil API buatan lu (ProfileController -> getTracking)
+            // 🌟 FIX: Pastikan URL AJAX sesuai dengan Route web.php lu (api.order.tracking)
             axios.get(`/profile/order/${orderId}/tracking`)
                 .then(response => {
                     document.getElementById('tracking-loading').style.display = 'none';
@@ -436,42 +473,36 @@
                     if (response.data.success) {
                         const data = response.data.data;
                         
-                        // Isi Header Status
-                        document.getElementById('track-courier-name').innerText = data.courier.company || 'Kurir Standar';
+                        document.getElementById('track-courier-name').innerText = data.courier.company || 'Ekspedisi';
                         document.getElementById('track-waybill-id').innerText = data.courier.waybill_id || 'Menunggu Resi';
                         document.getElementById('track-current-status').innerText = data.status || 'Diproses';
 
-                        // Isi Timeline History
                         const historyContainer = document.getElementById('tracking-history-list');
-                        historyContainer.innerHTML = ''; // Bersihkan dulu
+                        historyContainer.innerHTML = '';
 
                         if (data.history && data.history.length > 0) {
-                            // Looping data history dari yang paling baru
                             data.history.forEach((item, index) => {
-                                const isLatest = index === 0; // Item paling atas
-                                
-                                // Format waktu: "25 Apr 2026, 09:30 WIB"
+                                const isLatest = index === 0; 
                                 const timeFormatted = moment(item.updated_at).format('DD MMM YYYY, HH:mm') + ' WIB';
 
-                                // Tentukan desain (Titik tebal untuk status terbaru, titik bolong untuk yang lama)
                                 const dotStyle = isLatest 
                                     ? 'bg-dark rounded-circle flex-shrink-0 mt-1 border border-white' 
                                     : 'bg-white rounded-circle flex-shrink-0 mt-1 border border-dark';
                                 
                                 const dotSize = isLatest 
-                                    ? 'width: 16px; height: 16px; border-width: 3px !important; box-shadow: 0 0 0 2px #000;'
-                                    : 'width: 16px; height: 16px; border-width: 2px !important;';
+                                    ? 'width: 16px; height: 16px; border-width: 3px !important; box-shadow: 0 0 0 2px #000; left: -9px; position: absolute;'
+                                    : 'width: 14px; height: 14px; border-width: 2px !important; left: -8px; position: absolute;';
                                     
                                 const textOpacity = isLatest ? '' : 'opacity-75';
 
                                 const htmlRow = `
-                                    <div class="d-flex position-relative mb-5" style="z-index: 2;">
+                                    <div class="position-relative mb-4 ps-4 pb-2" style="z-index: 2;">
                                         <div class="${dotStyle}" style="${dotSize}"></div>
-                                        <div class="ms-4 ${textOpacity}">
-                                            <h6 class="fw-bold text-uppercase mb-1" style="font-size: 14px;">${item.status}</h6>
-                                            <p class="text-secondary mb-1" style="font-size: 13px;">${item.note}</p>
-                                            <span class="${isLatest ? 'fw-bold text-dark' : 'text-secondary fw-bold'}" style="font-size: 12px;">
-                                                ${timeFormatted}
+                                        <div class="${textOpacity}">
+                                            <h6 class="fw-bold text-uppercase mb-1" style="font-size: 13px;">${item.status}</h6>
+                                            <p class="text-secondary mb-1" style="font-size: 13px; line-height: 1.5;">${item.note}</p>
+                                            <span class="${isLatest ? 'fw-bold text-dark' : 'text-secondary fw-bold'}" style="font-size: 11px; letter-spacing: 0.5px;">
+                                                <i class="bi bi-clock me-1"></i> ${timeFormatted}
                                             </span>
                                         </div>
                                     </div>
@@ -482,27 +513,21 @@
                             historyContainer.innerHTML = '<p class="text-secondary ms-4">Belum ada riwayat perjalanan paket.</p>';
                         }
 
-                        // Tampilkan element
                         document.getElementById('tracking-header').style.display = 'block';
                         document.getElementById('tracking-timeline-container').style.display = 'block';
 
                     } else {
-                        // Muncul jika success = false (contoh: resi belum di-pick up)
-                        document.getElementById('tracking-error-text').innerText = response.data.message;
+                        document.getElementById('tracking-error-text').innerText = response.data.message || "Resi belum bisa dilacak";
                         document.getElementById('tracking-error').style.display = 'block';
                     }
                 })
                 .catch(error => {
                     document.getElementById('tracking-loading').style.display = 'none';
-                    
-                    // Menangkap pesan error asli dari server
                     let errorMsg = 'Gagal menghubungi server.';
                     if (error.response) {
-                        // Jika server Laravel membalas dengan error (misal 404 atau 500)
-                        errorMsg = `Error ${error.response.status}: Route tidak ditemukan atau ada masalah di Controller.`;
-                        console.error("Detail Error:", error.response.data);
+                        errorMsg = `Server gagal memuat resi. (Error ${error.response.status})`;
+                        console.error("Tracking Error:", error.response.data);
                     }
-                    
                     document.getElementById('tracking-error-text').innerText = errorMsg;
                     document.getElementById('tracking-error').style.display = 'block';
                 });

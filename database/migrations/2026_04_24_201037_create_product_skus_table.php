@@ -11,12 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_images', function (Blueprint $table) {
+        Schema::create('product_skus', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->string('image_path');
-            $table->boolean('is_primary')->default(false);
+            $table->string('size'); 
+            $table->string('color')->nullable(); // Atribut baru
+            $table->decimal('base_price', 12, 2); // 🌟 Pindah ke sini
+            $table->decimal('discount_price', 12, 2)->nullable(); // 🌟 Pindah ke sini
+            $table->integer('stock')->default(0);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -25,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_images');
+        Schema::dropIfExists('product_skus');
     }
 };

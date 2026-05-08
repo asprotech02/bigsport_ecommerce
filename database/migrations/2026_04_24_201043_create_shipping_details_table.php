@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::create('shipping_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->string('biteship_order_id')->nullable();
-            $table->string('courier_name'); // JNE, J&T
-            $table->string('courier_service'); // Reguler, YES
-            $table->string('tracking_number')->nullable(); // Nomor Resi
+            $table->string('biteship_order_id')->nullable(); // Pindah ke sini
+            $table->string('courier_company'); // Misal: jne
+            $table->string('courier_type'); // Misal: reg
+            $table->string('tracking_number')->nullable(); // Nomor Resi (waybill_id)
             $table->decimal('cost', 12, 2);
             $table->timestamps();
+            $table->softDeletes(); // Opsional, sesuaikan dengan ERD Anda jika pakai deleted_at
         });
     }
 

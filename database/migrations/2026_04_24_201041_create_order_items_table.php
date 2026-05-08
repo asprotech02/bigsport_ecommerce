@@ -25,6 +25,7 @@ return new class extends Migration
             $table->integer('quantity');
             
             $table->timestamps();
+            $table->softDeletes(); // Opsional, sesuaikan dengan ERD Anda jika pakai deleted_at
         });
     }
 
