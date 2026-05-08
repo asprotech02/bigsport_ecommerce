@@ -22,6 +22,7 @@ return new class extends Migration
             $table->decimal('min_order_amount', 15, 2)->default(0); // Syarat minimal belanja
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes(); // Opsional, sesuaikan dengan ERD Anda jika pakai deleted_at
         });
     }
 

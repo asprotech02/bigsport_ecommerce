@@ -14,12 +14,12 @@
                 <h4 class="fw-bold mt-4 mb-3">VERIFIKASI EMAIL ANDA</h4>
                 
                 <p class="auth-subtitle mb-4 text-muted" style="line-height: 1.6;">
-                    Terima kasih telah mendaftar di Big Sport! Sebelum memulai, mohon verifikasi alamat email Anda dengan mengeklik tautan yang baru saja kami kirimkan ke kotak masuk Anda.
+                    Terima kasih telah mendaftar di Big Sport! Sebelum memulai, mohon verifikasi email Anda dengan mengeklik tautan yang baru saja kami kirimkan ke kotak masuk Anda.
                 </p>
 
                 @if (session('status') == 'verification-link-sent')
                     <div class="alert alert-success rounded-0 mb-4" style="font-size: 14px;">
-                        Tautan verifikasi baru telah dikirim ke alamat email Anda.
+                        Tautan verifikasi baru telah dikirim ke email Anda.
                     </div>
                 @endif
 

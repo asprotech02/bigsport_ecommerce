@@ -24,24 +24,36 @@ class WishlistController extends Controller
 
 
     public function toggle(Request $request)
-{
-    $productId = $request->product_id;
-    $userId = auth()->id();
+    {
+        $productId = $request->product_id;
+        $userId = auth()->id();
 
-    // Cek apakah sudah ada di wishlist
-    $wishlist = \App\Models\Wishlist::where('user_id', $userId)
-                                    ->where('product_id', $productId)
-                                    ->first();
+        // Cek apakah sudah ada di wishlist
+        $wishlist = \App\Models\Wishlist::where('user_id', $userId)
+                                        ->where('product_id', $productId)
+                                        ->first();
 
-    if ($wishlist) {
-        $wishlist->delete();
-        return response()->json(['status' => 'removed', 'message' => 'Dihapus dari wishlist']);
-    } else {
-        \App\Models\Wishlist::create([
-            'user_id' => $userId,
-            'product_id' => $productId
+        if ($wishlist) {
+            $wishlist->delete();
+            $status = 'removed';
+            $message = 'Dihapus dari wishlist';
+        } else {
+            \App\Models\Wishlist::create([
+                'user_id' => $userId,
+                'product_id' => $productId
+            ]);
+            $status = 'added';
+            $message = 'Ditambahkan ke wishlist';
+        }
+
+        // 🌟 FIX: Hitung jumlah terbaru dari wishlist user ini setelah ditambah/dihapus
+        $totalWishlist = \App\Models\Wishlist::where('user_id', $userId)->count();
+
+        // Kirim kembali datanya ke JavaScript (termasuk total terbarunya)
+        return response()->json([
+            'status' => $status, 
+            'message' => $message,
+            'total' => $totalWishlist // Data baru untuk ditangkap JavaScript
         ]);
-        return response()->json(['status' => 'added', 'message' => 'Ditambahkan ke wishlist']);
     }
-}
 }

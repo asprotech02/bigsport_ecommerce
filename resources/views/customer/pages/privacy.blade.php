@@ -21,7 +21,7 @@
 
                 <h5 class="fw-bold text-uppercase mb-3 mt-5" style="font-size: 16px; letter-spacing: 0.5px;">1. Pengumpulan Data Informasi</h5>
                 <p class="mb-4 text-secondary">
-                    Kami mengumpulkan informasi yang Anda berikan secara langsung kepada kami saat mendaftar akun, melakukan transaksi, atau mengisi form alamat pengiriman. Informasi ini mencakup namun tidak terbatas pada: Nama lengkap, alamat email, nomor telepon genggam, dan alamat lengkap pengiriman.
+                    Kami mengumpulkan informasi yang Anda berikan secara langsung kepada kami saat mendaftar akun, melakukan transaksi, atau mengisi form alamat pengiriman. Informasi ini mencakup namun tidak terbatas pada: Nama lengkap, email, nomor telepon genggam, dan alamat lengkap pengiriman.
                 </p>
 
                 <h5 class="fw-bold text-uppercase mb-3 mt-4" style="font-size: 16px; letter-spacing: 0.5px;">2. Penggunaan Data</h5>

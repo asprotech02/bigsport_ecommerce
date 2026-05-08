@@ -12,18 +12,23 @@ class HomeController extends Controller
     public function index()
     {
         // 1. PRODUK DISKON (Diskon Terbesar, STOK > 0, dan Terbaru)
-        $discountProducts = Product::with(['brand', 'category', 'skus', 'images' => function($query) {
-                                        $query->where('is_primary', true);
+        // 🌟 FIX: Cari diskon terbesar via relasi SKU menggunakan Sub-query[cite: 2]
+        $discountProducts = Product::select('products.*')
+                                    ->with(['brand', 'category', 'skus', 'images' => function($q) {
+                                        $q->where('is_primary', true);
                                     }])
-                                    ->whereNotNull('discount_price')
-                                    ->where('base_price', '>', 0) 
-                                    ->whereHas('skus', function($query) {
-                                        $query->where('stock', '>', 0); // Syarat Stok > 0
+                                    ->whereHas('skus', function($q) {
+                                        $q->whereNotNull('discount_price')->where('stock', '>', 0);
                                     })
+                                    ->addSelect(['max_discount_pct' => DB::table('product_skus')
+                                        ->whereColumn('product_id', 'products.id')
+                                        ->whereNotNull('discount_price')
+                                        ->selectRaw('MAX(((base_price - discount_price) / base_price) * 100)')
+                                    ])
                                     ->withAvg('reviews', 'rating')
                                     ->withCount('reviews')
-                                    ->orderByRaw('((base_price - discount_price) / base_price) * 100 DESC') // Urutan 1: Diskon Terbesar
-                                    ->latest() // Urutan 2: Terbaru
+                                    ->orderBy('max_discount_pct', 'DESC') 
+                                    ->latest()
                                     ->take(8) 
                                     ->get();
 

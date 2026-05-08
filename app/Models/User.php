@@ -9,12 +9,8 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements MustVerifyEmail 
 {
-    // CUKUP PAKAI HasFactory dan Notifiable SAJA
     use HasFactory, Notifiable;
 
-    /**
-     * Atribut yang dapat diisi (Mass Assignable).
-     */
     protected $fillable = [
         'name',
         'email',
@@ -23,19 +19,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'birthday',
         'gender',
         'phone_number',
+        'role', // Jika role dimasukkan pas registrasi
     ];
 
-    /**
-     * Atribut yang harus disembunyikan saat serialisasi.
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Casting atribut (Konversi tipe data otomatis).
-     */
     protected function casts(): array
     {
         return [
@@ -44,9 +35,16 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    // --- RELASI DATABASE ---
     public function addresses() { return $this->hasMany(Address::class); }
     public function orders() { return $this->hasMany(Order::class); }
     public function carts() { return $this->hasMany(Cart::class); }
     public function wishlists() { return $this->hasMany(Wishlist::class); }
+    
+    // 🌟 Relasi ke promo yang sudah pernah dipakai
+    public function usedPromos()
+    {
+        return $this->belongsToMany(Promo::class, 'promo_user')
+                    ->withPivot('used_at')
+                    ->withTimestamps();
+    }
 }

@@ -20,8 +20,8 @@ class NewPasswordController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], [
-            'password.required' => 'Password baru wajib diisi.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'password.required' => 'Password baru wajib diisi',
+            'password.confirmed' => 'Konfirmasi password tidak cocok',
         ]);
 
         $status = Password::reset(

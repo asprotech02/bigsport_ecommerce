@@ -38,7 +38,7 @@ class CartController extends Controller
             $existingCart->quantity += $request->quantity;
             $existingCart->save();
         } else {
-            // 🌟 TAMBAHKAN VARIABEL $newCartItem DI SINI
+            // 🌟 VARIABEL $newCartItem SUDAH BENAR DI SINI
             $newCartItem = Cart::create([
                 'user_id' => Auth::id(),
                 'product_sku_id' => $request->sku_id,
@@ -46,11 +46,25 @@ class CartController extends Controller
             ]);
         }
 
+        // JIKA TOMBOL "BELI SEKARANG" DIKLIK (Normal Redirect)
         if ($request->action == 'buy_now') {
             $cartId = $existingCart ? $existingCart->id : $newCartItem->id; 
             return redirect()->route('checkout', ['cart_ids' => [$cartId]]);
         }
 
+        // 🌟 FIX: Hitung jumlah entri keranjang unik untuk update badge navbar
+        $totalCart = Cart::where('user_id', Auth::id())->count();
+
+        // 🌟 FIX: Jika request datang dari JavaScript (Tombol "Tambah Keranjang")
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Produk berhasil ditambahkan ke keranjang',
+                'total' => $totalCart // Kirim total terbaru ke script JS
+            ]);
+        }
+
+        // Fallback (jaga-jaga kalau JS mati/gagal)
         return redirect()->back()->with('success', 'Produk berhasil ditambahkan ke keranjang');
     }
 
@@ -70,13 +84,24 @@ class CartController extends Controller
     // 4. Update Qty AJAX
     public function update(Request $request, $id)
     {
-        $cartItem = Cart::where('user_id', Auth::id())->where('id', $id)->first();
+        $cartItem = Cart::with('productSku.product')->where('user_id', Auth::id())->where('id', $id)->first();
 
         if ($cartItem) {
+            // 🌟 SINKRONISASI FLOWCHART: [Revalidate Stock] di sisi Backend
+            $availableStock = $cartItem->productSku->available_stock;
+            
+            // 🌟 FIX LOGIKA: Tolak request jika melebihi stok dan kirim pesan dinamis
+            if ($request->quantity > $availableStock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Maksimal pembelian ' . $availableStock . ' pcs' 
+                ], 400); 
+            }
+
             $cartItem->quantity = $request->quantity;
             $cartItem->save();
 
-            $product = $cartItem->productSku->product;
+            $product = $cartItem->productSku;
             $price = $product->discount_price ?? $product->base_price;
             $itemSubtotal = $price * $cartItem->quantity;
 

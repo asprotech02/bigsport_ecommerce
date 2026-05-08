@@ -6,31 +6,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    // 👇👇👇 INI YANG BIKIN ERROR KALAU HILANG 👇👇👇
     protected $fillable = [
         'user_id',
         'address_id',
-        'shipping_address', // Tambahkan ini
-        'biteship_order_id', // Tambahkan ini
-        'waybill_id', // Tambahkan ini
-        'promo_id',
+        'promo_id', // 🌟 Wajib ada untuk relasi diskon
         'invoice_number',
+        'shipping_address',
         'total_product_price',
         'total_shipping_cost',
         'discount_amount',
         'grand_total',
-        'status',
+        'snap_token',
         'payment_status',
         'payment_type',
-        'courier_company',
-        'courier_type',
-        'snap_token',
+        'status',
+        // 🌟 biteship_order_id, waybill_id, courier_company, courier_type DIHAPUS
     ];
 
-    // Relasi-relasi lu tetap di bawah sini
     public function user() { return $this->belongsTo(User::class); }
     public function address() { return $this->belongsTo(Address::class); }
     public function items() { return $this->hasMany(OrderItem::class); }
     public function payment() { return $this->hasOne(Payment::class); }
     public function shippingDetail() { return $this->hasOne(ShippingDetail::class); }
+    
+    // 🌟 Relasi Baru
+    public function promo() { return $this->belongsTo(Promo::class); }
 }

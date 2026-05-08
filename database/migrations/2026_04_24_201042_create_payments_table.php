@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('bank_name')->nullable();
             $table->decimal('gross_amount', 12, 2);
             $table->timestamps();
+            $table->softDeletes(); // Opsional, sesuaikan dengan ERD Anda jika pakai deleted_at
         });
     }
 

@@ -14,14 +14,17 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
+            $table->foreignId('subcategory_id')->nullable()->constrained('subcategories')->nullOnDelete();
             $table->foreignId('brand_id')->constrained()->onDelete('cascade');
+            $table->enum('gender', ['Laki-laki', 'Perempuan', 'Anak-anak', 'Unisex'])->nullable();
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description');
-            $table->decimal('base_price', 12, 2);
-            $table->integer('weight_gram'); // Wajib untuk Biteship
-            $table->softDeletes();
+            $table->integer('weight_gram'); 
+            $table->boolean('is_featured')->default(false);
+            // 🌟 FIX: base_price dan discount_price dihapus dari sini
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

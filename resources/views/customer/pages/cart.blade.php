@@ -30,9 +30,11 @@
 
                     @forelse($cartItems as $item)
                         @php
-                            $product = $item->productSku->product;
-                            $isDiscount = $product->discount_price && $product->discount_price < $product->base_price;
-                            $price = $isDiscount ? $product->discount_price : $product->base_price;
+                            $sku = $item->productSku;
+                            $product = $sku->product;
+                            
+                            $isDiscount = $sku->discount_price && $sku->discount_price < $sku->base_price;
+                            $price = $isDiscount ? $sku->discount_price : $sku->base_price;
                             $subtotal = $price * $item->quantity;
                             
                             $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
@@ -53,7 +55,13 @@
                                     <div class="fw-bold text-uppercase mb-1" style="font-size: 14px;">{{ $product->brand->name ?? 'Brand' }}</div>
                                     <div class="fw-bold text-dark mb-1" style="font-size: 15px;">{{ $product->name }}</div>
                                     <div class="text-secondary" style="font-size: 12px;">{{ $product->gender }}</div>
-                                    <div class="text-secondary mb-2" style="font-size: 12px;">Ukuran: {{ $item->productSku->size }}</div>
+                                    
+                                    <div class="text-secondary mb-2" style="font-size: 12px;">
+                                        Ukuran: {{ $sku->size }} 
+                                        @if($sku->color) 
+                                            <span class="mx-1">|</span> Warna: {{ $sku->color }} 
+                                        @endif
+                                    </div>
                                     
                                     <button type="button" onclick="deleteItem('{{ $item->id }}')" class="btn btn-link p-0 text-danger fw-bold text-decoration-none text-uppercase shadow-none" style="font-size: 11px; letter-spacing: 1px;">Hapus</button>
                                 </div>
@@ -64,31 +72,32 @@
                                 <div class="text-md-center">
                                     @if($isDiscount)
                                         <div class="d-flex flex-column align-items-md-center">
-                                            <span class="fw-bold text-danger" style="font-size: 15px;">Rp {{ number_format($product->discount_price, 0, ',', '.') }}</span>
+                                            <span class="fw-bold text-danger" style="font-size: 15px;">Rp {{ number_format($sku->discount_price, 0, ',', '.') }}</span>
                                             <div class="d-flex gap-2 align-items-center" style="font-size: 12px;">
-                                                <span class="text-secondary text-decoration-line-through">Rp {{ number_format($product->base_price, 0, ',', '.') }}</span>
-                                                <span class="badge bg-danger rounded-0" style="font-size: 10px;">{{ round((($product->base_price - $product->discount_price) / $product->base_price) * 100) }}%</span>
+                                                <span class="text-secondary text-decoration-line-through">Rp {{ number_format($sku->base_price, 0, ',', '.') }}</span>
+                                                <span class="badge bg-danger rounded-0" style="font-size: 10px;">{{ round((($sku->base_price - $sku->discount_price) / $sku->base_price) * 100) }}%</span>
                                             </div>
                                         </div>
                                     @else
-                                        <span class="fw-bold" style="font-size: 15px;">Rp {{ number_format($product->base_price, 0, ',', '.') }}</span>
+                                        <span class="fw-bold" style="font-size: 15px;">Rp {{ number_format($sku->base_price, 0, ',', '.') }}</span>
                                     @endif
                                 </div>
                             </div>
 
                             <div class="col-12 col-md-2 mb-3 mb-md-0 d-flex justify-content-between justify-content-md-center align-items-center px-0">
                                 <span class="d-md-none fw-bold text-secondary text-uppercase" style="font-size: 12px;">Jumlah</span>
-                                <div class="border border-dark d-flex align-items-center" style="height: 35px;">
-                                    {{-- Tambahkan keyword 'this' agar JS tau tombol mana yang diklik --}}
-                                    <button type="button" class="btn border-0 rounded-0 fw-bold px-3 py-0 shadow-none text-dark btn-minus" onclick="updateQty('{{ $item->id }}', -1, this)">-</button>
-                                    <input type="text" value="{{ $item->quantity }}" class="border-0 text-center fw-bold text-dark p-0 qty-input" style="width: 30px; outline: none; background: transparent;" readonly>
-                                    <button type="button" class="btn border-0 rounded-0 fw-bold px-3 py-0 shadow-none text-dark btn-plus" onclick="updateQty('{{ $item->id }}', 1, this)">+</button>
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="border border-dark d-flex align-items-center" style="height: 35px;">
+                                        <button type="button" class="btn border-0 rounded-0 fw-bold px-3 py-0 shadow-none text-dark btn-minus" onclick="updateQty('{{ $item->id }}', -1, this)">-</button>
+                                        <input type="text" value="{{ $item->quantity }}" class="border-0 text-center fw-bold text-dark p-0 qty-input" style="width: 30px; outline: none; background: transparent;" readonly>
+                                        <button type="button" class="btn border-0 rounded-0 fw-bold px-3 py-0 shadow-none text-dark btn-plus" onclick="updateQty('{{ $item->id }}', 1, this)">+</button>
+                                    </div>
+                                    <span class="qty-warning text-danger fw-bold mt-1 text-center w-100" style="font-size: 11px; display: none;"></span>
                                 </div>
                             </div>
 
                             <div class="col-12 col-md-2 d-flex justify-content-between justify-content-md-end align-items-center px-0">
                                 <span class="d-md-none fw-bold text-secondary text-uppercase" style="font-size: 12px;">Subtotal</span>
-                                {{-- Tambahkan class 'item-subtotal' --}}
                                 <span class="fw-bold fs-6 item-subtotal">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                             </div>
 
@@ -106,7 +115,7 @@
                         <div class="row justify-content-end mt-5 m-0">
                             <div class="col-12 col-md-5 col-lg-4 px-0">
                                 <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-dark">
-                                    <span class="fw-bold text-uppercase" style="font-size: 14px; letter-spacing: 1px;">Total Terpilih</span>
+                                    <span class="fw-bold text-uppercase" style="font-size: 14px; letter-spacing: 1px;">Total</span>
                                     <span class="fw-bold fs-4" id="grand-total">Rp 0</span>
                                 </div>
                                 
@@ -120,7 +129,7 @@
                     @endif
                 </form>
 
-                {{-- Form Delete (Biar aman hapus item tetep pakai cara biasa/reload) --}}
+                {{-- Form Delete --}}
                 <form id="delete-form" action="{{ route('cart.destroy', 'ID_PLACEHOLDER') }}" method="POST" style="display:none;">
                     @csrf @method('DELETE')
                 </form>
@@ -132,31 +141,33 @@
     @include('customer.components.footer')
     @include('customer.components.chatbot')
     
+    @push('styles')
     <style>
-        /* Mengubah warna checkbox saat dicentang menjadi hitam */
         .form-check-input:checked {
             background-color: #000 !important;
             border-color: #000 !important;
         }
-
-        /* Mengubah warna garis luar saat checkbox diklik/fokus */
         .form-check-input:focus {
             border-color: #000 !important;
-            /* box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.25) !important; */
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            50% { transform: translateX(3px); }
+            75% { transform: translateX(-3px); }
+            100% { transform: translateX(0); }
         }
     </style>
-    {{-- Import Axios untuk AJAX --}}
+    @endpush
+
+    @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // Setup CSRF Token Laravel untuk Axios
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         if(csrfToken) {
             axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-        } else {
-            console.warn("CSRF meta tag tidak ditemukan. Tambahkan <meta name='csrf-token' content='{{ csrf_token() }}'> di head layout.app lo.");
         }
 
-        // Deklarasi global biar bisa dipanggil tombol onclick
         let calculateTotalGlobal;
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -204,17 +215,17 @@
             calculateTotalGlobal();
         });
 
-        // FUNGSI AJAX UPDATE QTY TANPA RELOAD
+        // 🌟 FIX: FUNGSI AJAX UPDATE QTY (PESAN ERROR STAY PERMANENT)
         function updateQty(id, delta, btnElement) {
             const row = btnElement.closest('.cart-item-row');
             const input = row.querySelector('.qty-input');
             const subtotalText = row.querySelector('.item-subtotal');
+            const warningText = row.querySelector('.qty-warning'); 
             
             let currentQty = parseInt(input.value);
             let newQty = currentQty + delta;
             
             if(newQty >= 1) {
-                // Kasih efek redup biar keliatan lagi loading
                 input.style.opacity = '0.5';
 
                 axios.patch(`/cart/${id}`, {
@@ -222,32 +233,50 @@
                 })
                 .then(response => {
                     if(response.data.success) {
-                        // 1. Update angka jumlah di kotak
                         input.value = response.data.new_qty;
-                        // 2. Update harga subtotal di pinggir kanan
                         subtotalText.innerText = response.data.item_subtotal;
-                        // 3. Update total akhir belanjaan
-                        if(typeof calculateTotalGlobal === 'function') {
-                            calculateTotalGlobal();
-                        }
+                        
+                        // Sembunyikan pesan error jika sukses (misal: user menekan tombol minus sehingga angka valid kembali)
+                        if(warningText) warningText.style.display = 'none'; 
+                        
+                        if(typeof calculateTotalGlobal === 'function') calculateTotalGlobal();
                     }
                 })
                 .catch(error => {
                     console.error("Error AJAX:", error);
-                    // alert('Gagal update qty. Pastikan CSRF Token aman.');
+                    
+                    let errMsg = 'Terjadi kesalahan';
+                    if (error.response && error.response.data && error.response.data.message) {
+                        errMsg = error.response.data.message;
+                    }
+
+                    // Kembalikan ke angka sebelumnya yang valid
+                    input.value = currentQty;
+                    
+                    // Tampilkan pesan error TANPA Timeout agar menempel terus
+                    if(warningText) {
+                        warningText.innerText = errMsg;
+                        warningText.style.display = 'block';
+                        warningText.style.animation = 'shake 0.3s ease';
+                        
+                        // Cukup hilangkan animasinya saja agar jika ditekan lagi bisa goyang lagi
+                        setTimeout(() => {
+                            warningText.style.animation = '';
+                        }, 300);
+                    }
                 })
                 .finally(() => {
-                    // Balikin terang lagi
                     input.style.opacity = '1';
                 });
             }
         }
 
-        // Hapus item (tetap pakai form submit biasa biar barisnya hilang sempurna)
+        // Hapus item
         function deleteItem(id) {
             const form = document.getElementById('delete-form');
             form.action = form.action.replace('ID_PLACEHOLDER', id);
             form.submit();
         }
     </script>
+    @endpush
 @endsection

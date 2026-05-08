@@ -35,15 +35,13 @@
                     
                     @auth
                         @php
-                            // Menghitung jumlah produk unik di wishlist user (Gunakan auth()->id() agar lebih aman di blade)
                             $wishlistCount = \App\Models\Wishlist::where('user_id', auth()->id())->count();
                         @endphp
                         
-                        @if($wishlistCount > 0)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                {{ $wishlistCount > 99 ? '99+' : $wishlistCount }}
-                            </span>
-                        @endif
+                        <!-- FIX: Tambahkan id="wishlist-badge" dan class d-none kalau angkanya 0 -->
+                        <span id="wishlist-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $wishlistCount == 0 ? 'd-none' : '' }}">
+                            {{ $wishlistCount > 99 ? '99+' : $wishlistCount }}
+                        </span>
                     @endauth
                 </a>
 
@@ -52,15 +50,13 @@
                     
                     @auth
                         @php
-                            // Gunakan auth()->id() agar lebih aman di blade
-                            $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
+                            $cartCount = \App\Models\Cart::where('user_id', auth()->id())->count();
                         @endphp
                         
-                        @if($cartCount > 0)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                {{ $cartCount > 99 ? '99+' : $cartCount }}
-                            </span>
-                        @endif
+                        <!-- FIX: Tambahkan id="cart-badge" dan logika d-none -->
+                        <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $cartCount == 0 ? 'd-none' : '' }}">
+                            {{ $cartCount > 99 ? '99+' : $cartCount }}
+                        </span>
                     @endauth
                 </a>
                 <button class="navbar-toggler border-0 shadow-none p-0 d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#unifiedMenu">

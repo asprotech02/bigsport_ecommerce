@@ -12,7 +12,7 @@
                 <div class="col-12 col-md-6 col-lg-5">
                     <div class="auth-card">
                         <h4 class="fw-bold mb-3">MASUK</h4>
-                        <p class="auth-subtitle mb-4">Apabila sudah memiliki akun, Masuk dengan alamat email terdaftar</p>
+                        <p class="auth-subtitle mb-4">Apabila sudah memiliki akun, Masuk dengan email terdaftar</p>
 
                         <form action="{{ route('login') }}" method="POST" novalidate>
                             @csrf 
@@ -67,6 +67,8 @@
     @include('customer.components.footer')
     @include('customer.components.chatbot')
 
+
+    @push('scripts')
     <script>
         function togglePassword(inputId, iconId) {
             var input = document.getElementById(inputId);
@@ -76,4 +78,5 @@
             icon.classList.toggle("bi-eye-slash");
         }
     </script>
+    @endpush
 @endsection
