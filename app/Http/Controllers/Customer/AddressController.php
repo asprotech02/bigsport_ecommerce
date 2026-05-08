@@ -72,18 +72,19 @@ class AddressController extends Controller
         'is_default'     => $request->has('is_default'),
     ]);
 
-    $cartIds = $request->cart_ids ?? session('selected_cart_ids');
+   // 🌟 KUNCI FIX LOGIKA REDIRECT YANG BENAR & BERSIH
+    $sourceUrl = $request->input('source_url', '');
 
-    if (!is_array($cartIds)) {
-        $cartIds = [$cartIds]; 
+    // Jika user datang dari halaman checkout, kembalikan ke checkout
+    if (str_contains($sourceUrl, 'checkout')) {
+        $cartIds = session('selected_cart_ids', []);
+        return redirect()->route('checkout', ['cart_ids' => $cartIds])
+            ->with('success', 'Alamat berhasil ditambahkan!');
     }
 
-    // 🔥 PAKSA SIMPAN SESSION SEBELUM REDIRECT
-    session(['selected_cart_ids' => $cartIds]);
-    session()->save(); 
-
-    return redirect()->route('checkout', ['cart_ids' => $cartIds])
-        ->with('success', 'Alamat berhasil sinkron dengan Biteship!');
+    // Jika bukan dari checkout (alias dari Profil), lempar balik ke Profil
+    return redirect()->route('profile', ['tab' => 'alamat'])
+        ->with('success', 'Alamat berhasil ditambahkan!');
 }
 
     public function setMain($id)
@@ -161,6 +162,8 @@ public function update(Request $request, $id)
         'is_default'     => $request->has('is_default'),
     ]);
 
-    return redirect()->route('profile', ['tab' => 'alamat'])->with('success', 'Alamat berhasil diperbarui!');
-}
+    // Ganti baris return redirect() di update() menjadi seperti ini:
+    return redirect()->route('profile', ['tab' => 'alamat'])
+            ->with('success', 'Alamat berhasil diperbarui!');
+    }
 }

@@ -611,97 +611,56 @@ class CheckoutController extends Controller
 
 
                 if ($biteshipResponse->successful()) {
-
                     $biteshipData = $biteshipResponse->json();
-
+                    
                     $shippingDetail->update([
-
                         'biteship_order_id' => $biteshipData['id'],
-
-                        'tracking_number' => $biteshipData['courier']['waybill_id'] ?? null
-
+                        // Kadang resi tidak langsung keluar di detik pertama pesanan dibuat, jadi bisa null dulu
+                        'tracking_number' => $biteshipData['courier']['waybill_id'] ?? null 
                     ]);
-
                 } else {
-
-                    $shippingDetail->update([
-
-                        'biteship_order_id' => 'bts_dummy_' . uniqid(),
-
-                        'tracking_number' => 'RESI-' . strtoupper(Str::random(10))
-
-                    ]);
-
+                    // 🌟 KUNCI FIX: TIDAK ADA LAGI DUMMY DATA!
+                    // Kalau Biteship nolak, kita tangkap pesan error aslinya dan lempar ke sistem!
+                    $errorBiteship = $biteshipResponse->json()['error'] ?? 'Gagal membuat pesanan kurir.';
+                    $pesanError = is_string($errorBiteship) ? $errorBiteship : json_encode($errorBiteship);
+                    
+                    throw new \Exception('Sistem Ekspedisi (Biteship): ' . $pesanError);
                 }
-
             }
-
-
 
             // 2. Hit API Midtrans
-
             \Midtrans\Config::$serverKey = config('midtrans.server_key');
-
             \Midtrans\Config::$isProduction = config('midtrans.is_production');
-
             \Midtrans\Config::$isSanitized = true;
-
             \Midtrans\Config::$is3ds = true;
 
-
-
             $snapToken = \Midtrans\Snap::getSnapToken([
-
                 'transaction_details' => ['order_id' => $invoiceNumber, 'gross_amount' => (int)$grandTotal],
-
                 'customer_details' => ['first_name' => $user->name, 'email' => $user->email],
-
             ]);
-
-
 
             // Update token ke order yang sudah tersimpan
-
             $order->update(['snap_token' => $snapToken]);
-
-           
-
+            
             return response()->json(['success' => true, 'snap_token' => $snapToken, 'invoice' => $invoiceNumber]);
 
-
-
         } catch (\Exception $e) {
-
-            // 🔴 COMPENSATION LOGIC: Jika Midtrans DOWN/Error, Batalkan Order & Kembalikan Stok!
-
+            // 🔴 COMPENSATION LOGIC: Jika Midtrans ATAU Biteship Error, Batalkan Order & Kembalikan Stok!
             Log::error('API External Error (Midtrans/Biteship): ' . $e->getMessage());
-
-           
-
+            
             $order->update([
-
                 'status' => 'cancelled',
-
                 'payment_status' => 'failed'
-
             ]);
 
-
-
             // Kembalikan reserved stock
-
             $orderItems = OrderItem::where('order_id', $order->id)->get();
-
             foreach ($orderItems as $item) {
-
                 ProductSku::where('id', $item->product_sku_id)->decrement('reserved_stock', $item->quantity);
-
             }
 
-
-
-            return response()->json(['success' => false, 'message' => 'Layanan pembayaran sedang gangguan. Silakan coba lagi nanti.']);
-
+            // 🌟 FIX: Tampilkan error aslinya ke layar user biar dia tau salahnya di mana
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
 
     }

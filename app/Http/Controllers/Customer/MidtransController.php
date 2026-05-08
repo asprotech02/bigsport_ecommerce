@@ -22,6 +22,8 @@ use App\Models\Payment;
 
 use Illuminate\Support\Facades\Log;
 
+use App\Models\UserNotification;
+
 
 
 class MidtransController extends Controller
@@ -164,6 +166,14 @@ class MidtransController extends Controller
 
                     ]);
 
+                    // 🌟 KIRIM NOTIFIKASI SUKSES
+                    UserNotification::create([
+                        'user_id' => $order->user_id,
+                        'type'    => 'transaksi',
+                        'title'   => 'Pembayaran Berhasil',
+                        'message' => "Pembayaran pesanan #{$order->invoice_number} sebesar Rp " . number_format($order->grand_total, 0, ',', '.') . " telah kami terima. Pesanan Anda akan segera dikemas."
+                    ]);
+
 
 
                     // 🔥 RESOLUSI STOK (SUKSES): Kurangi fisik (stock) DAN lepaskan gembok (reserved_stock)
@@ -204,6 +214,15 @@ class MidtransController extends Controller
 
                         'payment_type' => $paymentType
 
+                    ]);
+
+
+                    // 🌟 KIRIM NOTIFIKASI BATAL
+                    UserNotification::create([
+                        'user_id' => $order->user_id,
+                        'type'    => 'transaksi',
+                        'title'   => 'Pesanan Dibatalkan',
+                        'message' => "Pesanan #{$order->invoice_number} telah dibatalkan karena melewati batas waktu pembayaran atau dibatalkan oleh sistem."
                     ]);
 
 

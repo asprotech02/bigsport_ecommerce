@@ -18,4 +18,15 @@ class OrderController extends Controller
             
         return view('customer.pages.order', compact('orders'));
     }
+
+
+    public function show($id)
+    {
+        // Pakai helper auth() agar tidak terkena error "Class Auth not found"
+        $order = Order::with(['items.sku.product.images', 'shippingDetail', 'payment'])
+            ->where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        return view('customer.pages.detail_order', compact('order'));
+    }
 }

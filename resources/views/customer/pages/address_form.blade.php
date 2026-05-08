@@ -21,9 +21,14 @@
                         @method('PUT')
                     @endif
 
-                    @foreach(session('selected_cart_ids', []) as $id)
-                        <input type="hidden" name="cart_ids[]" value="{{ $id }}">
-                    @endforeach
+                   <form action="{{ isset($address) ? route('address.update', $address->id) : route('address.store') }}" method="POST" id="address-form">
+                    @csrf
+                    @if(isset($address))
+                        @method('PUT')
+                    @endif
+
+                    {{-- HAPUS BAGIAN FOREACH INI DAN GANTI DENGAN KODE DI BAWAH --}}
+                    <input type="hidden" name="source_url" value="{{ url()->previous() }}">
 
                     <div class="row">
                         <div class="col-md-6 mb-4">
@@ -114,8 +119,9 @@
         const oldData = {
             province: "{{ $address->province_id ?? '' }}",
             city: "{{ $address->city_id ?? '' }}",
-            district: "{{ $address->district_id ?? '' }}",
-            village: "{{ $address->village_id ?? '' }}"
+            // 🌟 FIX: Kita pakai nama (huruf besar) buat nyocokin Kecamatan & Kelurahan, karena ID-nya pakai format Biteship
+            district_name: "{!! $address->district_name ?? '' !!}".toUpperCase(),
+            village_name: "{!! $address->village_name ?? '' !!}".toUpperCase()
         };
 
         // --- 1. LOAD PROVINSI ---
@@ -127,7 +133,6 @@
                 });
                 provinceSelect.innerHTML = options;
                 
-                // Jika edit, trigger load kota otomatis
                 if(oldData.province) provinceSelect.dispatchEvent(new Event('change'));
             });
 
@@ -145,11 +150,12 @@
                     });
                     citySelect.innerHTML = options;
                     citySelect.disabled = false;
+                    
                     if(oldData.city) citySelect.dispatchEvent(new Event('change'));
                 });
         });
 
-        // --- 3. LOAD KECAMATAN ---
+        // --- 3. LOAD KECAMATAN (🌟 FIXED DENGAN MATCHING NAMA) ---
         citySelect.addEventListener('change', function() {
             const cityId = this.value;
             if (!cityId) return;
@@ -158,16 +164,29 @@
             axios.get(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${cityId}.json`)
                 .then(response => {
                     let options = '<option value="">-- Pilih Kecamatan --</option>';
+                    let hasMatch = false;
+
                     response.data.forEach(dist => {
-                        options += `<option value="${dist.id}" data-name="${dist.name}" ${oldData.district == dist.id ? 'selected' : ''}>${dist.name}</option>`;
+                        let isSelected = '';
+                        // Cocokkan berdasarkan nama wilayah
+                        if (oldData.district_name && dist.name.toUpperCase() === oldData.district_name) {
+                            isSelected = 'selected';
+                            hasMatch = true;
+                        }
+                        options += `<option value="${dist.id}" data-name="${dist.name}" ${isSelected}>${dist.name}</option>`;
                     });
+                    
                     districtSelect.innerHTML = options;
                     districtSelect.disabled = false;
-                    if(oldData.district) districtSelect.dispatchEvent(new Event('change'));
+                    
+                    // Lanjut trigger Kelurahan kalau kecamatannya berhasil dipilih
+                    if(hasMatch || districtSelect.value) {
+                        districtSelect.dispatchEvent(new Event('change'));
+                    }
                 });
         });
 
-        // --- 4. LOAD KELURAHAN ---
+        // --- 4. LOAD KELURAHAN (🌟 FIXED DENGAN MATCHING NAMA) ---
         districtSelect.addEventListener('change', function() {
             const districtId = this.value;
             if (!districtId) return;
@@ -177,7 +196,12 @@
                 .then(response => {
                     let options = '<option value="">-- Pilih Kelurahan/Desa --</option>';
                     response.data.forEach(vill => {
-                        options += `<option value="${vill.id}" data-name="${vill.name}" ${oldData.village == vill.id ? 'selected' : ''}>${vill.name}</option>`;
+                        let isSelected = '';
+                        // Cocokkan berdasarkan nama wilayah
+                        if (oldData.village_name && vill.name.toUpperCase() === oldData.village_name) {
+                            isSelected = 'selected';
+                        }
+                        options += `<option value="${vill.id}" data-name="${vill.name}" ${isSelected}>${vill.name}</option>`;
                     });
                     villageSelect.innerHTML = options;
                     villageSelect.disabled = false;

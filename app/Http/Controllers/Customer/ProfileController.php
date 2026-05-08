@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http; // 🔥 WAJIB ADA
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\UserNotification;
+
 
 class ProfileController extends Controller
 {
@@ -142,5 +144,16 @@ class ProfileController extends Controller
 
         // 3. (Opsional) Keluarkan pesan sukses & kembalikan ke profil
         return redirect()->route('profile')->with('success', 'Password berhasil diperbarui!');
+    }
+
+
+    public function notifications()
+    {
+        // Ambil notifikasi user yang login, urutkan dari yang paling baru
+        $notifications = \App\Models\UserNotification::where('user_id', auth()->id())
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+
+        return view('customer.pages.notification', compact('notifications'));
     }
 }

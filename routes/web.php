@@ -43,6 +43,7 @@ Route::get('/api/biteship/search-area', function (Request $request) {
 });
 
 
+
 // ==========================================
 // 2. RUTE WEBHOOK (Sistem ke Sistem)
 // ==========================================
@@ -88,6 +89,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/login_edit', function () { 
         return view('customer.pages.login_edit', ['user' => auth()->user()]); 
     })->name('login_edit');
+
+
 
 
     // --- BAGIAN ALAMAT PENGIRIMAN ---
@@ -137,8 +140,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('order_success');
 
 
-    // --- LAIN-LAIN ---
-    Route::get('/notification', function () { return view('customer.pages.notification'); })->name('notification');
+// --- LAIN-LAIN ---
+    // 🌟 FIX: Rute yang benar, diarahkan ke fungsi 'notifications' (pakai 's') di ProfileController
+    Route::get('/notification', [ProfileController::class, 'notifications'])->name('notification');
+    
     Route::get('/chatbot', function () { return view('customer.pages.chatbot'); })->name('chatbot');
 
 }); // <-- PENUTUP BLOK AUTH
