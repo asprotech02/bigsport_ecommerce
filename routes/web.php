@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Customer\HomeController;
-use App\Http\Controllers\Customer\ProductController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\CheckoutController;
 use App\Http\Controllers\Customer\AddressController;
@@ -12,15 +12,48 @@ use App\Http\Controllers\Customer\MidtransController;
 use App\Http\Controllers\Customer\ProfileController;
 use App\Http\Controllers\Customer\OrderController; // <-- Import Controller untuk Detail Pesanan
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\SubcategoryController;   
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
+
+Route::prefix('admin')->group(function () {
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('admin.dashboard');
+
+    Route::resource('brands', BrandController::class)
+        ->names('admin.brands');
+
+    Route::resource('categories', CategoryController::class)
+        ->names('admin.categories');
+    
+    Route::resource('subcategories', SubcategoryController::class)
+        ->names('admin.subcategories');
+
+    Route::resource('products', AdminProductController::class)
+        ->names('admin.products');
+
+});
+
+Route::prefix('admin')->group(function () {
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('admin.dashboard');
+
+});
+
+
 // ==========================================
 // 1. RUTE PUBLIK (Dapat diakses tanpa login)
 // ==========================================
 
 // Rute halaman utama dan pencarian produk
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/api/search/live', [ProductController::class, 'liveSearch'])->name('api.search.live');
-Route::get('/products', [ProductController::class, 'index'])->name('product.index');
-Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.detail');
+Route::get('/api/search/live', [CustomerProductController::class, 'liveSearch'])->name('api.search.live');
+Route::get('/products', [CustomerProductController::class, 'index'])->name('product.index');
+Route::get('/product/{slug}', [CustomerProductController::class, 'show'])->name('product.detail');
 
 // Rute informasi statis (Biasanya dipanggil dari Footer)
 Route::get('/store_location', function () { return view('customer.pages.store_location'); })->name('store_location');
