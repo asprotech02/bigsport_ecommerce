@@ -57,9 +57,9 @@
                                     <div class="text-secondary" style="font-size: 12px;">{{ $product->gender }}</div>
                                     
                                     <div class="text-secondary mb-2" style="font-size: 12px;">
-                                        Ukuran: {{ $sku->size }} 
+                                        Ukuran: {{ $sku->size }}<br>
                                         @if($sku->color) 
-                                            <span class="mx-1">|</span> Warna: {{ $sku->color }} 
+                                            Warna: {{ $sku->color }} 
                                         @endif
                                     </div>
                                     
@@ -215,59 +215,75 @@
             calculateTotalGlobal();
         });
 
-        // 🌟 FIX: FUNGSI AJAX UPDATE QTY (PESAN ERROR STAY PERMANENT)
+        // Buat nyimpen timer (Debounce) biar ga nge-spam server
+        let qtyTimeouts = {}; 
+
+        // 🌟 FIX UX: Fungsi AJAX dengan Optimistic UI & Debounce
         function updateQty(id, delta, btnElement) {
             const row = btnElement.closest('.cart-item-row');
             const input = row.querySelector('.qty-input');
             const subtotalText = row.querySelector('.item-subtotal');
             const warningText = row.querySelector('.qty-warning'); 
             
-            let currentQty = parseInt(input.value);
-            let newQty = currentQty + delta;
+            // Ambil harga asli item dari data attribute baris tersebut
+            const price = parseInt(row.dataset.price);
+            
+            // Catat qty lama buat jaga-jaga kalau server nolak (Rollback)
+            const previousQty = parseInt(input.value); 
+            let newQty = previousQty + delta;
             
             if(newQty >= 1) {
-                input.style.opacity = '0.5';
+                // 1. OPTIMISTIC UI: Langsung ubah angka & subtotal di layar detik ini juga! (Instan)
+                input.value = newQty;
+                subtotalText.innerText = 'Rp ' + (price * newQty).toLocaleString('id-ID');
+                
+                if(warningText) warningText.style.display = 'none'; 
+                if(typeof calculateTotalGlobal === 'function') calculateTotalGlobal(); // Update Grand Total instan
 
-                axios.patch(`/cart/${id}`, {
-                    quantity: newQty
-                })
-                .then(response => {
-                    if(response.data.success) {
-                        input.value = response.data.new_qty;
-                        subtotalText.innerText = response.data.item_subtotal;
-                        
-                        // Sembunyikan pesan error jika sukses (misal: user menekan tombol minus sehingga angka valid kembali)
-                        if(warningText) warningText.style.display = 'none'; 
-                        
-                        if(typeof calculateTotalGlobal === 'function') calculateTotalGlobal();
-                    }
-                })
-                .catch(error => {
-                    console.error("Error AJAX:", error);
-                    
-                    let errMsg = 'Terjadi kesalahan';
-                    if (error.response && error.response.data && error.response.data.message) {
-                        errMsg = error.response.data.message;
-                    }
+                // 2. DEBOUNCE: Batalin request AJAX sebelumnya kalau user ngeklik lagi belum nyampe 500ms
+                clearTimeout(qtyTimeouts[id]);
+                
+                // 3. BACKGROUND SYNC: Kirim ke server setelah user berhenti ngeklik selama setengah detik
+                qtyTimeouts[id] = setTimeout(() => {
+                    input.style.opacity = '0.5'; // Efek loading tipis
 
-                    // Kembalikan ke angka sebelumnya yang valid
-                    input.value = currentQty;
-                    
-                    // Tampilkan pesan error TANPA Timeout agar menempel terus
-                    if(warningText) {
-                        warningText.innerText = errMsg;
-                        warningText.style.display = 'block';
-                        warningText.style.animation = 'shake 0.3s ease';
+                    axios.patch(`/cart/${id}`, {
+                        quantity: newQty
+                    })
+                    .then(response => {
+                        if(response.data.success) {
+                            // Sukses! Data di server udah sinkron sama layar
+                            // Nggak perlu ubah teks lagi karena udah diubah duluan sama Optimistic UI
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error AJAX:", error);
                         
-                        // Cukup hilangkan animasinya saja agar jika ditekan lagi bisa goyang lagi
-                        setTimeout(() => {
-                            warningText.style.animation = '';
-                        }, 300);
-                    }
-                })
-                .finally(() => {
-                    input.style.opacity = '1';
-                });
+                        let errMsg = 'Terjadi kesalahan';
+                        if (error.response && error.response.data && error.response.data.message) {
+                            errMsg = error.response.data.message;
+                        }
+
+                        // 🔴 ROLLBACK: Kalau server nolak (misal stok abis), balikin ke angka sebelumnya!
+                        input.value = previousQty;
+                        subtotalText.innerText = 'Rp ' + (price * previousQty).toLocaleString('id-ID');
+                        if(typeof calculateTotalGlobal === 'function') calculateTotalGlobal(); // Hitung ulang Grand Total
+                        
+                        // Tampilkan pesan error nolak dari backend
+                        if(warningText) {
+                            warningText.innerText = errMsg;
+                            warningText.style.display = 'block';
+                            warningText.style.animation = 'shake 0.3s ease';
+                            
+                            setTimeout(() => {
+                                warningText.style.animation = '';
+                            }, 300);
+                        }
+                    })
+                    .finally(() => {
+                        input.style.opacity = '1'; // Normalin UI
+                    });
+                }, 500); // <-- Waktu tunggu (500 milidetik / setengah detik)
             }
         }
 

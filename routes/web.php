@@ -10,7 +10,7 @@ use App\Http\Controllers\Customer\CheckoutController;
 use App\Http\Controllers\Customer\AddressController;
 use App\Http\Controllers\Customer\MidtransController;
 use App\Http\Controllers\Customer\ProfileController;
-use App\Http\Controllers\Customer\OrderController; // <-- Import Controller untuk Detail Pesanan
+use App\Http\Controllers\Customer\OrderController; 
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\BrandController;
@@ -18,8 +18,10 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\SubcategoryController;   
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 
+// ==========================================
+// RUTE ADMIN
+// ==========================================
 Route::prefix('admin')->group(function () {
-
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('admin.dashboard');
 
@@ -34,14 +36,6 @@ Route::prefix('admin')->group(function () {
 
     Route::resource('products', AdminProductController::class)
         ->names('admin.products');
-
-});
-
-Route::prefix('admin')->group(function () {
-
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->name('admin.dashboard');
-
 });
 
 
@@ -76,7 +70,6 @@ Route::get('/api/biteship/search-area', function (Request $request) {
 });
 
 
-
 // ==========================================
 // 2. RUTE WEBHOOK (Sistem ke Sistem)
 // ==========================================
@@ -85,7 +78,11 @@ Route::get('/api/biteship/search-area', function (Request $request) {
 Route::post('/midtrans/callback', [MidtransController::class, 'callback'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
+// 🌟 Webhook Biteship (RUTE BARU)
+Route::post('/biteship/webhook', [\App\Http\Controllers\Customer\BiteshipWebhookController::class, 'handleWebhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
+    
 // ==========================================
 // 3. RUTE PROTECTED (Wajib Login & Verifikasi Email)
 // ==========================================
@@ -100,17 +97,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('customer.pages.auth.email_edit', ['user' => auth()->user()]); 
     })->name('email_edit');
 
-    // 🌟 Mengarah ke form reset_password
+    // Mengarah ke form reset_password
     Route::get('/password_edit', function () { 
-        // Pastikan route view ini sesuai dengan lokasi asli reset_password.blade.php lu!
-        // Jika lokasinya di luar folder auth, sesuaikan jadi 'customer.pages.reset_password'
         return view('customer.pages.auth.reset_password', ['user' => auth()->user()]); 
     })->name('password_edit');
     
-    // 🌟 Rute Penerima Data Ganti Password
+    // Rute Penerima Data Ganti Password
     Route::patch('/password/update-profile', [ProfileController::class, 'updatePassword'])->name('password.update.profile');
     
-    // 🌟 FIX TYPO: Halaman Edit Profil (Passing data user dengan sintaks array '=>' yang benar)
+    // Halaman Edit Profil
     Route::get('/profile_edit', function () { 
         return view('customer.pages.profile_edit', ['user' => auth()->user()]); 
     })->name('profile_edit');
@@ -118,12 +113,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Action untuk memproses update profil ke Database
     Route::patch('/profile/update', [ProfileController::class, 'updateProfile'])->name('profile.update'); 
     
-    // 🌟 FIX TYPO: Halaman Edit Login (Passing data user dengan sintaks array '=>' yang benar)
+    // Halaman Edit Login
     Route::get('/login_edit', function () { 
         return view('customer.pages.login_edit', ['user' => auth()->user()]); 
     })->name('login_edit');
-
-
 
 
     // --- BAGIAN ALAMAT PENGIRIMAN ---
@@ -131,18 +124,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/address/store', [AddressController::class, 'store'])->name('address.store'); // Action Simpan Alamat
     Route::patch('/address/{id}/set-main', [AddressController::class, 'setMain'])->name('address.set_main'); // Action Set Alamat Utama
     Route::delete('/address/{id}', [AddressController::class, 'destroy'])->name('address.destroy'); // Action Hapus Alamat
-    // Pastikan rute ini ada di dalam group middleware auth
     Route::get('/address/create', [AddressController::class, 'create'])->name('address.create'); // Tambah
     Route::get('/address/{id}/edit', [AddressController::class, 'edit'])->name('address.edit'); // Edit
-    Route::post('/address/store', [AddressController::class, 'store'])->name('address.store'); // Simpan Baru
     Route::put('/address/{id}/update', [AddressController::class, 'update'])->name('address.update'); // Simpan Perubahan
 
 
-    // --- BAGIAN PESANAN & TRACKING ---
+    // --- BAGIAN PESANAN, TRACKING & AKSI PESANAN ---
     Route::get('/orders', [ProfileController::class, 'index'])->name('order'); // Mengarah ke Tab Pesanan di Halaman Profil
     Route::get('/order/{id}', [OrderController::class, 'show'])->name('order.detail'); // Halaman Rincian Pesanan
+    Route::get('/profile/order/{id}/track', [\App\Http\Controllers\Customer\ProfileController::class, 'trackOrderPage'])->name('order.track');
     Route::get('/profile/order/{id}/tracking', [ProfileController::class, 'getTracking'])->name('order.tracking'); // Endpoint AJAX Cek Resi
     Route::get('/profile/order/{id}/invoice', [ProfileController::class, 'printInvoice'])->name('order.invoice'); // Endpoint Download PDF Invoice
+    Route::post('/profile/order/{id}/cancel-manual', [ProfileController::class, 'cancelOrderManual'])->name('profile.order.cancel');
+    
+    // 🌟 RUTE BARU UNTUK FITUR TOMBOL AKSI 🌟
+    Route::post('/profile/order/{id}/complete', [ProfileController::class, 'completeOrder'])->name('order.complete');
+    Route::get('/profile/order/{id}/buy-again', [ProfileController::class, 'buyAgain'])->name('order.buy-again');
+    Route::post('/profile/order/{id}/review', [ProfileController::class, 'storeReview'])->name('order.review');
 
 
     // --- BAGIAN WISHLIST ---
@@ -167,16 +165,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- BAGIAN ORDER SUCCESS ---
     Route::get('/order_success', function () {
-        // Ambil 1 pesanan paling baru milik user yang sedang login untuk ditampilkan infonya
         $order = \App\Models\Order::where('user_id', auth()->id())->latest()->first();
         return view('customer.pages.order_success', compact('order'));
     })->name('order_success');
 
 
-// --- LAIN-LAIN ---
-    // 🌟 FIX: Rute yang benar, diarahkan ke fungsi 'notifications' (pakai 's') di ProfileController
+    // --- LAIN-LAIN ---
     Route::get('/notification', [ProfileController::class, 'notifications'])->name('notification');
-    
     Route::get('/chatbot', function () { return view('customer.pages.chatbot'); })->name('chatbot');
 
 }); // <-- PENUTUP BLOK AUTH

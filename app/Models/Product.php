@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory; // 🌟 INI OBATNYA BRO!
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Scout\Searchable; // 🌟 TAMBAHKAN INI
 
 class Product extends Model
 {
+    use HasFactory, Searchable; // 🌟 TAMBAHKAN Searchable DI SINI
+
     protected $fillable = [
         'category_id',
         'subcategory_id',
@@ -25,6 +29,18 @@ class Product extends Model
     public function skus() { return $this->hasMany(ProductSku::class); }
     public function reviews() { return $this->hasMany(Review::class); }
     
+        // 🌟 PASTE METHOD BARU INI DI BAWAH RELASI
+    public function toSearchableArray()
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'category_name' => $this->category ? $this->category->name : '',
+            'brand_name' => $this->brand ? $this->brand->name : '',
+        ];
+    }
+
     public function getImageUrlAttribute()
     {
         $image = $this->images->firstWhere('is_primary', true);

@@ -19,4 +19,10 @@ class Review extends Model
     
     // 🌟 Relasi ke order_items
     public function orderItem() { return $this->belongsTo(OrderItem::class); }
+
+    // 🌟 Relasi ke gambar ulasan
+    public function images()
+    {
+        return $this->hasMany(ReviewImage::class);
+    }
 }

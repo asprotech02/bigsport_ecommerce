@@ -20,6 +20,7 @@ class Order extends Model
         'payment_status',
         'payment_type',
         'status',
+        'cancel_reason', // 🌟 WAJIB TAMBAHKAN BARIS INI!
         // 🌟 biteship_order_id, waybill_id, courier_company, courier_type DIHAPUS
     ];
 

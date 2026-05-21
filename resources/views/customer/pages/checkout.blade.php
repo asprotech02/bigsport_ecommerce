@@ -43,11 +43,12 @@
             <input type="hidden" name="shipping_cost" id="input-shipping-cost" value="0">
             <input type="hidden" name="courier_company" id="input-courier-company" value="">
             <input type="hidden" name="courier_type" id="input-courier-type" value="">
-            <input type="hidden" name="store_location" id="input-store-location" value="tangsel">
+            
+            {{-- Nilai statis toko utama --}}
+            <input type="hidden" name="store_location" id="input-store-location" value="toko_utama">
 
             <div class="row g-5">
                 <div class="col-12 col-lg-7 col-xl-8">
-                    <!-- 1. INFO PENERIMA -->
                     <div class="mb-5">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-bold m-0 text-uppercase" style="font-size: 14px; letter-spacing: 1px;">Info Penerima</h5>
@@ -76,7 +77,6 @@
                         </div>
                     </div>
 
-                    <!-- 2. PRODUK DIPESAN -->
                     <div class="mb-5">
                         <h5 class="fw-bold mb-3 text-uppercase" style="font-size: 14px; letter-spacing: 1px;">Produk Dipesan</h5>
                         <div class="border p-0 rounded-0">
@@ -84,7 +84,6 @@
                                 @php
                                     $sku = $item->productSku;
                                     $product = $sku->product;
-                                    // 🌟 FIX: Tarik harga dari relasi SKU
                                     $price = $sku->discount_price ?? $sku->base_price;
                                     $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
                                 @endphp
@@ -108,7 +107,6 @@
                         </div>
                     </div>
 
-                    <!-- 3. METODE PENGIRIMAN -->
                     <div class="mb-4">
                         <h5 class="fw-bold mb-3 text-uppercase" style="font-size: 14px; letter-spacing: 1px;">Metode Pengiriman</h5>
                         <div class="row g-3">
@@ -145,37 +143,24 @@
                     </div>
 
                     <div class="mb-5 d-none" id="pickup-section">
-                        <h5 class="fw-bold mb-3 text-uppercase text-secondary" style="font-size: 12px; letter-spacing: 1px;">Pilih Lokasi Pengambilan</h5>
-                        <div class="row g-3">
-                            @php
-                                $locations = [
-                                    ['id' => 'tangsel', 'name' => 'Bigsport Tangerang Selatan', 'addr' => 'Jl. HOS Cokroaminoto No.52, RT.001/RW.005, Larangan, Kec. Larangan, Kota Tangerang'],
-                                    ['id' => 'citra', 'name' => 'Bigsport Citra Raya Tangerang', 'addr' => 'QG7F+2JW, Cikupa, Tangerang Regency, Banten 15710'],
-                                    ['id' => 'bogor', 'name' => 'Bigsport Bogor', 'addr' => 'Jl. Kol. Edy Yoso Martadipura No.82, Pakansari, Kec. Cibinong, Kabupaten Bogor'],
-                                    ['id' => 'serang', 'name' => 'Bigsport Serang', 'addr' => 'Jl. Jenderal Ahmad Yani Serang, Cipare, Kec. Serang, Kota Serang, Banten 42117']
-                                ];
-                            @endphp
-                            @foreach($locations as $shop)
-                            <div class="col-12">
-                                <label class="selectable-card p-4 rounded-0 bg-light-gray shadow-sm d-block pickup-location-card {{ $loop->first ? 'active' : '' }}" for="pickup_{{ $shop['id'] }}">
-                                    <input type="radio" name="pickup_location" id="pickup_{{ $shop['id'] }}" value="{{ $shop['id'] }}" class="d-none pickup-radio" {{ $loop->first ? 'checked' : '' }}>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-black text-white p-3 me-3 text-center" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
-                                            <i class="bi bi-geo-alt-fill fs-4"></i>
-                                        </div>
-                                        <div>
-                                            <p class="fw-bold mb-1" style="font-size: 14px;">{{ $shop['name'] }}</p>
-                                            <p class="text-secondary mb-0 small">{{ $shop['addr'] }}</p>
-                                        </div>
-                                    </div>
-                                </label>
+                        <h5 class="fw-bold mb-3 text-uppercase text-secondary" style="font-size: 12px; letter-spacing: 1px;">Lokasi Pengambilan</h5>
+                        <div class="border p-4 rounded-0 bg-light-gray shadow-sm border-dark" style="border-width: 2px !important;">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-black text-white p-3 me-3 text-center flex-shrink-0" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-shop fs-4"></i>
+                                </div>
+                                <div>
+                                    <p class="fw-bold mb-1" style="font-size: 14px;">Big Sport Tangerang (Toko Utama)</p>
+                                    <p class="text-secondary mb-0 small" style="line-height: 1.5;">
+                                        Jl. HOS Cokroaminoto No.52, RT.001/RW.005, Larangan, Kec. Larangan, Kota Tangerang
+                                    </p>
+                                </div>
                             </div>
-                            @endforeach
                         </div>
+                        <p class="text-secondary mt-2 small"><i class="bi bi-info-circle me-1"></i> Pembayaran dilakukan sekarang, tunjukkan QR Code ke kasir saat mengambil barang</p>
                     </div>
                 </div>
 
-                <!-- KOLOM KANAN: RINGKASAN -->
                 <div class="col-12 col-lg-5 col-xl-4 align-self-start">
                     <div class="bg-light-gray p-4 rounded-0 sticky-summary shadow-sm">
                         <h5 class="fw-bold mb-4 text-uppercase" style="letter-spacing: 1px;">Ringkasan Belanja</h5>
@@ -199,13 +184,12 @@
                         <div class="mb-4">
                             <label class="text-secondary mb-2 small fw-bold text-uppercase">Kode Promo</label>
                             <div class="input-group">
-                                <input type="text" id="promo-input" class="form-control rounded-0 border-dark shadow-none" placeholder="Contoh: BIGSPORT10">
+                                <input type="text" id="promo-input" class="form-control rounded-0 border-dark shadow-none">
                                 <button id="apply-promo-btn" class="btn btn-black rounded-0 fw-bold px-3" type="button">PAKAI</button>
                             </div>
                             <small id="promo-message" class="d-block mt-1"></small>
                         </div>
                         
-                        <!-- Wadah pesan error elegan tanpa alert -->
                         <div id="checkout-error-message" class="text-danger fw-bold text-center mb-3" style="display: none; font-size: 12px; letter-spacing: 0.5px;"></div>
 
                         <button type="submit" class="btn btn-black w-100 py-3 fw-bold text-uppercase shadow-sm">BAYAR SEKARANG</button>
@@ -216,7 +200,6 @@
     </div>
 </section>
 
-<!-- MODAL PILIH ALAMAT -->
 <div class="modal fade" id="modalPilihAlamat" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-0 border-dark">
@@ -285,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
         displayGrandTotal.innerText = formatRupiah(grandTotal > 0 ? grandTotal : 0);
     }
 
-    // --- 1. HANDLING PILIH ALAMAT (DENGAN MEMORI SESSION STORAGE) ---
+    // --- 1. HANDLING PILIH ALAMAT ---
     function applySelectedAddress(btn, isInitialLoad = false) {
         const id = btn.dataset.id;
         const name = btn.dataset.name;
@@ -293,7 +276,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const street = btn.dataset.street;
         const region = btn.dataset.region;
 
-        // 1. Update UI Info Penerima di background (Halaman Checkout)
         document.getElementById('selected-address-container').innerHTML = `
             <div class="border p-4 rounded-0 bg-light-gray shadow-sm">
                 <input type="hidden" name="address_id" id="address-id" value="${id}">
@@ -303,7 +285,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </p>
             </div>`;
 
-        // 2. Update UI Modal (Pindahkan label "Terpilih")
         document.querySelectorAll('.address-option').forEach(opt => {
             opt.classList.remove('bg-light');
             opt.querySelector('.btn-pilih-alamat').classList.remove('d-none');
@@ -315,21 +296,17 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.classList.add('d-none');
         selectedOption.querySelector('.text-terpilih').classList.remove('d-none');
 
-        // 3. Simpan ke memori browser biar nggak ilang pas di-refresh
         sessionStorage.setItem('checkout_saved_address_id', id);
 
-        // 4. Tutup Modal (hanya kalau dipanggil dari klik tombol, bukan dari auto-load)
         if (!isInitialLoad) {
             const modalEl = document.getElementById('modalPilihAlamat');
             const modalInstance = bootstrap.Modal.getInstance(modalEl);
             if (modalInstance) modalInstance.hide();
         }
 
-        // 5. Hitung Ulang Ongkir
         fetchShippingRates(id);
     }
 
-    // Event Listener saat tombol "PILIH" diklik user
     document.querySelectorAll('.btn-pilih-alamat').forEach(btn => {
         btn.addEventListener('click', function() {
             applySelectedAddress(this, false);
@@ -357,17 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- 3. HANDLING PILIH TOKO (PICKUP) ---
-    document.querySelectorAll('.pickup-location-card').forEach(card => {
-        card.addEventListener('click', function() {
-            document.querySelectorAll('.pickup-location-card').forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            this.querySelector('input').checked = true;
-            document.getElementById('input-store-location').value = this.querySelector('input').value;
-        });
-    });
-
-    // --- 4. HANDLING KURIR & AUTO-SELECT ---
+    // --- 3. HANDLING KURIR & AUTO-SELECT ---
     function fetchShippingRates(addressId) {
         shippingContainer.innerHTML = '<div class="border p-4 text-center small bg-light-gray shadow-sm"><div class="spinner-border spinner-border-sm me-2"></div>Menghitung...</div>';
         let cartIds = [];
@@ -413,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     });
                 } else {
-                    // Munculkan pesan error dinamis, agar lu gak bingung misal API Limit abis dll.
                     console.error("Biteship Error Response:", response.data);
                     let errorMsg = response.data.message || 'Kurir tidak tersedia untuk wilayah ini.';
                     shippingContainer.innerHTML = `<div class="border border-secondary-subtle p-3 text-center text-danger rounded-0 bg-light-gray shadow-sm small fw-bold"><i class="bi bi-exclamation-circle me-1"></i> ${errorMsg}</div>`;
@@ -421,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // --- 5. HANDLING PROMO CODE ---
+    // --- 4. HANDLING PROMO CODE ---
     const promoBtn = document.getElementById('apply-promo-btn');
     if (promoBtn) {
         promoBtn.addEventListener('click', function() {
@@ -459,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 6. HANDLING SUBMIT CHECKOUT & MIDTRANS SNAP ---
+    // --- 5. HANDLING SUBMIT CHECKOUT & MIDTRANS SNAP ---
     const checkoutForm = document.getElementById('checkout-form');
     const errorMsgBox = document.getElementById('checkout-error-message');
 
@@ -497,7 +463,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         window.snap.pay(response.data.snap_token, {
                             onSuccess: function(result){
-                                // Reset memori session setelah pembayaran sukses
                                 sessionStorage.removeItem('checkout_saved_address_id');
                                 window.location.href = "{{ route('order_success') }}";
                             },
@@ -525,7 +490,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error("FULL ERROR:", error);
                     let errorMsg = 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
 
-                    // 🌟 BARIS INI AKAN MEMBONGKAR ERROR ASLI DARI LARAVEL
                     if (error.response) {
                         errorMsg = `Server Error (${error.response.status}): Cek tab Console (F12) untuk detailnya.`;
                         console.error("PESAN DARI LARAVEL:", error.response.data);
@@ -542,18 +506,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const savedAddressId = sessionStorage.getItem('checkout_saved_address_id');
 
     if (savedAddressId) {
-        // Kalau user sebelumnya udah pernah milih alamat, otomatis jalankan perubahannya
         const savedBtn = document.querySelector(`.btn-pilih-alamat[data-id="${savedAddressId}"]`);
         
         if (savedBtn) {
-            applySelectedAddress(savedBtn, true); // True = mode initial load (modal gak usah ditutup)
+            applySelectedAddress(savedBtn, true); 
         } else {
-            // Jaga-jaga kalau data error, panggil default
             const initAddr = document.getElementById('address-id')?.value;
             if(initAddr) fetchShippingRates(initAddr);
         }
     } else {
-        // Kalau baru pertama kali banget buka checkout, pakai alamat default dari Laravel
         const initAddr = document.getElementById('address-id')?.value;
         if(initAddr) fetchShippingRates(initAddr);
     }

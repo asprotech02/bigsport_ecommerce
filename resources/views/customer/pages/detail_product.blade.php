@@ -25,28 +25,38 @@
         $availableColors = $skus->pluck('color')->filter()->unique()->values();
         $hasColors = $availableColors->count() > 0;
         
-        // Saring ukuran agar berurutan sesuai $standardSizes lu
+        // Saring ukuran agar berurutan sesuai $standardSizes
         $availableSizes = collect($standardSizes)->filter(function($size) use ($skus) {
             return $skus->where('size', $size)->count() > 0;
         })->values();
 
         $totalValidStock = 0; 
         
-        // 🌟 AUTO-SELECT: Cari SKU pertama yang ada stok tersedia buat patokan
-        $defaultSku = $skus->where('available_stock', '>', 0)->first();
+        // 🌟 AUTO-SELECT SHOPEE: Cari SKU dengan stok terbanyak untuk patokan awal
+        $defaultSku = $skus->where('available_stock', '>', 0)->sortByDesc('available_stock')->first();
         
         $defaultBasePrice = $defaultSku ? $defaultSku->base_price : ($skus->first()->base_price ?? 0);
         $defaultDiscountPrice = $defaultSku ? $defaultSku->discount_price : ($skus->first()->discount_price ?? null);
         
-        // Variabel untuk dilempar ke JS agar otomatis terpilih
-        $defaultColor = $defaultSku ? $defaultSku->color : null;
-        $defaultSize = $defaultSku ? $defaultSku->size : null;
+        // 🌟 REVISI: Auto Select HANYA WARNA (Jika ada). UKURAN DIKOSONGKAN.
+        $defaultColor = ($hasColors && $defaultSku) ? $defaultSku->color : null; 
+        $defaultSize = null; 
 
         // Hitung total stok valid
         foreach($skus as $sku) {
             if(in_array($sku->size, $standardSizes) && $sku->available_stock > 0) {
                 $totalValidStock += $sku->available_stock;
             }
+        }
+    @endphp
+
+    @php
+        // Cek wishlist untuk halaman detail
+        $isInWishlistDetail = false;
+        if(auth()->check()) {
+            $isInWishlistDetail = \App\Models\Wishlist::where('user_id', auth()->id())
+                ->where('product_id', $product->id)
+                ->exists();
         }
     @endphp
 
@@ -68,7 +78,7 @@
                     
                     <div class="col-12 col-lg-7 d-flex flex-column-reverse flex-md-row gap-3">
                         
-                        <div class="d-flex flex-row flex-md-column gap-2 overflow-x-auto thumbnail-scroll" style="width: 100%; max-width: 85px;">
+                        <div class="d-flex flex-row flex-md-column gap-2 overflow-x-auto thumbnail-scroll flex-shrink-0" style="max-width: 85px;">
                             @foreach($product->images as $index => $image)
                                 <div class="ratio ratio-1x1 border {{ $image->is_primary ? 'border-dark' : 'border-secondary-subtle opacity-50' }} bg-white flex-shrink-0 cursor-pointer thumb-item" 
                                      style="width: 85px; transition: all 0.2s;"
@@ -78,7 +88,7 @@
                             @endforeach
                         </div>
 
-                        <div class="flex-grow-1 position-relative bg-white border border-secondary-subtle d-flex align-items-center justify-content-center overflow-hidden">
+                        <div class="flex-grow-1 position-relative bg-white border border-secondary-subtle">
                             <button class="btn btn-light rounded-circle position-absolute top-0 end-0 m-3 shadow-sm border-0 d-flex align-items-center justify-content-center" 
                                     id="btn-zoom" style="width: 40px; height: 40px; z-index: 10; opacity: 0.8; transition: all 0.3s;">
                                 <i class="bi bi-search fs-5"></i>
@@ -89,11 +99,11 @@
                                 <i class="bi bi-chevron-left text-white fs-5"></i>
                             </button>
 
-                            <div class="ratio ratio-1x1 w-100 position-relative" id="main-img-wrapper" style="overflow: hidden;">
+                            <div class="w-100 position-relative" id="main-img-wrapper" style="overflow: hidden; height: 100%;">
                                 <img src="{{ asset('storage/' . ($primaryImage ? $primaryImage->image_path : 'default.jpg')) }}" 
                                      id="main-product-img" 
-                                     class="w-100 h-100 object-fit-cover" 
-                                     style="transition: transform 0.1s ease-out, opacity 0.3s ease-in-out;">
+                                     class="w-100 h-100" 
+                                     style="object-fit: contain; display: block; transition: transform 0.1s ease-out, opacity 0.3s ease-in-out;">
                             </div>
 
                             <button class="btn rounded-0 position-absolute end-0 top-50 translate-middle-y me-2 me-md-3 border-0 d-flex justify-content-center align-items-center gallery-nav-btn" 
@@ -178,6 +188,7 @@
                                         </button>
                                     @endforeach
                                 </div>
+                                <span id="color-warning" class="text-danger fw-bold d-block mt-1" style="font-size: 11px; display: none;"></span>
                             </div>
                             @endif
 
@@ -197,6 +208,7 @@
                                         </button>
                                     @endforeach
                                 </div>
+                                <span id="size-warning" class="text-danger fw-bold d-block mt-1" style="font-size: 11px; display: none;"></span>
 
                                 <div id="stock-status-container" class="mt-2 pt-1" style="display: none;">
                                     <span class="text-secondary me-1" style="font-size: 12px;">Sisa stok:</span>
@@ -224,20 +236,44 @@
                                         </button>
                                     </div>
                                     <div class="col-12 col-sm-6">
-                                        <button type="submit" name="action" value="add_cart" id="btn-add-cart" class="btn btn-action-main m-0 w-100 d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; padding: 0;">
+                                        <button type="submit" name="action" value="add_cart" id="btn-add-cart" class="btn btn-dark m-0 w-100 d-flex justify-content-center align-items-center fw-bold text-uppercase rounded-0" style="height: 48px; font-size: 12px; padding: 0;">
                                             PILIH VARIAN
                                         </button>
                                     </div>
                                 @else
                                     <div class="col-12">
                                         <button type="button" class="btn btn-secondary w-100 rounded-0 fw-bold text-uppercase d-flex justify-content-center align-items-center" style="height: 48px; font-size: 12px; letter-spacing: 1px; opacity: 0.7; cursor: not-allowed;" disabled>
-                                            MAAF, STOK HABIS
+                                            MAAF STOK HABIS
                                         </button>
                                     </div>
                                 @endif
                             </div>
                         </form>
-                        <div class="mt-4 pt-3">
+                        <div class="d-flex flex-wrap gap-5 mt-4 pt-2 border-top border-secondary-subtle">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-patch-check-fill fs-4 flex-shrink-0"></i>
+                                <div>
+                                    <span class="fw-bold d-block" style="font-size: 11px; line-height: 1.2; ">100% ORIGINAL</span>
+                                    <span class="text-secondary" style="font-size: 10px;">Produk resmi & asli</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-arrow-return-left fs-4 flex-shrink-0"></i>
+                                <div>
+                                    <span class="fw-bold d-block" style="font-size: 11px; line-height: 1.2;">GARANSI RETUR</span>
+                                    <span class="text-secondary" style="font-size: 10px;">14 hari retur</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-truck fs-4 flex-shrink-0"></i>
+                                <div>
+                                    <span class="fw-bold d-block" style="font-size: 11px; line-height: 1.2;">GRATIS ONGKIR</span>
+                                    <span class="text-secondary" style="font-size: 10px;">S&K berlaku</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 pt-3 border-top border-secondary-subtle">
                             <span class="text-secondary d-block mb-2" style="font-size: 12px;">Sedia Metode Pembayaran:</span>
                             <div class="d-flex flex-wrap gap-2">
                                 <div class="bg-white border border-light-subtle d-flex align-items-center justify-content-center p-1" style="width: 55px; height: 32px;">
@@ -257,10 +293,30 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="row g-2 mt-3 pt-3 border-top border-secondary-subtle">
+                            <div class="col-12 col-sm-6">
+                                <button class="btn btn-outline-dark w-100 rounded-0 fw-bold text-uppercase d-flex justify-content-center align-items-center toggle-wishlist-detail" 
+                                        data-product-id="{{ $product->id }}" 
+                                        style="height: 48px; font-size: 12px; letter-spacing: 1px; border-width: 2px; gap: 8px;">
+                                    <i class="bi {{ $isInWishlistDetail ? 'bi-heart-fill text-danger' : 'bi-heart' }} fs-5"></i>
+                                    <span id="wishlist-text-detail">{{ $isInWishlistDetail ? 'Tersimpan' : 'Simpan' }}</span>
+                                </button>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <button class="btn btn-outline-dark w-100 rounded-0 fw-bold text-uppercase d-flex justify-content-center align-items-center" 
+                                        id="btn-share-product"
+                                        style="height: 48px; font-size: 12px; letter-spacing: 1px; border-width: 2px; gap: 8px;">
+                                    <i class="bi bi-share fs-5"></i>
+                                    <span>Bagikan</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            {{-- TABS DETAIL & ULASAN --}}
             <div class="border border-secondary-subtle rounded-0 mb-5">
                 <ul class="nav border-bottom border-secondary-subtle px-4 pt-4 gap-4" id="productTabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -304,71 +360,121 @@
                     </div>
 
                     <div class="tab-pane fade p-4 p-md-5 bg-white" id="ulasan-content" role="tabpanel" aria-labelledby="ulasan-tab">
-                        <div class="row g-5">
-                            <div class="col-12 col-md-4 col-lg-3">
-                                <h6 class="fw-bold text-uppercase mb-4">Ringkasan Ulasan</h6>
-                                <div class="d-flex align-items-center mb-2">
-                                    <h1 class="fw-black m-0 me-3" style="font-size: 48px;">{{ number_format($avgRating, 1) }}</h1>
-                                    <div>
-                                        <div class="text-warning mb-1 fs-5">
-                                            @for($i = 1; $i <= 5; $i++)
-                                                @if($avgRating >= $i)
-                                                    <i class="bi bi-star-fill"></i>
-                                                @elseif($avgRating >= $i - 0.5)
-                                                    <i class="bi bi-star-half"></i>
-                                                @else
-                                                    <i class="bi bi-star text-secondary"></i>
-                                                @endif
-                                            @endfor
-                                        </div>
-                                        <span class="text-secondary" style="font-size: 13px;">Berdasarkan {{ $product->reviews_count ?? 0 }} Ulasan</span>
-                                    </div>
+    <div class="row g-5">
+        
+        <div class="col-12 col-md-4 col-lg-4">
+            <h6 class="fw-bold text-uppercase mb-4">Ringkasan Ulasan</h6>
+            <div class="d-flex align-items-center mb-3">
+                <h1 class="fw-black m-0 me-3" style="font-size: 56px; line-height: 1;">{{ number_format($avgRating, 1) }}</h1>
+                <div>
+                    <div class="text-warning mb-1 fs-5">
+                        @for($i = 1; $i <= 5; $i++)
+                            @if($avgRating >= $i)
+                                <i class="bi bi-star-fill"></i>
+                            @elseif($avgRating >= $i - 0.5)
+                                <i class="bi bi-star-half"></i>
+                            @else
+                                <i class="bi bi-star text-secondary"></i>
+                            @endif
+                        @endfor
+                    </div>
+                    <span class="text-secondary" style="font-size: 13px;">Berdasarkan {{ $product->reviews_count ?? 0 }} Ulasan</span>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-top border-secondary-subtle">
+                <h6 class="fw-bold mb-3" style="font-size: 13px; letter-spacing: 0.5px;">FILTER ULASAN</h6>
+                <div class="d-flex flex-wrap gap-2" id="review-filter-container">
+                    <button type="button" class="btn btn-dark rounded-0 px-3 py-1 fw-bold review-filter-btn active" data-rating="all" style="font-size: 12px; letter-spacing: 0.5px;">Semua</button>
+                    <button type="button" class="btn btn-outline-dark rounded-0 px-3 py-1 fw-bold review-filter-btn" data-rating="5" style="font-size: 12px; letter-spacing: 0.5px;">5 ★</button>
+                    <button type="button" class="btn btn-outline-dark rounded-0 px-3 py-1 fw-bold review-filter-btn" data-rating="4" style="font-size: 12px; letter-spacing: 0.5px;">4 ★</button>
+                    <button type="button" class="btn btn-outline-dark rounded-0 px-3 py-1 fw-bold review-filter-btn" data-rating="3" style="font-size: 12px; letter-spacing: 0.5px;">3 ★</button>
+                    <button type="button" class="btn btn-outline-dark rounded-0 px-3 py-1 fw-bold review-filter-btn" data-rating="2" style="font-size: 12px; letter-spacing: 0.5px;">2 ★</button>
+                    <button type="button" class="btn btn-outline-dark rounded-0 px-3 py-1 fw-bold review-filter-btn" data-rating="1" style="font-size: 12px; letter-spacing: 0.5px;">1 ★</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-md-8 col-lg-8" id="review-list-container">
+            @forelse($product->reviews as $review)
+                <div class="border-bottom border-secondary-subtle pb-4 mb-4 review-item" data-rating="{{ $review->rating }}">
+                    
+                    <div class="d-flex align-items-start mb-3">
+                        @php $userName = $review->user?->name ?? 'Pengguna Anonim'; @endphp
+                        <div class="bg-light-gray text-dark fw-bold d-flex justify-content-center align-items-center rounded-circle flex-shrink-0 me-3" 
+                             style="width: 45px; height: 45px; font-size: 16px; border: 1px solid #dee2e6;">
+                            {{ strtoupper(substr($userName, 0, 1)) }}
+                        </div>
+                        
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="fw-bold" style="font-size: 14px;">
+                                    {{ $userName }}
+                                    <i class="bi bi-patch-check-fill text-success ms-1" style="font-size: 13px;" title="Pembeli Terverifikasi"></i>
+                                </div>
+                                <div class="text-secondary text-end" style="font-size: 12px;">
+                                    {{ \Carbon\Carbon::parse($review->created_at)->translatedFormat('d F Y') }}
                                 </div>
                             </div>
                             
-                            <div class="col-12 col-md-8 col-lg-9">
-                                @forelse($product->reviews as $review)
-                                    <div class="border-bottom border-secondary-subtle pb-4 mb-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <div class="fw-bold fs-6">
-                                                {{ $review->user?->name ?? 'Pengguna Anonim' }} 
-                                                <i class="bi bi-patch-check-fill text-success ms-1" style="font-size: 12px;" title="Pembeli Terverifikasi"></i>
-                                            </div>
-                                            <div class="text-secondary" style="font-size: 12px;">
-                                                {{ \Carbon\Carbon::parse($review->created_at)->translatedFormat('d F Y') }}
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="text-warning mb-3" style="font-size: 12px;">
-                                            @for($i = 1; $i <= 5; $i++)
-                                                @if($i <= $review->rating)
-                                                    <i class="bi bi-star-fill"></i>
-                                                @else
-                                                    <i class="bi bi-star text-secondary"></i>
-                                                @endif
-                                            @endfor
-                                        </div>
-                                        
-                                        <p class="text-secondary mb-0" style="font-size: 14px; line-height: 1.6;">
-                                            {{ $review->comment }}
-                                        </p>
-                                    </div>
-                                @empty
-                                    <div class="text-center py-5">
-                                        <i class="bi bi-chat-square-text text-secondary mb-3 d-block" style="font-size: 32px;"></i>
-                                        <h6 class="fw-bold text-uppercase mb-2">Belum Ada Ulasan</h6>
-                                        <p class="text-secondary mb-0" style="font-size: 14px;">Jadilah yang pertama memberikan ulasan untuk produk ini setelah membeli!</p>
-                                    </div>
-                                @endforelse
-
-                                @if($product->reviews->count() > 3)
-                                    <button type="button" class="btn btn-outline-dark rounded-0 fw-bold text-uppercase px-4 py-2 mt-2" style="font-size: 12px; letter-spacing: 1px;">
-                                        Lihat Lebih Banyak
-                                    </button>
-                                @endif
+                            <div class="text-warning mt-1" style="font-size: 11px;">
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= $review->rating)
+                                        <i class="bi bi-star-fill"></i>
+                                    @else
+                                        <i class="bi bi-star text-secondary opacity-50"></i>
+                                    @endif
+                                @endfor
                             </div>
                         </div>
                     </div>
+
+                    <p class="text-dark mb-3 ps-5 ms-2" style="font-size: 14px; line-height: 1.6;">
+                        {{ $review->comment }}
+                    </p>
+
+                    @if($review->images && $review->images->count() > 0)
+                        <div class="d-flex flex-wrap gap-2 ps-5 ms-2">
+                            @foreach($review->images as $reviewImage)
+                                <div class="border border-secondary-subtle cursor-pointer review-img-thumb position-relative" 
+                                     style="width: 80px; height: 80px; overflow: hidden;"
+                                     data-bs-toggle="modal" data-bs-target="#reviewImageModal"
+                                     data-img-src="{{ asset('storage/' . $reviewImage->image_path) }}">
+                                    <img src="{{ asset('storage/' . $reviewImage->image_path) }}" class="w-100 h-100 object-fit-cover">
+                                    </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <div class="text-center py-5" id="review-empty-state">
+                    <i class="bi bi-chat-square-text text-secondary mb-3 d-block" style="font-size: 36px; opacity: 0.5;"></i>
+                    <h6 class="fw-bold text-uppercase mb-2">Belum Ada Ulasan</h6>
+                    <p class="text-secondary mb-0" style="font-size: 14px;">Jadilah yang pertama memberikan ulasan untuk produk ini setelah membeli!</p>
+                </div>
+            @endforelse
+
+            @if($product->reviews->count() > 3)
+                <div class="text-center mt-2">
+                    <button type="button" class="btn btn-outline-dark rounded-0 fw-bold text-uppercase px-5 py-2" style="font-size: 12px; letter-spacing: 1px; border-width: 2px;">
+                        Lihat Lebih Banyak Ulasan
+                    </button>
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reviewImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-0 border-0 bg-transparent shadow-none">
+            <div class="text-end mb-2">
+                <button type="button" class="btn btn-dark btn-sm rounded-0 px-3 fw-bold" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i> Tutup</button>
+            </div>
+            <img id="review-modal-img" src="" class="w-100 bg-dark" style="object-fit: contain; max-height: 85vh;">
+        </div>
+    </div>
+</div>
                 </div>
             </div>
 
@@ -562,6 +668,48 @@
             display: flex;
             flex-direction: column;
         }
+
+        /* Animasi Wishlist */
+        @keyframes wishlistPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        /* Hover efek thumbnail ulasan */
+        .review-img-thumb {
+            transition: opacity 0.2s, border-color 0.2s;
+        }
+        .review-img-thumb:hover {
+            opacity: 0.8;
+            border-color: #000 !important;
+            cursor: pointer;
+        }
+
+        /* Style share dropdown */
+        .share-option {
+            transition: all 0.2s;
+        }
+        .share-option:hover {
+            background-color: #000 !important;
+            color: #fff !important;
+        }
+        
+        /* Style disabled button */
+        .size-btn.disabled, .color-btn.disabled {
+            opacity: 0.4 !important;
+            border-style: dashed !important;
+            pointer-events: none;
+        }
+
+        /* Animasi Shake untuk warning */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
     </style>
     @endpush
 
@@ -569,17 +717,19 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             
-            // ==========================================
-            // 🌟 LOGIKA MATRIX FILTER SHOPEE (AUTO-SELECT)
-            // ==========================================
             const skus = @json($product->skus);
             const hasColors = {{ $hasColors ? 'true' : 'false' }};
             const defaultBasePrice = {{ $defaultBasePrice }};
             const defaultDiscountPrice = {{ $defaultDiscountPrice ?? 'null' }};
             
-            // 🌟 AUTO-SELECT VARIAN DARI PHP
-            let selectedColor = {!! json_encode($defaultColor) !!};
-            let selectedSize = {!! json_encode($defaultSize) !!};
+            const skuMap = {};
+            skus.forEach(s => {
+                const key = (s.color || 'NO_COLOR') + '|' + s.size;
+                skuMap[key] = s;
+            });
+
+            let selectedColor = {!! json_encode($defaultColor) !!}; 
+            let selectedSize = {!! json_encode($defaultSize) !!};   
             let currentMaxStock = 0;
 
             const colorBtns = document.querySelectorAll('.color-btn');
@@ -605,12 +755,13 @@
             }
 
             function updateVariantMatrix() {
-                // 1. FILTER TOMBOL WARNA BERDASARKAN UKURAN YANG DIPILIH
+                // 1. CEK KETERSEDIAAN WARNA
                 colorBtns.forEach(btn => {
                     const c = btn.dataset.color;
                     let stockForThisColor = 0;
+                    
                     if (selectedSize) {
-                        const sku = skus.find(s => s.color === c && s.size === selectedSize);
+                        const sku = skuMap[c + '|' + selectedSize];
                         stockForThisColor = sku ? sku.available_stock : 0;
                     } else {
                         stockForThisColor = skus.filter(s => s.color === c).reduce((sum, s) => sum + s.available_stock, 0);
@@ -619,16 +770,13 @@
                     if (stockForThisColor <= 0) {
                         btn.classList.add('disabled', 'btn-outline-secondary', 'text-muted');
                         btn.classList.remove('btn-outline-dark');
-                        btn.style.borderStyle = 'dashed';
-                        btn.disabled = true;
                         if (selectedColor === c) selectedColor = null; 
                     } else {
                         btn.classList.remove('disabled', 'btn-outline-secondary', 'text-muted');
                         btn.classList.add('btn-outline-dark');
-                        btn.style.borderStyle = 'solid';
-                        btn.disabled = false;
                     }
 
+                    // HANYA 1 background hitam -> yang dipilih
                     if (selectedColor === c) {
                         btn.classList.add('active', 'bg-dark', 'text-white');
                     } else {
@@ -636,12 +784,13 @@
                     }
                 });
 
-                // 2. FILTER TOMBOL UKURAN BERDASARKAN WARNA YANG DIPILIH
+                // 2. CEK KETERSEDIAAN UKURAN
                 sizeBtns.forEach(btn => {
                     const sz = btn.dataset.size;
                     let stockForThisSize = 0;
+                    
                     if (selectedColor) {
-                        const sku = skus.find(s => s.size === sz && s.color === selectedColor);
+                        const sku = skuMap[selectedColor + '|' + sz];
                         stockForThisSize = sku ? sku.available_stock : 0;
                     } else {
                         stockForThisSize = skus.filter(s => s.size === sz).reduce((sum, s) => sum + s.available_stock, 0);
@@ -650,16 +799,13 @@
                     if (stockForThisSize <= 0) {
                         btn.classList.add('disabled', 'btn-outline-secondary', 'text-muted');
                         btn.classList.remove('btn-outline-dark');
-                        btn.style.borderStyle = 'dashed';
-                        btn.disabled = true;
-                        if (selectedSize === sz) selectedSize = null; 
+                        if (selectedSize === sz) selectedSize = null;
                     } else {
                         btn.classList.remove('disabled', 'btn-outline-secondary', 'text-muted');
                         btn.classList.add('btn-outline-dark');
-                        btn.style.borderStyle = 'solid';
-                        btn.disabled = false;
                     }
 
+                    // HANYA 1 background hitam -> yang dipilih
                     if (selectedSize === sz) {
                         btn.classList.add('active', 'bg-dark', 'text-white');
                     } else {
@@ -667,19 +813,27 @@
                     }
                 });
 
-                // 3. CEK KOMBINASI FINAL
+                // 3. KOMBINASI FINAL
                 let finalSku = null;
+                let priceToShow = null;
+
                 if (hasColors) {
                     if (selectedColor && selectedSize) {
-                        finalSku = skus.find(s => s.color === selectedColor && s.size === selectedSize);
+                        finalSku = skuMap[selectedColor + '|' + selectedSize];
+                        priceToShow = finalSku;
+                    } else if (selectedColor) {
+                        priceToShow = skus.find(s => s.color === selectedColor && s.available_stock > 0);
+                    } else if (selectedSize) {
+                        priceToShow = skus.find(s => s.size === selectedSize && s.available_stock > 0);
                     }
                 } else {
                     if (selectedSize) {
-                        finalSku = skus.find(s => s.size === selectedSize);
+                        finalSku = skuMap['NO_COLOR|' + selectedSize];
+                        priceToShow = finalSku;
                     }
                 }
 
-                // 4. UPDATE UI & HARGA
+                // 4. UPDATE UI
                 if (finalSku) {
                     skuInput.value = finalSku.id;
                     updatePriceDisplay(finalSku.base_price, finalSku.discount_price);
@@ -689,9 +843,7 @@
                     currentMaxStock = finalSku.available_stock;
 
                     if(btnCart && btnBuy) {
-                        btnCart.disabled = false;
                         btnCart.innerText = 'TAMBAH KE KERANJANG';
-                        btnBuy.disabled = false;
                         btnBuy.innerText = 'BELI SEKARANG';
                     }
                 } else {
@@ -700,42 +852,44 @@
                     currentMaxStock = 0;
 
                     if(btnCart && btnBuy) {
-                        btnCart.disabled = true;
                         btnCart.innerText = 'PILIH VARIAN';
-                        btnBuy.disabled = true;
                         btnBuy.innerText = 'PILIH VARIAN';
                     }
 
-                    updatePriceDisplay(defaultBasePrice, defaultDiscountPrice);
+                    if (priceToShow) {
+                        updatePriceDisplay(priceToShow.base_price, priceToShow.discount_price);
+                    } else {
+                        updatePriceDisplay(defaultBasePrice, defaultDiscountPrice);
+                    }
                 }
                 
                 document.getElementById('qty-input').value = 1;
                 document.getElementById('qty-warning').style.setProperty('display', 'none', 'important');
             }
 
-            // --- EVENT LISTENER TOMBOL ---
+            // EVENT LISTENER
             colorBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const c = this.dataset.color;
-                    selectedColor = (selectedColor === c) ? null : c; 
+                    if (this.classList.contains('disabled')) return;
+                    const clickedColor = this.dataset.color;
+                    selectedColor = (selectedColor === clickedColor) ? null : clickedColor;
                     updateVariantMatrix();
                 });
             });
 
             sizeBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const sz = this.dataset.size;
-                    selectedSize = (selectedSize === sz) ? null : sz; 
+                    if (this.classList.contains('disabled')) return;
+                    const clickedSize = this.dataset.size;
+                    selectedSize = (selectedSize === clickedSize) ? null : clickedSize;
                     updateVariantMatrix();
                 });
             });
 
-            // Jalankan validasi pertama kali (Otomatis memilih SKU dari PHP)
+            // Initialize
             updateVariantMatrix();
 
-            // ==========================================
-            // KONTROL KUANTITAS (+ / -)
-            // ==========================================
+            // KUANTITAS
             document.getElementById('btn-qty-plus').addEventListener('click', function() {
                 if (!skuInput.value) return; 
                 let currentQty = parseInt(document.getElementById('qty-input').value);
@@ -757,9 +911,7 @@
                 }
             });
 
-            // ==========================================
-            // LOGIKA GALERI & INTERACTIVE ZOOM
-            // ==========================================
+            // GALERI & ZOOM
             const mainImg = document.getElementById('main-product-img');
             const imgWrapper = document.getElementById('main-img-wrapper');
             const thumbs = document.querySelectorAll('.thumb-item');
@@ -846,31 +998,230 @@
             });
 
             // ==========================================
-            // 🌟 LOGIKA ADD TO CART (RELOAD CEPAT NORMAL)
+            // 🌟 ADD TO CART + WARNING PISAH (WARNA & UKURAN)
             // ==========================================
+            const colorWarning = document.getElementById('color-warning');
+            const sizeWarning = document.getElementById('size-warning');
+            
             const cartForm = document.getElementById('add-to-cart-form');
             
             if (cartForm) {
                 cartForm.addEventListener('submit', function(e) {
-                    if (!skuInput.value) {
-                        e.preventDefault(); // Hentikan reload jika belum memilih varian lengkap
-                        
-                        const sizeContainer = document.getElementById('size-button-container');
-                        let warning = document.getElementById('dynamic-size-warning');
-                        
-                        if (!warning) {
-                            warning = document.createElement('span');
-                            warning.id = 'dynamic-size-warning';
-                            warning.className = 'text-danger fw-bold d-block mt-1';
-                            warning.style.fontSize = '11px';
-                            warning.innerText = 'Silakan pilih varian warna & ukuran terlebih dahulu';
-                            sizeContainer.insertAdjacentElement('afterend', warning);
+                    let hasError = false;
+
+                    // 1. CEK WARNA (HANYA JIKA PRODUK PUNYA WARNA)
+                    if (hasColors && !selectedColor) {
+                        hasError = true;
+                        if (colorWarning) {
+                            colorWarning.innerText = 'Silakan pilih warna terlebih dahulu';
+                            colorWarning.style.display = 'block';
+                            colorWarning.style.animation = 'none';
+                            void colorWarning.offsetWidth;
+                            colorWarning.style.animation = 'shake 0.5s ease-in-out';
+                            setTimeout(() => colorWarning.style.animation = '', 500);
                         }
-                        
-                        sizeContainer.style.animation = 'shake 0.5s';
-                        setTimeout(() => sizeContainer.style.animation = '', 500);
+                    } else if (colorWarning) {
+                        colorWarning.style.display = 'none';
                     }
-                    // Jika SKU sudah terisi, biarkan form berjalan normal (reload otomatis ke cart.add)
+
+                    // 2. CEK UKURAN
+                    if (!selectedSize) {
+                        hasError = true;
+                        if (sizeWarning) {
+                            sizeWarning.innerText = 'Silakan pilih ukuran terlebih dahulu';
+                            sizeWarning.style.display = 'block';
+                            sizeWarning.style.animation = 'none';
+                            void sizeWarning.offsetWidth;
+                            sizeWarning.style.animation = 'shake 0.5s ease-in-out';
+                            setTimeout(() => sizeWarning.style.animation = '', 500);
+                        }
+                    } else if (sizeWarning) {
+                        sizeWarning.style.display = 'none';
+                    }
+
+                    // 3. CEK STOK HABIS (JIKA VARIAN SUDAH DIPILIH TAPI STOK 0)
+                    if (skuInput.value && currentMaxStock === 0) {
+                        hasError = true;
+                        if (sizeWarning) {
+                            sizeWarning.innerText = 'Maaf varian yang dipilih sedang kehabisan stok';
+                            sizeWarning.style.display = 'block';
+                            sizeWarning.style.animation = 'none';
+                            void sizeWarning.offsetWidth;
+                            sizeWarning.style.animation = 'shake 0.5s ease-in-out';
+                            setTimeout(() => sizeWarning.style.animation = '', 500);
+                        }
+                    }
+
+                    if (hasError) {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            // ==========================================
+            // 🌟 WISHLIST + CEK LOGIN
+            // ==========================================
+            const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
+            const wishlistDetailBtn = document.querySelector('.toggle-wishlist-detail');
+            if (wishlistDetailBtn) {
+                wishlistDetailBtn.addEventListener('click', function() {
+                    // CEK LOGIN DULU
+                    if (!isLoggedIn) {
+                        // Redirect ke halaman login, setelah login balik lagi ke halaman ini
+                        window.location.href = "{{ route('login') }}?redirect=" + encodeURIComponent(window.location.href);
+                        return;
+                    }
+
+                    const productId = this.getAttribute('data-product-id');
+                    const icon = this.querySelector('i');
+                    const text = document.getElementById('wishlist-text-detail');
+
+                    fetch("{{ route('wishlist.toggle') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ product_id: productId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'added') {
+                            icon.classList.remove('bi-heart');
+                            icon.classList.add('bi-heart-fill', 'text-danger');
+                            text.innerText = 'Tersimpan';
+                            this.style.animation = 'wishlistPop 0.3s ease';
+                            setTimeout(() => this.style.animation = '', 300);
+                        } else {
+                            icon.classList.remove('bi-heart-fill', 'text-danger');
+                            icon.classList.add('bi-heart');
+                            text.innerText = 'Simpan';
+                        }
+                        let badge = document.getElementById('wishlist-badge');
+                        if (badge) {
+                            if (data.total > 0) {
+                                badge.innerText = data.total > 99 ? '99+' : data.total;
+                                badge.classList.remove('d-none');
+                            } else {
+                                badge.classList.add('d-none');
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            }
+
+            // ==========================================
+            // 🌟 FILTER ULASAN
+            // ==========================================
+            const filterBtns = document.querySelectorAll('.review-filter-btn');
+            const reviewItems = document.querySelectorAll('.review-item');
+            const reviewEmptyState = document.getElementById('review-empty-state');
+
+            if (filterBtns.length > 0) {
+                filterBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        filterBtns.forEach(b => {
+                            b.classList.remove('btn-dark');
+                            b.classList.add('btn-outline-dark');
+                        });
+                        this.classList.remove('btn-outline-dark');
+                        this.classList.add('btn-dark');
+
+                        const rating = this.getAttribute('data-rating');
+                        let visibleCount = 0;
+
+                        reviewItems.forEach(item => {
+                            if (rating === 'all' || item.getAttribute('data-rating') === rating) {
+                                item.style.display = '';
+                                visibleCount++;
+                            } else {
+                                item.style.display = 'none';
+                            }
+                        });
+
+                        if (reviewEmptyState) {
+                            if (visibleCount === 0) {
+                                reviewEmptyState.style.display = 'block';
+                                const filterText = rating === 'all' ? '' : ' dengan rating ' + rating + ' bintang';
+                                reviewEmptyState.querySelector('h6').innerText = 'Tidak Ada Ulasan' + filterText;
+                                reviewEmptyState.querySelector('p').innerText = 'Belum ada ulasan' + filterText + ' untuk produk ini.';
+                            } else {
+                                reviewEmptyState.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            }
+
+            // ==========================================
+            // 🌟 LIGHTBOX FOTO ULASAN
+            // ==========================================
+            const reviewImgThumbs = document.querySelectorAll('.review-img-thumb');
+            const reviewModalImg = document.getElementById('review-modal-img');
+
+            reviewImgThumbs.forEach(thumb => {
+                thumb.addEventListener('click', function() {
+                    const imgSrc = this.getAttribute('data-img-src');
+                    reviewModalImg.src = imgSrc;
+                });
+            });
+
+            // ==========================================
+            // 🌟 SHARE
+            // ==========================================
+            const shareBtn = document.getElementById('btn-share-product');
+            if (shareBtn) {
+                shareBtn.addEventListener('click', function() {
+                    const productUrl = window.location.href;
+                    const productName = "{{ $product->name }}";
+
+                    if (navigator.share) {
+                        navigator.share({
+                            title: productName,
+                            text: 'Cek produk ' + productName + ' di BigSport!',
+                            url: productUrl
+                        }).catch(err => console.log('Share cancelled:', err));
+                    } else {
+                        const shareOptions = [
+                            { name: 'WhatsApp', url: 'https://wa.me/?text=' + encodeURIComponent('Cek produk ' + productName + ' di BigSport! ' + productUrl) },
+                            { name: 'Twitter / X', url: 'https://twitter.com/intent/tweet?text=' + encodeURIComponent('Cek produk ' + productName + ' di BigSport! ') + '&url=' + encodeURIComponent(productUrl) },
+                            { name: 'Salin Tautan', url: 'copy' }
+                        ];
+
+                        let shareDropdown = document.getElementById('share-dropdown');
+                        if (!shareDropdown) {
+                            shareDropdown = document.createElement('div');
+                            shareDropdown.id = 'share-dropdown';
+                            shareDropdown.className = 'position-absolute bg-white border border-dark shadow-lg p-2';
+                            shareDropdown.style.cssText = 'z-index: 1000; bottom: 100%; left: 0; min-width: 180px; margin-bottom: 5px;';
+                            this.style.position = 'relative';
+                            this.appendChild(shareDropdown);
+                        }
+
+                        shareDropdown.innerHTML = shareOptions.map(opt => {
+                            if (opt.url === 'copy') {
+                                return '<button type="button" class="btn btn-sm btn-outline-dark w-100 rounded-0 text-start mb-1 share-option" data-action="copy" style="font-size: 12px;"><i class="bi bi-link-45deg me-2"></i>Salin Tautan</button>';
+                            }
+                            return '<a href="' + opt.url + '" target="_blank" class="btn btn-sm btn-outline-dark w-100 rounded-0 text-start mb-1 share-option" style="font-size: 12px;"><i class="bi bi-' + (opt.name.includes('WhatsApp') ? 'whatsapp' : 'twitter') + ' me-2"></i>' + opt.name + '</a>';
+                        }).join('');
+
+                        shareDropdown.style.display = shareDropdown.style.display === 'none' ? 'block' : 'none';
+
+                        shareDropdown.querySelector('[data-action="copy"]')?.addEventListener('click', function() {
+                            navigator.clipboard.writeText(productUrl).then(() => {
+                                this.innerHTML = '<i class="bi bi-check-lg me-2 text-success"></i>Tautan tersalin!';
+                                setTimeout(() => shareDropdown.style.display = 'none', 1500);
+                            });
+                        });
+
+                        document.addEventListener('click', function closeDropdown(e) {
+                            if (!shareBtn.contains(e.target) && !shareDropdown.contains(e.target)) {
+                                shareDropdown.style.display = 'none';
+                                document.removeEventListener('click', closeDropdown);
+                            }
+                        });
+                    }
                 });
             }
 

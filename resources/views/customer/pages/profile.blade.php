@@ -44,14 +44,10 @@
                             </div>
                             <div>
                                 <h6 class="fw-bold mb-3 text-dark">Detail Login</h6>
-                                
-                                {{-- Seksi Email --}}
                                 <div class="mb-4">
                                     <div class="profile-info-text mb-2">{{ $user->email }}</div>
                                     <a href="{{ route('email_edit') }}" class="btn btn-dark btn-sm px-4 py-2">Edit Email</a>
                                 </div>
-
-                                {{-- Seksi Password --}}
                                 <div class="mb-2">
                                     <div class="profile-info-text mb-2">*************</div>
                                     <a href="{{ route('password_edit') }}" class="btn btn-dark btn-sm px-4 py-2">Edit Password</a>
@@ -64,7 +60,6 @@
                             <div class="mb-5">
                                 <h3 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px;">Informasi Alamat</h3>
                             </div>
-
                             <div id="address-list">
                                 @forelse($addresses as $addr)
                                     <div class="address-card border p-4 mb-4 position-relative {{ $addr->is_default ? 'border-dark' : 'border-secondary-subtle' }}" 
@@ -83,7 +78,6 @@
                                         </div>
 
                                         <div class="d-flex gap-3 align-items-center">
-                                            {{-- Link di halaman profile.blade.php --}}
                                             <a href="{{ route('address.edit', $addr->id) }}" class="text-dark fw-bold text-decoration-none" style="font-size: 12px; letter-spacing: 0.5px;">
                                                 <i class="bi bi-pencil-square me-1"></i> EDIT
                                             </a>
@@ -103,7 +97,6 @@
                                     </div>
                                 @endforelse
                             </div>
-
                             <div class="mt-5">
                                 <a href="{{ route('address_form') }}" class="btn btn-dark w-100 rounded-0 py-3 fw-bold text-uppercase" style="letter-spacing: 1px; font-size: 14px;">
                                     Tambah Alamat Baru
@@ -111,19 +104,16 @@
                             </div>
                         </div>
 
-                        {{-- ========================================== --}}
-                        {{-- TAB: PESANAN SAYA (FULL SOURCE CODE FIXED) --}}
-                        {{-- ========================================== --}}
+                        {{-- TAB: PESANAN SAYA --}}
                         <div class="tab-pane fade" id="content-pesanan" role="tabpanel">
                             <div class="mb-4">
                                 <h3 class="fw-bold text-uppercase m-0" style="font-size: 24px; letter-spacing: 1px;">Pesanan Saya</h3>
                             </div>
 
-                            {{-- TAMBAHAN: TAB DIKIRIM --}}
                             <ul class="nav border-bottom border-secondary-subtle mb-4 gap-3 gap-md-4 d-flex flex-nowrap overflow-x-auto thumbnail-scroll" id="orderTabs" role="tablist">
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 active text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#semua" type="button">Semua</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#belum-bayar" type="button">Belum Bayar</button></li>
-                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#diproses" type="button">Diproses</button></li>
+                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dikemas" type="button">Dikemas</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dikirim" type="button">Dikirim</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#selesai" type="button">Selesai</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dibatalkan" type="button">Dibatalkan</button></li>
@@ -134,36 +124,35 @@
 
                                 function getCustomerStatus($order) {
                                     if ($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired', 'refunded'])) {
-                                        return ['label' => 'Dibatalkan', 'class' => 'bg-secondary text-white'];
+                                        return ['label' => 'Dibatalkan', 'class' => 'text-dark'];
                                     }
                                     if (in_array($order->payment_status, ['unpaid', 'pending'])) {
-                                        return ['label' => 'Belum Dibayar', 'class' => 'bg-danger text-white'];
+                                        return ['label' => 'Belum Dibayar', 'class' => 'text-danger'];
                                     }
                                     switch ($order->status) {
-                                        case 'pending': return ['label' => 'Menunggu Konfirmasi', 'class' => 'bg-warning text-dark'];
-                                        case 'confirmed': return ['label' => 'Sedang Dikemas', 'class' => 'bg-info text-dark'];
-                                        case 'processing': return ['label' => 'Sedang Dikirim', 'class' => 'bg-primary text-white'];
-                                        case 'completed': return ['label' => 'Selesai', 'class' => 'bg-success text-white'];
-                                        default: return ['label' => 'Status Tidak Diketahui', 'class' => 'bg-light text-dark border'];
+                                        case 'pending': return ['label' => 'Menunggu Konfirmasi', 'class' => 'text-dark'];
+                                        case 'confirmed': return ['label' => 'Sedang Dikemas', 'class' => 'text-dark'];
+                                        case 'processing': return ['label' => 'Sedang Dikirim', 'class' => 'text-dark'];
+                                        case 'completed': return ['label' => 'Selesai', 'class' => 'text-dark'];
+                                        default: return ['label' => 'Status Tidak Diketahui', 'class' => 'text-dark'];
                                     }
                                 }
 
-                                // LOGIKA PEMISAHAN TAB DIPROSES DAN DIKIRIM
                                 $tabData = [
-                                    'semua' => ['data' => $orderList, 'empty' => 'Belum ada pesanan.'],
+                                    'semua' => ['data' => $orderList, 'empty' => 'Belum ada pesanan'],
                                     'belum-bayar' => ['data' => $orderList->filter(function($o) {
                                         return in_array($o->payment_status, ['unpaid', 'pending']) && $o->status != 'cancelled';
-                                    }), 'empty' => 'Tidak ada pesanan belum dibayar.'],
-                                    'diproses' => ['data' => $orderList->filter(function($o) {
+                                    }), 'empty' => 'Tidak ada pesanan yang belum dibayar'],
+                                    'dikemas' => ['data' => $orderList->filter(function($o) {
                                         return $o->payment_status == 'paid' && in_array($o->status, ['pending', 'confirmed']);
-                                    }), 'empty' => 'Tidak ada pesanan yang sedang diproses / dikemas.'],
+                                    }), 'empty' => 'Tidak ada pesanan yang sedang dikemas'],
                                     'dikirim' => ['data' => $orderList->filter(function($o) {
                                         return $o->payment_status == 'paid' && $o->status == 'processing';
-                                    }), 'empty' => 'Tidak ada pesanan yang sedang dalam pengiriman.'],
-                                    'selesai' => ['data' => $orderList->where('status', 'completed'), 'empty' => 'Belum ada pesanan selesai.'],
+                                    }), 'empty' => 'Tidak ada pesanan yang sedang dalam pengiriman'],
+                                    'selesai' => ['data' => $orderList->where('status', 'completed'), 'empty' => 'Belum ada pesanan yang selesai'],
                                     'dibatalkan' => ['data' => $orderList->filter(function($o) {
                                         return $o->status == 'cancelled' || in_array($o->payment_status, ['failed', 'expired']);
-                                    }), 'empty' => 'Tidak ada pesanan dibatalkan.'],
+                                    }), 'empty' => 'Tidak ada pesanan yang dibatalkan'],
                                 ];
                             @endphp
 
@@ -174,15 +163,10 @@
                                             @php
                                                 $statusData = getCustomerStatus($order);
                                                 $isPickup = $order->shippingDetail && $order->shippingDetail->courier_company === 'pickup';
-                                                
-                                                // 🌟 LOGIKA BATAS WAKTU BATAL (Bisa dibatalin jika blm lewat 1 jam & blm dikirim)
-                                                $cancelDeadline = \Carbon\Carbon::parse($order->created_at)->addHours(1);
-                                                $canCancel = now()->lessThan($cancelDeadline);
                                             @endphp
 
                                             <div class="card rounded-0 mb-4 border-secondary-subtle shadow-sm">
                                                 
-                                                {{-- HEADER CARD: NAMA TOKO & STATUS --}}
                                                 <div class="card-header bg-light border-bottom border-secondary-subtle py-2 px-3 d-flex justify-content-between align-items-center">
                                                     <div class="d-flex align-items-center gap-2">
                                                         <i class="bi bi-shop fs-5"></i>
@@ -193,17 +177,15 @@
                                                             <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
                                                         @endif
                                                     </div>
-                                                    <span class="badge {{ $statusData['class'] }} rounded-0 px-3 py-2 text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">{{ $statusData['label'] }}</span>
+                                                    <span class="fw-bold text-uppercase {{ $statusData['class'] }}" style="font-size: 12px; letter-spacing: 0.5px;">{{ $statusData['label'] }}</span>
                                                 </div>
 
-                                                {{-- BODY CARD: DAFTAR PRODUK --}}
                                                 <div class="card-body p-3">
                                                     @php
                                                         $firstItem = $order->items->first();
-                                                        $otherItems = $order->items->skip(1); // Ambil sisa produk selain yang pertama
+                                                        $otherItems = $order->items->skip(1);
                                                         $otherItemsCount = $otherItems->count();
                                                         
-                                                        // Bikin fungsi kecil biar gampang manggil gambar
                                                         $getImage = function($item) {
                                                             if ($item && $item->sku && $item->sku->product && $item->sku->product->images->isNotEmpty()) {
                                                                 $primaryImg = $item->sku->product->images->where('is_primary', true)->first() ?? $item->sku->product->images->first();
@@ -214,7 +196,6 @@
                                                         $firstImagePath = $getImage($firstItem);
                                                     @endphp
                                                     
-                                                    {{-- TAMPILKAN PRODUK PERTAMA --}}
                                                     @if($firstItem)
                                                     <div class="d-flex align-items-start">
                                                         <div class="ratio ratio-1x1 border border-secondary-subtle flex-shrink-0 bg-light me-3" style="width: 80px;">
@@ -235,7 +216,6 @@
                                                     </div>
                                                     @endif
 
-                                                    {{-- JIKA ADA PRODUK LAINNYA, MASUKKAN KE DALAM COLLAPSE --}}
                                                     @if($otherItemsCount > 0)
                                                         <div class="collapse" id="collapseOrder{{ $order->id }}">
                                                             @foreach($otherItems as $item)
@@ -260,7 +240,6 @@
                                                             @endforeach
                                                         </div>
 
-                                                        {{-- TOMBOL TOGGLE --}}
                                                         <div class="mt-3 pt-2 border-top border-light text-secondary text-center" 
                                                              style="font-size: 12px; font-weight: 600; cursor: pointer;" 
                                                              data-bs-toggle="collapse" 
@@ -273,50 +252,58 @@
                                                     @endif
                                                 </div>
 
-                                                {{-- FOOTER CARD: TOTAL HARGA & TOMBOL AKSI --}}
                                                 <div class="card-footer bg-white border-top border-secondary-subtle p-3">
                                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                                                         
                                                         <div class="text-start">
-                                                            <span class="text-secondary" style="font-size: 12px;">No. Pesanan: <strong class="text-dark">#{{ $order->invoice_number }}</strong></span><br>
-                                                            <span class="text-secondary" style="font-size: 13px;">Total Belanja:</span>
-                                                            <span class="fw-bold text-danger ms-2 fs-5">Rp {{ number_format($order->grand_total, 0, ',', '.') }}</span>
+                                                            <div class="text-secondary" style="font-size: 12px;">No. Pesanan: <strong class="text-dark">#{{ $order->invoice_number }}</strong></div>
+                                                            <div class="text-secondary" style="font-size: 12px; margin-top: 2px;">Total Belanja: <strong class="text-dark">Rp {{ number_format($order->grand_total, 0, ',', '.') }}</strong></div>
                                                         </div>
                                                         
                                                         <div class="d-flex flex-wrap justify-content-md-end gap-2">
-                                                            
-                                                            {{-- Tombol Batal (Hanya untuk orderan pending/belum dikirim dengan limit 1 Jam) --}}
-                                                            @if(in_array($order->status, ['pending', 'confirmed']) && $order->status != 'cancelled')
-                                                                @if($canCancel)
-                                                                    <button type="button" class="btn btn-outline-danger fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Batalkan Pesanan</button>
+
+                                                            {{-- 🌟 TOMBOL YANG TERSISA HANYA INI --}}
+                                                            <a href="{{ route('order.detail', $order->id) }}" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Detail Pesanan</a>
+
+                                                            @if(in_array($order->payment_status, ['unpaid', 'pending']) && $order->status != 'cancelled')
+                                                                <button type="button" class="btn btn-dark fw-bold text-uppercase btn-lanjut-bayar rounded-0" style="font-size: 11px; padding: 8px 15px;" data-token="{{ $order->snap_token }}">Bayar Sekarang</button>
+                                                            @endif
+
+                                                            @if($order->status == 'processing' && !$isPickup)
+                                                                {{-- Tambahkan ID dinamis dan onclick yang membawa ID pesanan --}}
+                                                                <button type="button" onclick="submitOrderReceived({{ $order->id }})" id="btn-complete-{{ $order->id }}" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Pesanan Diterima</button>
+                                                            @endif
+
+                                                            @php
+                                                                // Ambil semua ID produk SKU dari pesanan ini
+                                                                $skuIds = $order->items->pluck('product_sku_id')->toArray();
+                                                                
+                                                                // Cek apakah user sudah mengulas produk di pesanan ini (tanpa pakai order_id)
+                                                                try {
+                                                                    $hasReviewed = \Illuminate\Support\Facades\DB::table('reviews')
+                                                                                    ->where('user_id', auth()->id())
+                                                                                    ->whereIn('product_sku_id', $skuIds)
+                                                                                    ->exists();
+                                                                } catch (\Exception $e) {
+                                                                    $hasReviewed = false; // Pencegah error 500
+                                                                }
+                                                            @endphp
+
+                                                            @if($order->status == 'completed')
+                                                                @if(!$hasReviewed)
+                                                                    {{-- Jika BELUM diulas, munculkan tombol Beri Ulasan --}}
+                                                                    <a href="{{ route('order.detail', $order->id) }}" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Beri Ulasan</a>
                                                                 @else
-                                                                    <button type="button" class="btn btn-outline-secondary fw-bold text-uppercase rounded-0 disabled" style="font-size: 11px; padding: 8px 15px;" title="Batas waktu pembatalan telah habis">Batal (Waktu Habis)</button>
+                                                                    {{-- Jika SUDAH diulas, tombol Beri Ulasan hilang, diganti dengan Beli Lagi --}}
+                                                                    <a href="{{ route('order.buy-again', $order->id) }}" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Beli Lagi</a>
                                                                 @endif
                                                             @endif
 
-                                                            <a href="{{ route('order.detail', $order->id) }}" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Detail Pesanan</a>
-
-                                                            {{-- Tombol Bayar --}}
-                                                            @if(in_array($order->payment_status, ['unpaid', 'pending']) && $order->status != 'cancelled')
-                                                                <button type="button" class="btn btn-danger fw-bold text-uppercase btn-lanjut-bayar rounded-0" style="font-size: 11px; padding: 8px 15px;" data-token="{{ $order->snap_token }}">Bayar Sekarang</button>
+                                                            {{-- Tombol Beli Lagi juga biasanya selalu muncul untuk pesanan yang Dibatalkan/Gagal --}}
+                                                            @if($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired']))
+                                                                <a href="{{ route('order.buy-again', $order->id) }}" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Beli Lagi</a>
                                                             @endif
 
-                                                            {{-- Tombol Lacak & Terima (Hanya kalau status processing/dikirim) --}}
-                                                            @if($order->status == 'processing' && !$isPickup)
-                                                                <button type="button" onclick="loadTrackingData({{ $order->id }})" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Lacak Pesanan</button>
-                                                                <button type="button" class="btn btn-success fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Pesanan Diterima</button>
-                                                            @endif
-
-                                                            {{-- Tombol Ambil di Toko --}}
-                                                            @if($order->status == 'processing' && $isPickup)
-                                                                <button type="button" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;"><i class="bi bi-qr-code me-1"></i> QR Code</button>
-                                                            @endif
-
-                                                            {{-- Tombol Selesai --}}
-                                                            @if($order->status == 'completed')
-                                                                <button type="button" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Beri Ulasan</button>
-                                                                <a href="{{ route('product.index') }}" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Beli Lagi</a>
-                                                            @endif
                                                         </div>
 
                                                     </div>
@@ -337,7 +324,6 @@
                                 @endforeach
                             </div>
                         </div>
-                        {{-- END TAB PESANAN --}}
 
                         {{-- TAB: KONTAK KAMI --}}
                         <div class="tab-pane fade" id="content-kontak" role="tabpanel">
@@ -391,7 +377,6 @@
 
     @push('scripts')
     <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
     
@@ -402,16 +387,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Ambil parameter '?tab=' dari URL
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
 
-            // Cek apakah ada request tab tertentu
             if (tabParam) {
-                // Buat pemetaan (mapping) antara nilai parameter URL dengan ID tombol Tab di HTML
                 const tabMapping = {
                     'orders': 'tab-pesanan',
-                    'alamat': 'tab-alamat', // 🌟 Menambahkan mapping untuk tab alamat
+                    'alamat': 'tab-alamat',
                     'status': 'tab-status'
                 };
 
@@ -422,11 +404,7 @@
                     if (tabTrigger) {
                         const tab = new bootstrap.Tab(tabTrigger);
                         tab.show();
-                        
-                        // Gulir layar ke atas biar nggak nyangkut di tengah
                         window.scrollTo({ top: 0, behavior: 'smooth' });
-                        
-                        // Opsional: Bersihkan URL setelah tab terbuka biar rapi (tanpa reload)
                         window.history.replaceState({}, document.title, window.location.pathname);
                     }
                 }
@@ -457,7 +435,6 @@
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
             }).then(res => res.json()).then(data => {
                 if (data.success) {
-                    // 🌟 FIX: Jangan cuma reload, tapi paksa arahkan ke URL dengan ?tab=alamat
                     window.location.href = window.location.pathname + "?tab=alamat";
                 }
             });
@@ -482,106 +459,57 @@
 
         moment.locale('id');
 
-        // Fungsi untuk merubah teks Tampilkan / Sembunyikan Produk
-    function toggleOrderItems(element, count) {
-        const textSpan = element.querySelector('.toggle-text');
-        const icon = element.querySelector('.toggle-icon');
-        
-        // Timeout kecil biar sinkron sama animasi Collapse Bootstrap
-        setTimeout(() => {
-            const isExpanded = element.getAttribute('aria-expanded') === 'true';
-            if (isExpanded) {
-                textSpan.innerText = 'Sembunyikan produk';
-                icon.classList.remove('bi-chevron-down');
-                icon.classList.add('bi-chevron-up');
-            } else {
-                textSpan.innerText = `Tampilkan ${count} produk lainnya`;
-                icon.classList.remove('bi-chevron-up');
-                icon.classList.add('bi-chevron-down');
-            }
-        }, 50);
-    }
+        function toggleOrderItems(element, count) {
+            const textSpan = element.querySelector('.toggle-text');
+            const icon = element.querySelector('.toggle-icon');
+            
+            setTimeout(() => {
+                const isExpanded = element.getAttribute('aria-expanded') === 'true';
+                if (isExpanded) {
+                    textSpan.innerText = 'Sembunyikan produk';
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-up');
+                } else {
+                    textSpan.innerText = `Tampilkan ${count} produk lainnya`;
+                    icon.classList.remove('bi-chevron-up');
+                    icon.classList.add('bi-chevron-down');
+                }
+            }, 50);
+        }
 
-        function loadTrackingData(orderId) {
-            // Pindah ke tab Status Pesanan
-            const statusTab = new bootstrap.Tab(document.querySelector('#tab-status'));
-            statusTab.show();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        // ==========================================
+        // FUNGSI PESANAN DITERIMA (DARI HALAMAN PROFIL)
+        // ==========================================
+        function submitOrderReceived(orderId) {
+            if (confirm('Apakah Anda yakin paket telah diterima dengan aman dan ingin menyelesaikan pesanan ini?')) {
+                // Ambil tombol berdasarkan ID pesanan yang unik
+                const btn = document.getElementById('btn-complete-' + orderId);
+                if(btn) {
+                    btn.disabled = true;
+                    btn.innerText = 'MEMPROSES...';
+                }
 
-            // Reset UI
-            document.getElementById('tracking-header').style.display = 'none';
-            document.getElementById('tracking-timeline-container').style.display = 'none';
-            document.getElementById('tracking-error').style.display = 'none';
-            document.getElementById('tracking-loading').style.display = 'block';
-
-            // 🌟 FIX: Pastikan URL AJAX sesuai dengan Route web.php lu (api.order.tracking)
-            axios.get(`/profile/order/${orderId}/tracking`)
-                .then(response => {
-                    document.getElementById('tracking-loading').style.display = 'none';
-
-                    if (response.data.success) {
-                        const data = response.data.data;
-                        
-                        document.getElementById('track-courier-name').innerText = data.courier.company || 'Ekspedisi';
-                        document.getElementById('track-waybill-id').innerText = data.courier.waybill_id || 'Menunggu Resi';
-                        document.getElementById('track-current-status').innerText = data.status || 'Diproses';
-
-                        const historyContainer = document.getElementById('tracking-history-list');
-                        historyContainer.innerHTML = '';
-
-                        if (data.history && data.history.length > 0) {
-                            data.history.forEach((item, index) => {
-                                const isLatest = index === 0; 
-                                const timeFormatted = moment(item.updated_at).format('DD MMM YYYY, HH:mm') + ' WIB';
-
-                                const dotStyle = isLatest 
-                                    ? 'bg-dark rounded-circle flex-shrink-0 mt-1 border border-white' 
-                                    : 'bg-white rounded-circle flex-shrink-0 mt-1 border border-dark';
-                                
-                                const dotSize = isLatest 
-                                    ? 'width: 16px; height: 16px; border-width: 3px !important; box-shadow: 0 0 0 2px #000; left: -9px; position: absolute;'
-                                    : 'width: 14px; height: 14px; border-width: 2px !important; left: -8px; position: absolute;';
-                                    
-                                const textOpacity = isLatest ? '' : 'opacity-75';
-
-                                const htmlRow = `
-                                    <div class="position-relative mb-4 ps-4 pb-2" style="z-index: 2;">
-                                        <div class="${dotStyle}" style="${dotSize}"></div>
-                                        <div class="${textOpacity}">
-                                            <h6 class="fw-bold text-uppercase mb-1" style="font-size: 13px;">${item.status}</h6>
-                                            <p class="text-secondary mb-1" style="font-size: 13px; line-height: 1.5;">${item.note}</p>
-                                            <span class="${isLatest ? 'fw-bold text-dark' : 'text-secondary fw-bold'}" style="font-size: 11px; letter-spacing: 0.5px;">
-                                                <i class="bi bi-clock me-1"></i> ${timeFormatted}
-                                            </span>
-                                        </div>
-                                    </div>
-                                `;
-                                historyContainer.insertAdjacentHTML('beforeend', htmlRow);
-                            });
-                        } else {
-                            historyContainer.innerHTML = '<p class="text-secondary ms-4">Belum ada riwayat perjalanan paket.</p>';
-                        }
-
-                        document.getElementById('tracking-header').style.display = 'block';
-                        document.getElementById('tracking-timeline-container').style.display = 'block';
-
-                    } else {
-                        document.getElementById('tracking-error-text').innerText = response.data.message || "Resi belum bisa dilacak";
-                        document.getElementById('tracking-error').style.display = 'block';
-                    }
+                axios.post(`/profile/order/${orderId}/complete`, {
+                    _token: '{{ csrf_token() }}'
                 })
-                .catch(error => {
-                    document.getElementById('tracking-loading').style.display = 'none';
-                    let errorMsg = 'Gagal menghubungi server.';
-                    if (error.response) {
-                        errorMsg = `Server gagal memuat resi. (Error ${error.response.status})`;
-                        console.error("Tracking Error:", error.response.data);
+                .then(res => {
+                    if (res.data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(res.data.message); // Akan memunculkan isi dari Controller
+                        if(btn) {
+                            btn.disabled = false;
+                            btn.innerText = 'Pesanan Diterima';
+                        }
                     }
-                    document.getElementById('tracking-error-text').innerText = errorMsg;
-                    document.getElementById('tracking-error').style.display = 'block';
+                }).catch(() => {
+                    alert('Terjadi kesalahan koneksi server.');
+                    if(btn) {
+                        btn.disabled = false;
+                        btn.innerText = 'Pesanan Diterima';
+                    }
                 });
-
-                
+            }
         }
     </script>
     @endpush

@@ -8,9 +8,8 @@ export default defineConfig({
             input: [
                 "resources/css/app.css",
                 "resources/js/app.js",
-                // 👇 Tambahan asset JS untuk arsitektur baru
-                "resources/js/profile/address.js",
-                "resources/js/profile/order.js",
+                // Baris address.js dan order.js sudah dihapus karena script-nya
+                // sudah langsung kita tanam di dalam file Blade (HTML).
             ],
             refresh: true,
         }),

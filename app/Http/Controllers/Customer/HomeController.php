@@ -6,11 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // PENTING: Tambahkan ini untuk sub-query Terlaris
+use Illuminate\Support\Facades\Cache; // 🌟 JANGAN LUPA IMPORT INI DI PALING ATAS
 
 class HomeController extends Controller
 {
     public function index()
     {
+
+        $latestProducts = Cache::remember('home_latest_products', 3600, function () {
+            return Product::with(['images', 'skus'])
+                        ->latest()
+                        ->take(8)
+                        ->get();
+        });
+
         // 1. PRODUK DISKON (Diskon Terbesar, STOK > 0, dan Terbaru)
         // 🌟 FIX: Cari diskon terbesar via relasi SKU menggunakan Sub-query[cite: 2]
         $discountProducts = Product::select('products.*')

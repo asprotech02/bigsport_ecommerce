@@ -23,9 +23,23 @@
             </div>
             
             <div class="col-9 col-lg-3 pe-0 d-flex justify-content-end align-items-center gap-3 gap-lg-4">
-                <a href="{{ route('notification') }}" class="text-white text-decoration-none d-lg-inline-block position-relative">
+                {{-- Hitung Notifikasi Belum Dibaca --}}
+                @php
+                    $unreadNotifCount = 0;
+                    if (Auth::check()) {
+                        $unreadNotifCount = \App\Models\UserNotification::where('user_id', Auth::id())
+                                                ->where('is_read', 0)
+                                                ->count();
+                    }
+                @endphp
+
+                <a href="{{ route('notification') }}" id="navbar-bell-icon" class="text-white text-decoration-none d-lg-inline-block position-relative">
                     <i class="bi bi-bell fs-5"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">2</span>
+                    
+                    {{-- Badge Angka Notifikasi --}}
+                    <span id="notif-badge-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $unreadNotifCount == 0 ? 'd-none' : '' }}">
+                        {{ $unreadNotifCount > 99 ? '99+' : $unreadNotifCount }}
+                    </span>
                 </a>
                 
                 <a href="{{ route('profile') }}" class="text-white text-decoration-none d-lg-inline-block"><i class="bi bi-person fs-5"></i></a>

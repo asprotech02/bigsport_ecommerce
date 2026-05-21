@@ -28,33 +28,32 @@ class ProductController extends Controller
         // 2. SINKRONISASI: Gabungkan singular (Navbar) ke dalam array (Filter Offcanvas)
         $filterGen = (array) $request->query('gen', []);
         if ($gender && !in_array($gender, $filterGen)) {
-            $filterGen[] = $gender; // Masukkan gender dari URL ke dalam array filter
+            $filterGen[] = $gender; 
         }
 
         $filterCat = (array) $request->query('cat', []);
         if ($category && !in_array($category, $filterCat)) {
-            $filterCat[] = $category; // Masukkan category dari URL ke dalam array filter
+            $filterCat[] = $category; 
         }
 
-        // 3. Query Dasar
+        // 3. Query Dasar (Eloquent)
         $query = Product::select('products.*')
                     ->with(['brand', 'category', 'skus', 'images' => function($q) {
                         $q->where('is_primary', true);
                     }])
                     ->withAvg('reviews', 'rating')
                     ->withCount('reviews')
-                    ->withSum('skus', 'stock'); // <-- Hitung total stok
+                    ->withSum('skus', 'stock'); 
 
-        // 4. LOGIKA JUDUL BREADCRUMB (Cerdas membaca array filter)
+        // 4. LOGIKA JUDUL BREADCRUMB
         $title = 'SEMUA PRODUK';
         
         if ($type == 'sale') {
-            // 🌟 FIX: Cari produk yang SKU-nya ada diskon[cite: 2]
             $query->whereHas('skus', function($q) {
                 $q->whereNotNull('discount_price')->where('base_price', '>', 0);
             });
             $title = 'FLASH SALE 🔥';
-            $sort = 'diskon'; // Paksa urutan dari diskon terbesar
+            $sort = 'diskon'; 
 
         } elseif ($type == 'new') {
             $query->where('created_at', '>=', Carbon::now()->subMonths(6));
@@ -74,13 +73,11 @@ class ProductController extends Controller
             $sort = 'featured';
         }
 
-        // Jika hanya 1 gender yang difilter, jadikan judul
         $displayGender = $gender ?: (count($filterGen) == 1 ? $filterGen[0] : null);
         if ($displayGender) {
             $title = ($title == 'SEMUA PRODUK') ? 'KATEGORI ' . strtoupper($displayGender) : $title . ' ' . strtoupper($displayGender);
         }
 
-        // Jika hanya 1 kategori yang difilter, jadikan judul
         $displayCategory = $category ?: (count($filterCat) == 1 ? $filterCat[0] : null);
         if ($displayCategory) {
             $title .= ' - ' . strtoupper($displayCategory);
@@ -93,33 +90,31 @@ class ProductController extends Controller
             $title .= ' - ' . strtoupper($subcategory);
         }
 
-        // Ubah judul jika sedang mencari produk
         if ($search) {
             $title = 'HASIL PENCARIAN: "' . strtoupper($search) . '"';
         }
 
-        // 5. TERAPKAN FILTER
-        if ($search) {
-            // 🌟 FIX PENCARIAN PINTAR: Pecah keyword berdasarkan spasi
-            $searchTerms = explode(' ', $search);
+        // 🌟 5. TERAPKAN PENCARIAN PINTAR (TYPO-TOLERANCE SCOUT) 🌟
+        if (!empty($search)) {
+            // Ambil maksimal 1000 ID produk yang relevan dari mesin Meilisearch
+            $searchResultIds = Product::search($search)->take(1000)->keys()->toArray();
 
-            $query->where(function($q) use ($searchTerms) {
-                // Looping untuk setiap kata yang diketik user
-                foreach ($searchTerms as $term) {
-                    $q->where(function($subQ) use ($term) {
-                        $subQ->where('name', 'LIKE', '%' . $term . '%') 
-                             ->orWhere('description', 'LIKE', '%' . $term . '%') 
-                             ->orWhereHas('brand', function($b) use ($term) {
-                                 $b->where('name', 'LIKE', '%' . $term . '%');
-                             })
-                             ->orWhereHas('category', function($c) use ($term) {
-                                 $c->where('name', 'LIKE', '%' . $term . '%');
-                             });
-                    });
+            if (empty($searchResultIds)) {
+                // Jika Meilisearch tidak menemukan apa-apa, kosongkan hasil query DB dengan aman
+                $query->whereNull('products.id');
+            } else {
+                // Lempar ID dari Meilisearch ke dalam query Eloquent kita
+                $query->whereIn('products.id', $searchResultIds);
+                
+                // Jika user tidak memilih sorting khusus, urutkan berdasarkan tingkat kecocokan Meilisearch
+                if ($sort == 'rekomendasi') {
+                    $idsOrdered = implode(',', $searchResultIds);
+                    $query->orderByRaw("FIELD(products.id, $idsOrdered)");
                 }
-            });
+            }
         }
 
+        // 6. TERAPKAN SISA FILTER
         if (!empty($filterGen)) {
             $query->whereIn('gender', $filterGen);
         }
@@ -142,7 +137,6 @@ class ProductController extends Controller
             });
         }
 
-        // 🌟 FIX: Filter Harga Minimum dan Maksimum yang disesuaikan ke SKU[cite: 2]
         if ($minPrice || $maxPrice) {
             $query->whereHas('skus', function($q) use ($minPrice, $maxPrice) {
                 if ($minPrice) {
@@ -154,38 +148,38 @@ class ProductController extends Controller
             });
         }
 
-        // 6. SORTING (PENGURUTAN)
+        // 7. SORTING (PENGURUTAN)
         // Prioritaskan barang yang masih ada stoknya di atas
         $query->orderByRaw('CASE WHEN skus_sum_stock > 0 THEN 1 ELSE 0 END DESC');
         
-        if ($sort == 'terbaru') {
-            $query->latest();
-        } elseif ($sort == 'harga_tertinggi') {
-            // 🌟 FIX: Cari harga tertinggi dari relasi SKU menggunakan Sub-query
-            $query->addSelect(['max_price_sort' => DB::table('product_skus')
-                ->whereColumn('product_id', 'products.id')
-                ->selectRaw('MAX(COALESCE(discount_price, base_price))')
-            ])->orderBy('max_price_sort', 'DESC');
+        // Jangan timpa sorting Meilisearch jika user memilih 'rekomendasi' dan sedang mencari sesuatu
+        if (!($sort == 'rekomendasi' && !empty($search))) {
+            if ($sort == 'terbaru') {
+                $query->latest();
+            } elseif ($sort == 'harga_tertinggi') {
+                $query->addSelect(['max_price_sort' => DB::table('product_skus')
+                    ->whereColumn('product_id', 'products.id')
+                    ->selectRaw('MAX(COALESCE(discount_price, base_price))')
+                ])->orderBy('max_price_sort', 'DESC');
 
-        } elseif ($sort == 'harga_terendah') {
-            // 🌟 FIX: Cari harga terendah dari relasi SKU
-            $query->addSelect(['min_price_sort' => DB::table('product_skus')
-                ->whereColumn('product_id', 'products.id')
-                ->selectRaw('MIN(COALESCE(discount_price, base_price))')
-            ])->orderBy('min_price_sort', 'ASC');
+            } elseif ($sort == 'harga_terendah') {
+                $query->addSelect(['min_price_sort' => DB::table('product_skus')
+                    ->whereColumn('product_id', 'products.id')
+                    ->selectRaw('MIN(COALESCE(discount_price, base_price))')
+                ])->orderBy('min_price_sort', 'ASC');
 
-        } elseif ($sort == 'diskon') {
-            // 🌟 FIX: Hitung dan urutkan persentase diskon terbesar dari relasi SKU
-            $query->addSelect(['max_discount_pct' => DB::table('product_skus')
-                ->whereColumn('product_id', 'products.id')
-                ->whereNotNull('discount_price')
-                ->selectRaw('MAX(((base_price - discount_price) / base_price) * 100)')
-            ])->orderBy('max_discount_pct', 'DESC');
+            } elseif ($sort == 'diskon') {
+                $query->addSelect(['max_discount_pct' => DB::table('product_skus')
+                    ->whereColumn('product_id', 'products.id')
+                    ->whereNotNull('discount_price')
+                    ->selectRaw('MAX(((base_price - discount_price) / base_price) * 100)')
+                ])->orderBy('max_discount_pct', 'DESC');
 
-        } elseif ($sort == 'featured' || $type == 'featured') {
-            $query->orderBy('total_sold', 'DESC')->latest();
-        } else {
-            $query->latest();
+            } elseif ($sort == 'featured' || $type == 'featured') {
+                $query->orderBy('total_sold', 'DESC')->latest();
+            } else {
+                $query->latest();
+            }
         }
 
         $products = $query->paginate(32)->withQueryString();
@@ -202,7 +196,8 @@ class ProductController extends Controller
                 'subcategory', 
                 'images', 
                 'skus', 
-                'reviews.user' 
+                'reviews.user',
+                'reviews.images' 
             ])
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
@@ -212,19 +207,19 @@ class ProductController extends Controller
         // Ambil gambar utama
         $primaryImage = $product->images->where('is_primary', true)->first();
 
-        // Hitung total terjual[cite: 2] (Sudah aman karena order_items berelasi dengan product_skus)
+        // Hitung total terjual
         $totalSold = \Illuminate\Support\Facades\DB::table('order_items')
             ->join('product_skus', 'order_items.product_sku_id', '=', 'product_skus.id')
             ->where('product_skus.product_id', $product->id)
             ->sum('quantity');
 
-        // Ambil Produk Rekomendasi berdasarkan kategori yang sama (Kecuali produk ini sendiri)
+        // Ambil Produk Rekomendasi berdasarkan kategori yang sama
         $recommendedProducts = Product::with(['brand', 'category', 'skus', 'images' => function($q) {
                 $q->where('is_primary', true);
             }])
             ->withAvg('reviews', 'rating')
             ->where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id) // Jangan tampilkan produk yang sedang dilihat
+            ->where('id', '!=', $product->id) 
             ->inRandomOrder() 
             ->take(10) 
             ->get();
