@@ -160,52 +160,58 @@ class ProfileController extends Controller
 
 
     public function cancelOrderManual(Request $request, $id)
-    {
-        // Pastikan request adalah AJAX / JSON
-        if (!$request->wantsJson() && !$request->ajax()) {
-            return response()->json(['success' => false, 'message' => 'Invalid Request Protocol']);
-        }
+{
+    $order = Order::with('items.sku')
+        ->where('user_id', auth()->id())
+        ->where('id', $id)
+        ->first();
 
-        // Cari order milik user yang sedang login
-        $order = Order::with('items.sku')
-            ->where('user_id', auth()->id())
-            ->where('id', $id)
-            ->first();
+    if (!$order) {
+        return response()->json(['success' => false, 'message' => 'Pesanan tidak ditemukan.']);
+    }
 
-        if (!$order) {
-            return response()->json(['success' => false, 'message' => 'Pesanan tidak ditemukan.']);
-        }
+    if ($order->status == 'cancelled') {
+        return response()->json(['success' => false, 'message' => 'Pesanan sudah dibatalkan.']);
+    }
 
-        // Pastikan pesanan memang dalam posisi layak dibatalkan
-        if ($order->status == 'cancelled' || $order->payment_status == 'expired') {
-            return response()->json(['success' => false, 'message' => 'Pesanan sudah dibatalkan sebelumnya.']);
-        }
+    try {
+        DB::transaction(function () use ($order, $request) {
+            // 1. Update status pesanan
+            $isPaid = ($order->payment_status == 'paid');
+            $order->update([
+                'status' => 'cancelled',
+                'payment_status' => $isPaid ? 'refunded' : 'failed',
+                'cancel_reason' => $request->reason
+            ]);
 
-        try {
-            DB::transaction(function () use ($order, $request) {
-                // 1. Ubah status order menjadi cancelled DAN simpan alasannya
-                $order->update([
-                    'status' => 'cancelled',
-                    'payment_status' => 'failed',
-                    'cancel_reason' => $request->reason // 🌟 SIMPAN ALASAN PEMBATALAN DI SINI
-                ]);
-
-                // 2. Lepaskan kunci reserved_stock pada produk SKU
-                foreach ($order->items as $item) {
-                    $sku = $item->sku;
-                    if ($sku) {
-                        // Hanya kurangi reserved_stock, JANGAN tambah stock utama
-                        $sku->decrement('reserved_stock', $item->quantity);
+            // 2. LOGIKA STOK REAL LIFE (Sangat Aman)
+            foreach ($order->items as $item) {
+                $sku = $item->sku;
+                if ($sku) {
+                    if ($isPaid) {
+                        // KASUS: Pesanan sudah dibayar, stok utama sudah terpotong
+                        // Aksi: Kembalikan stok ke etalase (Increment Stok Utama)
+                        $sku->increment('stock', $item->quantity);
+                    } else {
+                        // KASUS: Pesanan belum dibayar, baru reserved
+                        // Aksi: Kurangi angka reserved_stock, tapi pastikan tidak pernah di bawah 0
+                        $currentReserved = $sku->reserved_stock;
+                        $amountToDecrement = min($item->quantity, $currentReserved);
+                        
+                        if ($amountToDecrement > 0) {
+                            $sku->decrement('reserved_stock', $amountToDecrement);
+                        }
                     }
                 }
-            });
+            }
+        });
 
-            return response()->json(['success' => true]);
-
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal memproses pembatalan di server.']);
-        }
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        Log::error("Error Pembatalan Stok: " . $e->getMessage());
+        return response()->json(['success' => false, 'message' => 'Gagal memproses pembatalan.']);
     }
+}
 
 
 /**
@@ -242,61 +248,77 @@ class ProfileController extends Controller
      * 2. Fitur Beli Lagi (Copy items kembali ke Keranjang)
      */
     public function buyAgain($id)
-    {
-        $order = Order::with('items')->where('user_id', auth()->id())->where('id', $id)->firstOrFail();
+{
+    // 1. Ambil data order lama dengan relasi item dan sku
+    $order = Order::with('items.sku.product')->where('user_id', auth()->id())->where('id', $id)->firstOrFail();
 
-        foreach ($order->items as $item) {
-            // Masukkan kembali produk ke tabel carts
-            \App\Models\Cart::updateOrCreate(
-                [
-                    'user_id'        => auth()->id(),
-                    'product_sku_id' => $item->product_sku_id,
-                ],
-                [
-                    'quantity' => DB::raw("quantity + {$item->quantity}")
-                ]
-            );
+    foreach ($order->items as $item) {
+        $sku = $item->sku;
+
+        // 2. Validasi: Apakah produk masih ada dan aktif?
+        if (!$sku || !$sku->product) {
+            continue; // Skip jika produk/sku sudah dihapus
         }
 
-        return redirect()->route('cart')->with('success', 'Produk berhasil dimasukkan kembali ke keranjang belanjamu!');
-    }
-
-    /**
-     * 3. Menyimpan ulasan produk dari pembeli
-     */
-   /**
-     * 3. Menyimpan ulasan produk dari pembeli
-     */
-    public function storeReview(Request $request, $id)
-    {
-        $request->validate([
-            'product_sku_id' => 'required',
-            'rating'         => 'required|integer|min:1|max:5',
-            'comment'        => 'required|string|max:1000',
-        ]);
-
-        // Cek agar user tidak spam ulasan untuk produk yang sama berkali-kali
-        $existingReview = DB::table('reviews')
-            ->where('user_id', auth()->id())
-            ->where('product_sku_id', $request->product_sku_id)
-            ->first();
-
-        if ($existingReview) {
-            return response()->json(['success' => false, 'message' => 'Anda sudah memberikan ulasan untuk produk ini.']);
+        // 3. Logika Stok: Jangan masukkan jumlah lama, tapi cek stok terbaru
+        // Pembeli maksimal beli sejumlah stok yang tersedia SEKARANG
+        $stockAvailable = $sku->stock - $sku->reserved_stock;
+        
+        if ($stockAvailable <= 0) {
+            // Opsional: Beri notifikasi bahwa produk ini stoknya habis
+            continue; 
         }
 
-        // Simpan ulasan ke tabel reviews (TANPA order_id)
-        DB::table('reviews')->insert([
-            'user_id'        => auth()->id(),
-            'product_sku_id' => $request->product_sku_id,
-            'rating'         => $request->rating,
-            'comment'        => $request->comment,
-            'created_at'     => now(),
-            'updated_at'     => now(),
-        ]);
-
-        return response()->json(['success' => true, 'message' => 'Terima kasih atas ulasan Anda! ⭐']);
+        // 4. Masukkan ke Keranjang dengan penanganan duplikat
+        \App\Models\Cart::updateOrCreate(
+            [
+                'user_id'        => auth()->id(),
+                'product_sku_id' => $item->product_sku_id,
+            ],
+            [
+                // Tambahkan jumlah, tapi tidak boleh melebihi stok yang ada
+                'quantity' => DB::raw("LEAST(quantity + {$item->quantity}, {$stockAvailable})")
+            ]
+        );
     }
+
+    return redirect()->route('cart')->with('success', 'Produk yang masih tersedia telah dimasukkan ke keranjang!');
+}
+
+   // Hapus parameter $id dari function signature
+public function storeReview(Request $request)
+{
+    $request->validate([
+        'order_item_id' => 'required|exists:order_items,id',
+        'rating'        => 'required|integer|min:1|max:5',
+        'comment'       => 'required|string|max:1000',
+    ]);
+
+    // Ambil order_item agar kita bisa tahu product_id nya
+    $orderItem = \App\Models\OrderItem::with('sku')->find($request->order_item_id);
+
+    // Cek duplikasi
+    $existing = DB::table('reviews')
+        ->where('user_id', auth()->id())
+        ->where('order_item', $request->order_item_id)
+        ->exists();
+
+    if ($existing) {
+        return response()->json(['success' => false, 'message' => 'Anda sudah mengulas produk ini.']);
+    }
+
+    DB::table('reviews')->insert([
+        'user_id'    => auth()->id(),
+        'product_id' => $orderItem->sku->product_id, // Ambil dari SKU
+        'order_item' => $request->order_item_id,
+        'rating'     => $request->rating,
+        'comment'    => $request->comment,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return response()->json(['success' => true, 'message' => 'Terima kasih atas ulasannya! ⭐']);
+}
 
 
     /**

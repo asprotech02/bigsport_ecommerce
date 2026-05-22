@@ -101,9 +101,6 @@ class MidtransController extends Controller
                             ]);
                     }
 
-                    // 🌟 BITESHIP: BUAT WAYBILL SETELAH PEMBAYARAN SUKSES
-                    $this->createBiteshipOrder($order, $orderItems);
-
                     Log::info("SUKSES: Order {$request->order_id} LUNAS. Stok berhasil diselesaikan.");
                 }
                 
@@ -154,100 +151,6 @@ class MidtransController extends Controller
         } else {
             Log::error('Signature Key Midtrans Tidak Valid untuk Order: ' . $request->order_id);
             return response()->json(['message' => 'Invalid signature'], 403);
-        }
-    }
-
-    /**
-     * 🌟 Buat order pengiriman di Biteship SETELAH pembayaran sukses
-     */
-    private function createBiteshipOrder(Order $order, $orderItems)
-    {
-        try {
-            $shippingDetail = ShippingDetail::where('order_id', $order->id)->first();
-
-            // Hanya proses jika bukan pickup
-            if (!$shippingDetail || $shippingDetail->courier_company === 'pickup') {
-                return;
-            }
-
-            // Ambil alamat user
-            $address = Address::find($order->address_id);
-            if (!$address) {
-                Log::warning("Biteship: Address tidak ditemukan untuk Order #{$order->invoice_number}");
-                return;
-            }
-
-            // Map order items ke format Biteship
-            $items = [];
-            foreach ($orderItems as $item) {
-                $items[] = [
-                    'name'        => $item->product_name,
-                    'description' => "Size: " . $item->product_size,
-                    'value'       => (int) $item->price_at_purchase,
-                    'weight'      => 500,
-                    'quantity'    => (int) $item->quantity,
-                ];
-            }
-
-            // Bersihkan nomor telepon
-            $cleanSenderPhone = '08123456789';
-            $cleanReceiverPhone = preg_replace('/[^0-9]/', '', $address->receiver_phone);
-            if (strlen($cleanReceiverPhone) < 10) {
-                $cleanReceiverPhone = '08' . str_pad($cleanReceiverPhone, 8, '0', STR_PAD_RIGHT);
-            }
-
-            // PERBAIKAN: Susun ulang alamat lengkap untuk dikirim ke kurir
-            $destinationParts = array_filter([
-                $address->full_address,
-                $address->village_name ?? null,   // tambah _name
-                $address->district_name ?? null,  // tambah _name
-                $address->city_name ?? null,      // tambah _name
-                $address->province_name ?? null,  // tambah _name
-                $address->postal_code ?? null
-            ]);
-            $completeDestinationAddress = implode(', ', $destinationParts);
-
-            // Payload ke Biteship
-            $biteshipPayload = [
-                'shipper_contact_name'  => 'Big Sport Tangerang',
-                'shipper_contact_phone' => $cleanSenderPhone,
-                'origin_contact_name'   => 'Big Sport Tangerang',
-                'origin_contact_phone'  => $cleanSenderPhone,
-                'origin_address'        => 'Jl. HOS Cokroaminoto No.52, Larangan, Tangerang',
-                'origin_postal_code'    => 15710,
-                'destination_contact_name'  => $address->receiver_name,
-                'destination_contact_phone' => $cleanReceiverPhone,
-                'destination_address'       => $completeDestinationAddress,
-                'destination_postal_code'   => (int) $address->postal_code,
-                'courier_company' => $shippingDetail->courier_company,
-                'courier_type'    => $shippingDetail->courier_type,
-                'items'           => $items,
-                'delivery_type'   => 'now',
-                'order_note'      => 'Order ' . $order->invoice_number
-            ];
-
-            $biteshipResponse = Http::timeout(10)->withHeaders([
-                'authorization' => env('BITESHIP_API_KEY'),
-                'content-type'  => 'application/json'
-            ])->post('https://api.biteship.com/v1/orders', $biteshipPayload);
-
-            if ($biteshipResponse->successful()) {
-                $biteshipData = $biteshipResponse->json();
-                
-                $shippingDetail->update([
-                    'biteship_order_id' => $biteshipData['id'],
-                    'tracking_number'   => $biteshipData['courier']['waybill_id'] ?? null
-                ]);
-
-                Log::info("BITESHIP SUKSES: Order #{$order->invoice_number} -> Waybill " . ($biteshipData['courier']['waybill_id'] ?? 'Belum tersedia'));
-            } else {
-                $errorBiteship = $biteshipResponse->json()['error'] ?? 'Gagal membuat pesanan kurir.';
-                Log::error("BITESHIP GAGAL untuk Order #{$order->invoice_number}: " . json_encode($errorBiteship));
-            }
-
-        } catch (\Exception $e) {
-            // Jangan throw error, cukup log. Webhook Midtrans tetap harus return 200
-            Log::error("BITESHIP EXCEPTION untuk Order #{$order->invoice_number}: " . $e->getMessage());
         }
     }
 }

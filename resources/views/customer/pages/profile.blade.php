@@ -289,15 +289,20 @@
                                                                 }
                                                             @endphp
 
-                                                            @if($order->status == 'completed')
-                                                                @if(!$hasReviewed)
-                                                                    {{-- Jika BELUM diulas, munculkan tombol Beri Ulasan --}}
-                                                                    <a href="{{ route('order.detail', $order->id) }}" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Beri Ulasan</a>
-                                                                @else
-                                                                    {{-- Jika SUDAH diulas, tombol Beri Ulasan hilang, diganti dengan Beli Lagi --}}
-                                                                    <a href="{{ route('order.buy-again', $order->id) }}" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Beli Lagi</a>
-                                                                @endif
-                                                            @endif
+                                                           @if($order->status == 'completed')
+    @if(!$hasReviewed)
+        {{-- Ganti <a> menjadi <button> agar memicu modal --}}
+        <button type="button" 
+                onclick="openReviewModal({{ $order->id }})" 
+                class="btn btn-dark fw-bold text-uppercase rounded-0" 
+                style="font-size: 11px; padding: 8px 15px;">
+            Beri Ulasan
+        </button>
+    @else
+        {{-- Jika SUDAH diulas, tetap tombol link Beli Lagi --}}
+        <a href="{{ route('order.buy-again', $order->id) }}" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Beli Lagi</a>
+    @endif
+@endif
 
                                                             {{-- Tombol Beli Lagi juga biasanya selalu muncul untuk pesanan yang Dibatalkan/Gagal --}}
                                                             @if($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired']))
@@ -374,6 +379,49 @@
 
     @include('customer.components.footer')
     @include('customer.components.chatbot')
+
+    {{-- 🌟 MODAL POP-UP UNTUK BERI ULASAN PRODUK 🌟 --}}
+        <div class="modal fade" id="reviewOrderModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered rounded-0">
+                <div class="modal-content rounded-0 border-dark">
+                    <form id="form-review-produk" onsubmit="submitReviewProduk(event)">
+                        <div class="modal-header bg-light border-bottom border-secondary-subtle py-3">
+                            <h6 class="modal-title fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 13px;">Berikan Penilaian Produk</h6>
+                            <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="fw-bold small text-uppercase mb-2">Pilih Produk Untuk Diulas</label>
+                               <select id="review-product-sku" name="order_item_id" class="form-select ..." required>
+                                    @foreach($order->items as $item)
+                                        {{-- Kita kirim $item->id karena itulah yang disimpan di kolom 'order_item' di DB --}}
+                                        <option value="{{ $item->id }}">{{ $item->product_name }} (Size: {{ $item->product_size }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold small text-uppercase mb-2">Rating Produk</label>
+                                <select name="rating" class="form-select rounded-0 border-dark shadow-none text-warning fw-bold" style="font-size: 13px;" required>
+                                    <option value="5">⭐⭐⭐⭐⭐ 5 - Sangat Bagus</option>
+                                    <option value="4">⭐⭐⭐⭐ 4 - Bagus</option>
+                                    <option value="3">⭐⭐⭐ 3 - Cukup</option>
+                                    <option value="2">⭐⭐ 2 - Kurang</option>
+                                    <option value="1">⭐ 1 - Buruk</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold small text-uppercase mb-2">Komentar / Ulasan</label>
+                                <textarea name="comment" rows="4" class="form-control rounded-0 border-dark shadow-none small" placeholder="Bagikan pengalaman produk belanjamu di Big Sport..." required></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-white border-top border-light p-3">
+                            <button type="button" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 10px 20px;" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" id="btnSubmitReview" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 10px 20px;">Kirim Ulasan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
     @push('scripts')
     <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
@@ -480,37 +528,61 @@
         // ==========================================
         // FUNGSI PESANAN DITERIMA (DARI HALAMAN PROFIL)
         // ==========================================
-        function submitOrderReceived(orderId) {
-            if (confirm('Apakah Anda yakin paket telah diterima dengan aman dan ingin menyelesaikan pesanan ini?')) {
-                // Ambil tombol berdasarkan ID pesanan yang unik
-                const btn = document.getElementById('btn-complete-' + orderId);
-                if(btn) {
-                    btn.disabled = true;
-                    btn.innerText = 'MEMPROSES...';
-                }
-
-                axios.post(`/profile/order/${orderId}/complete`, {
-                    _token: '{{ csrf_token() }}'
-                })
-                .then(res => {
-                    if (res.data.success) {
-                        window.location.reload();
-                    } else {
-                        alert(res.data.message); // Akan memunculkan isi dari Controller
-                        if(btn) {
-                            btn.disabled = false;
-                            btn.innerText = 'Pesanan Diterima';
-                        }
-                    }
-                }).catch(() => {
-                    alert('Terjadi kesalahan koneksi server.');
-                    if(btn) {
-                        btn.disabled = false;
-                        btn.innerText = 'Pesanan Diterima';
-                    }
-                });
-            }
+        // Pastikan ID select-nya benar: "review-product-sku"
+function submitReviewProduk(e) {
+    e.preventDefault();
+    const form = document.getElementById('form-review-produk');
+    const submitBtn = document.getElementById('btnSubmitReview');
+    
+    // Pastikan order_item_id diambil dari select box yang benar
+    const orderItemId = document.getElementById('review-product-sku').value;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'MENGIRIM...';
+    
+    axios.post("{{ route('order.review') }}", { // Sesuaikan route-nya jika perlu
+        order_item_id: orderItemId,
+        rating: form.rating.value,
+        comment: form.comment.value,
+        _token: '{{ csrf_token() }}'
+    })
+    .then(res => {
+        if (res.data.success) {
+            alert(res.data.message);
+            window.location.reload();
+        } else {
+            alert(res.data.message);
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Kirim Ulasan';
         }
+    }).catch(err => {
+        console.error(err.response.data); // LIHAT ERROR DETAIL DI CONSOLE
+        alert('Gagal mengirim ulasan. Pastikan Anda belum pernah mengulas produk ini.');
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Kirim Ulasan';
+    });
+}
+
+
+        function openReviewModal(orderId) {
+    // 1. Tampilkan modal
+    const myModal = new bootstrap.Modal(document.getElementById('reviewOrderModal'));
+    myModal.show();
+
+    // 2. Jika kamu punya form di dalam modal, kamu bisa set action URL-nya secara dinamis
+    const form = document.getElementById('form-review-produk');
+    form.setAttribute('action', `/order/${orderId}/review`); 
+    
+    // 3. Simpan orderId di input hidden agar bisa dikirim ke server
+    let hiddenInput = form.querySelector('input[name="order_id"]');
+    if (!hiddenInput) {
+        hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'order_id';
+        form.appendChild(hiddenInput);
+    }
+    hiddenInput.value = orderId;
+}
     </script>
     @endpush
 @endsection

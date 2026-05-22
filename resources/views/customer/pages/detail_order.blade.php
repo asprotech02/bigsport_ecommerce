@@ -245,7 +245,7 @@
 
                 {{-- KODE BARU YANG LEBIH AMAN --}}
                 @php
-                            $cancelDeadline = \Carbon\Carbon::parse($order->created_at)->addHours(1);
+                            $cancelDeadline = \Carbon\Carbon::parse($order->created_at)->addHours(12);
                             $canCancel = now()->lessThan($cancelDeadline);
                             
                             // Kita buat variabel khusus untuk ngecek apakah resi MASIH KOSONG
@@ -349,47 +349,7 @@
             </div>
         </div>
 
-        {{-- 🌟 MODAL POP-UP UNTUK BERI ULASAN PRODUK 🌟 --}}
-        <div class="modal fade" id="reviewOrderModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered rounded-0">
-                <div class="modal-content rounded-0 border-dark">
-                    <form id="form-review-produk" onsubmit="submitReviewProduk(event)">
-                        <div class="modal-header bg-light border-bottom border-secondary-subtle py-3">
-                            <h6 class="modal-title fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 13px;">Berikan Penilaian Produk</h6>
-                            <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body p-4">
-                            <div class="mb-3">
-                                <label class="fw-bold small text-uppercase mb-2">Pilih Produk Untuk Diulas</label>
-                                <select id="review-product-sku" name="product_sku_id" class="form-select rounded-0 border-dark shadow-none" style="font-size: 13px;" required>
-                                    @foreach($order->items as $item)
-                                        <option value="{{ $item->product_sku_id }}">{{ $item->product_name }} (Size: {{ $item->product_size }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="fw-bold small text-uppercase mb-2">Rating Produk</label>
-                                <select name="rating" class="form-select rounded-0 border-dark shadow-none text-warning fw-bold" style="font-size: 13px;" required>
-                                    <option value="5">⭐⭐⭐⭐⭐ 5 - Sangat Bagus</option>
-                                    <option value="4">⭐⭐⭐⭐ 4 - Bagus</option>
-                                    <option value="3">⭐⭐⭐ 3 - Cukup</option>
-                                    <option value="2">⭐⭐ 2 - Kurang</option>
-                                    <option value="1">⭐ 1 - Buruk</option>
-                                </select>
-                            </div>
-                            <div class="mb-2">
-                                <label class="fw-bold small text-uppercase mb-2">Komentar / Ulasan</label>
-                                <textarea name="comment" rows="4" class="form-control rounded-0 border-dark shadow-none small" placeholder="Bagikan pengalaman produk belanjamu di Big Sport..." required></textarea>
-                            </div>
-                        </div>
-                        <div class="modal-footer bg-white border-top border-light p-3">
-                            <button type="button" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 10px 20px;" data-bs-dismiss="modal">Batal</button>
-                            <button type="submit" id="btnSubmitReview" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 10px 20px;">Kirim Ulasan</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+        
 
     </section>
 
