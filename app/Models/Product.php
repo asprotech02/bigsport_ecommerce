@@ -49,6 +49,21 @@ class Product extends Model
             : 'https://placehold.co/600x600?text=No+Image';
     }
 
+    public function getLowestPriceAttribute()
+    {
+        if ($this->skus->isEmpty()) {
+            return 0;
+        }
+        return $this->skus->min(function ($sku) {
+            return $sku->discount_price ?? $sku->base_price;
+        });
+    }
+
+    public function getTotalStockAttribute()
+    {
+        return $this->skus->sum('stock');
+    }
+
     public function getIsOutOfStockAttribute()
     {
         return $this->skus->sum('stock') <= 0;

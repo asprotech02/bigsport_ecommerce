@@ -7,8 +7,8 @@
     </button>
 
     <!-- Judul Halaman -->
-    <h5 class="m-0 font-weight-bold text-primary">
-        {{ $title ?? 'Dashboard' }}
+    <h5 class="m-0 font-weight-bold text-uppercase tracking-wider" style="color: var(--primary-neon, #e50914) !important; font-size: 1.1rem;">
+        BigSport
     </h5>
 
     <!-- Navbar kanan -->
@@ -22,7 +22,7 @@
                href="#"
                id="userDropdown"
                role="button"
-               data-bs-toggle="dropdown"
+               data-toggle="dropdown"
                aria-expanded="false">
 
                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">

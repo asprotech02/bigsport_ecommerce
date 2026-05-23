@@ -27,6 +27,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('verification.notice');
         }
 
+        if (in_array($request->user()->role, ['admin', 'sales', 'manager'])) {
+            return redirect()->intended(route('admin.dashboard', absolute: false));
+        }
+
         return redirect()->intended(route('home', absolute: false));
     }
 

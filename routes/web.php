@@ -17,11 +17,21 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\SubcategoryController;   
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\PromoController;
+use App\Http\Controllers\Admin\ShippingController;
+use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\PageController;
 
 // ==========================================
-// RUTE ADMIN
+// RUTE ADMIN (Terproteksi Middleware Keamanan)
 // ==========================================
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'role:admin,sales,manager'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('admin.dashboard');
 
@@ -36,6 +46,50 @@ Route::prefix('admin')->group(function () {
 
     Route::resource('products', AdminProductController::class)
         ->names('admin.products');
+
+    // Pelanggan
+    Route::get('/customers', [CustomerController::class, 'index'])->name('admin.customers.index');
+    Route::get('/customers/{id}', [CustomerController::class, 'show'])->name('admin.customers.show');
+    Route::post('/customers/{id}/toggle', [CustomerController::class, 'toggleStatus'])->name('admin.customers.toggle');
+
+    // Pesanan
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
+    Route::get('/orders/{id}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
+    Route::match(['put', 'patch', 'post'], '/orders/{id}/status', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
+    Route::delete('/orders/{id}', [AdminOrderController::class, 'destroy'])->name('admin.orders.destroy');
+
+    // Promo
+    Route::resource('promos', PromoController::class)->names('admin.promos');
+
+    // Pengiriman
+    Route::get('/shippings', [ShippingController::class, 'index'])->name('admin.shippings.index');
+    Route::get('/shippings/{id}/edit', [ShippingController::class, 'edit'])->name('admin.shippings.edit');
+    Route::put('/shippings/{id}', [ShippingController::class, 'update'])->name('admin.shippings.update');
+
+    // Pembayaran
+    Route::get('/payments', [PaymentController::class, 'index'])->name('admin.payments.index');
+    Route::patch('/payments/{id}/status', [PaymentController::class, 'updateStatus'])->name('admin.payments.updateStatus');
+
+    // Reviews (Ulasan)
+    Route::get('/reviews', [ReviewController::class, 'index'])->name('admin.reviews.index');
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy'])->name('admin.reviews.destroy');
+
+    // Notifikasi
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications.index');
+    Route::get('/notifications/create', [NotificationController::class, 'create'])->name('admin.notifications.create');
+    Route::post('/notifications', [NotificationController::class, 'store'])->name('admin.notifications.store');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('admin.notifications.destroy');
+
+    // Laporan
+    Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports.index');
+    Route::get('/reports/csv', [ReportController::class, 'exportCsv'])->name('admin.reports.csv');
+    Route::get('/reports/pdf', [ReportController::class, 'exportPdf'])->name('admin.reports.pdf');
+
+    // CMS Banners
+    Route::resource('banners', BannerController::class)->names('admin.banners');
+
+    // CMS Pages
+    Route::resource('pages', PageController::class)->names('admin.pages');
 });
 
 
@@ -50,9 +104,20 @@ Route::get('/products', [CustomerProductController::class, 'index'])->name('prod
 Route::get('/product/{slug}', [CustomerProductController::class, 'show'])->name('product.detail');
 
 // Rute informasi statis (Biasanya dipanggil dari Footer)
-Route::get('/store_location', function () { return view('customer.pages.store_location'); })->name('store_location');
-Route::get('/contact_store', function () { return view('customer.pages.contact_store'); })->name('contact_store');
-Route::get('/kebijakan-keamanan-data', function () { return view('customer.pages.privacy'); })->name('privacy');
+Route::get('/store_location', function () { 
+    $page = \App\Models\StaticPage::where('slug', 'store_location')->where('is_active', true)->first();
+    return view('customer.pages.store_location', compact('page')); 
+})->name('store_location');
+
+Route::get('/contact_store', function () { 
+    $page = \App\Models\StaticPage::where('slug', 'contact_store')->where('is_active', true)->first();
+    return view('customer.pages.contact_store', compact('page')); 
+})->name('contact_store');
+
+Route::get('/kebijakan-keamanan-data', function () { 
+    $page = \App\Models\StaticPage::where('slug', 'kebijakan-keamanan-data')->where('is_active', true)->first();
+    return view('customer.pages.privacy', compact('page')); 
+})->name('privacy');
 
 // Rute API Publik untuk mencari area kecamatan dari Biteship
 Route::get('/api/biteship/search-area', function (Request $request) {

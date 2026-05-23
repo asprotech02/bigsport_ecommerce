@@ -36,6 +36,10 @@ class GoogleController extends Controller
                     return redirect()->route('verification.notice');
                 }
 
+                if (in_array($user->role, ['admin', 'sales', 'manager'])) {
+                    return redirect()->route('admin.dashboard');
+                }
+
                 return redirect()->route('home');
             } else {
                 $newUser = User::create([

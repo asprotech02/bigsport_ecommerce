@@ -9,6 +9,11 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{{ asset('assets/admin/vendor/fontawesome-free/css/all.min.css') }}">
 
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- SB Admin 2 CSS -->
     <link rel="stylesheet" href="{{ asset('assets/admin/css/sb-admin-2.min.css') }}">
 

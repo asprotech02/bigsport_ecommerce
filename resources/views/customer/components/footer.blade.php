@@ -2,7 +2,9 @@
     <div class="container">
         
         <div class="text-center mb-5">
-            <a href="/" class="text-white text-decoration-none fs-2 fw-bold">LOGO</a>
+            <a href="/" class="d-inline-block">
+                <img src="{{ asset('assets/logo.png') }}" alt="BigSport Logo" style="height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.25));">
+            </a>
         </div>
 
         <div class="row justify-content-between mb-5">

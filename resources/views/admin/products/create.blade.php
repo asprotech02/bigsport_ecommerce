@@ -1,198 +1,337 @@
 @extends('admin.layouts.app')
 
 @section('content')
-
 <div class="container-fluid">
 
-    <div class="card shadow">
-
-        <div class="card-header">
-            <h5 class="mb-0">Tambah Product</h5>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-white font-weight-bold">Tambah Produk Baru</h1>
+            <p class="text-muted small mb-0">Isi data produk, kelola galeri gambar, dan tambahkan variasi stok/harga.</p>
         </div>
+        <a href="{{ route('admin.products.index') }}" class="btn btn-secondary shadow-sm px-3">
+            <i class="fas fa-arrow-left me-1"></i> Kembali
+        </a>
+    </div>
 
-        <div class="card-body">
+    <!-- Error Alert Global -->
+    @if($errors->any())
+        <div class="alert alert-danger border-0 shadow-sm alert-dismissible fade show" role="alert" style="background: rgba(229, 9, 20, 0.15); border: 1px solid rgba(229, 9, 20, 0.3) !important; color: #ff8080;">
+            <i class="fas fa-exclamation-triangle me-2"></i> <strong>Gagal menyimpan produk:</strong>
+            <ul class="mb-0 mt-2 small">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
 
-            <form action="{{ route('admin.products.store') }}"
-                  method="POST">
+    <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
+        @csrf
 
-                @csrf
+        <div class="row">
+            <!-- KOLOM KIRI: Informasi Utama Produk -->
+            <div class="col-lg-6 mb-4">
+                <div class="card border-0 shadow-sm h-100" style="background: var(--dark-card); border: 1px solid var(--border-glass) !important;">
+                    <div class="card-header py-3" style="background: transparent; border-bottom: 1px solid var(--border-glass);">
+                        <h5 class="card-title mb-0 fw-bold" style="color: var(--primary-neon); font-size: 1.05rem; letter-spacing: 0.5px;">
+                            <i class="fas fa-info-circle me-1"></i> Informasi Utama
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        
+                        {{-- NAMA PRODUK --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-white-50">Nama Produk <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   name="name" 
+                                   value="{{ old('name') }}" 
+                                   class="form-control @error('name') is-invalid @enderror" 
+                                   placeholder="Contoh: Nike Air Force 1 Black" 
+                                   required>
+                            @error('name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
 
-                {{-- CATEGORY --}}
-                <div class="mb-3">
-                    <label>Category</label>
+                        <div class="row">
+                            {{-- KATEGORI --}}
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold text-white-50">Kategori <span class="text-danger">*</span></label>
+                                <select name="category_id" id="category_id" class="form-select @error('category_id') is-invalid @enderror" required>
+                                    <option value="">-- Pilih Kategori --</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                            {{ $category->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('category_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
 
-                    <select name="category_id"
-                            id="category_id"
-                            class="form-control"
-                            required>
+                            {{-- SUBKATEGORI --}}
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold text-white-50">Subkategori <span class="text-danger">*</span></label>
+                                <select name="subcategory_id" id="subcategory_id" class="form-select @error('subcategory_id') is-invalid @enderror" required>
+                                    <option value="">-- Pilih Subkategori --</option>
+                                    @foreach($subcategories as $subcategory)
+                                        <option value="{{ $subcategory->id }}" 
+                                                data-category="{{ $subcategory->category_id }}"
+                                                {{ old('subcategory_id') == $subcategory->id ? 'selected' : '' }}>
+                                            {{ $subcategory->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('subcategory_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
 
-                        <option value="">-- Pilih Category --</option>
+                        <div class="row">
+                            {{-- BRAND --}}
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold text-white-50">Brand <span class="text-danger">*</span></label>
+                                <select name="brand_id" class="form-select @error('brand_id') is-invalid @enderror" required>
+                                    <option value="">-- Pilih Brand --</option>
+                                    @foreach($brands as $brand)
+                                        <option value="{{ $brand->id }}" {{ old('brand_id') == $brand->id ? 'selected' : '' }}>
+                                            {{ $brand->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('brand_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
 
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}">
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
+                            {{-- GENDER --}}
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold text-white-50">Gender <span class="text-danger">*</span></label>
+                                <select name="gender" class="form-select @error('gender') is-invalid @enderror" required>
+                                    <option value="">-- Pilih Gender --</option>
+                                    <option value="Laki-laki" {{ old('gender') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
+                                    <option value="Perempuan" {{ old('gender') == 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+                                    <option value="Unisex" {{ old('gender') == 'Unisex' ? 'selected' : '' }}>Unisex</option>
+                                    <option value="Anak-anak" {{ old('gender') == 'Anak-anak' ? 'selected' : '' }}>Anak-anak</option>
+                                </select>
+                                @error('gender')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
 
-                    </select>
+                        {{-- BERAT PRODUK --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-white-50">Berat Produk (gram) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" 
+                                       name="weight_gram" 
+                                       value="{{ old('weight_gram') }}" 
+                                       class="form-control @error('weight_gram') is-invalid @enderror" 
+                                       placeholder="Contoh: 500" 
+                                       min="1" 
+                                       required>
+                                <span class="input-group-text" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: var(--text-muted);">gram</span>
+                            </div>
+                            @error('weight_gram')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- DESKRIPSI --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-white-50">Deskripsi Produk</label>
+                            <textarea name="description" 
+                                      rows="5" 
+                                      class="form-control @error('description') is-invalid @enderror" 
+                                      placeholder="Tuliskan spesifikasi lengkap, bahan, dan detail produk..."
+                            >{{ old('description') }}</textarea>
+                            @error('description')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- FEATURED --}}
+                        <div class="form-check form-switch p-3 rounded" style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-glass);">
+                            <input type="checkbox" 
+                                   name="is_featured" 
+                                   value="1" 
+                                   class="form-check-input ms-0 me-2" 
+                                   id="featured" 
+                                   {{ old('is_featured') ? 'checked' : '' }}>
+                            <label class="form-check-label fw-semibold text-white" for="featured">
+                                Tandai sebagai Produk Unggulan (Featured)
+                            </label>
+                            <div class="text-muted small ms-4">Produk ini akan tampil secara prioritas di halaman utama.</div>
+                        </div>
+
+                    </div>
                 </div>
+            </div>
 
-                {{-- SUBCATEGORY --}}
-                <div class="mb-3">
-                    <label>Subcategory</label>
+            <!-- KOLOM KANAN: Upload Gambar & Varian SKU -->
+            <div class="col-lg-6 mb-4">
+                <div class="d-flex flex-column h-100 gap-4">
+                    
+                    {{-- UPLOAD GAMBAR --}}
+                    <div class="card border-0 shadow-sm" style="background: var(--dark-card); border: 1px solid var(--border-glass) !important;">
+                        <div class="card-header py-3" style="background: transparent; border-bottom: 1px solid var(--border-glass);">
+                            <h5 class="card-title mb-0 fw-bold" style="color: var(--primary-neon); font-size: 1.05rem; letter-spacing: 0.5px;">
+                                <i class="fas fa-images me-1"></i> Galeri Foto Produk
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3 text-center rounded p-4 position-relative" style="cursor: pointer; background: rgba(255, 255, 255, 0.01); border: 2px dashed rgba(229, 9, 20, 0.25); transition: all 0.3s ease;" id="upload-zone">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-white-50 mb-2"></i>
+                                <h6 class="fw-semibold text-white">Pilih atau Seret Foto Ke Sini</h6>
+                                <p class="text-muted small mb-0">Format: JPG, JPEG, PNG, WEBP (Maksimal 2MB per foto)</p>
+                                <input type="file" 
+                                       name="images[]" 
+                                       id="image-input" 
+                                       multiple 
+                                       class="d-none">
+                            </div>
 
-                    <select name="subcategory_id"
-                            id="subcategory_id"
-                            class="form-control"
-                            required>
+                            <!-- Preview Grid -->
+                            <div id="image-preview-grid" class="row row-cols-3 g-2 mt-3"></div>
+                            <div class="text-muted small mt-2 d-none" id="primary-hint">
+                                <i class="fas fa-info-circle me-1"></i> Klik radio button pada salah satu gambar untuk menjadikannya **Gambar Utama**.
+                            </div>
+                        </div>
+                    </div>
 
-                        <option value="">-- Pilih Subcategory --</option>
-
-                        @foreach($subcategories as $subcategory)
-                            <option value="{{ $subcategory->id }}"
-                                    data-category="{{ $subcategory->category_id }}">
-                                {{ $subcategory->name }}
-                            </option>
-                        @endforeach
-
-                    </select>
-                </div>
-
-                {{-- BRAND --}}
-                <div class="mb-3">
-                    <label>Brand</label>
-
-                    <select name="brand_id"
-                            class="form-control"
-                            required>
-
-                        <option value="">-- Pilih Brand --</option>
-
-                        @foreach($brands as $brand)
-                            <option value="{{ $brand->id }}">
-                                {{ $brand->name }}
-                            </option>
-                        @endforeach
-
-                    </select>
-                </div>
-
-                {{-- GENDER --}}
-                <div class="mb-3">
-                    <label>Gender</label>
-
-                    <select name="gender"
-                            class="form-control"
-                            required>
-
-                        <option value="">-- Pilih Gender --</option>
-
-                        <option value="Laki-laki">Laki-laki</option>
-                        <option value="Perempuan">Perempuan</option>
-                        <option value="Unisex">Unisex</option>
-                        <option value="Anak-anak">Anak-anak</option>
-
-                    </select>
-                </div>
-
-                {{-- PRODUCT NAME --}}
-                <div class="mb-3">
-                    <label>Nama Product</label>
-
-                    <input type="text"
-                           name="name"
-                           class="form-control"
-                           required>
-                </div>
-
-                {{-- DESCRIPTION --}}
-                <div class="mb-3">
-                    <label>Description</label>
-
-                    <textarea name="description"
-                              rows="5"
-                              class="form-control"></textarea>
-                </div>
-
-                {{-- BASE PRICE --}}
-                <div class="mb-3">
-                    <label>Base Price</label>
-
-                    <input type="number"
-                           name="base_price"
-                           class="form-control"
-                           required>
-                </div>
-
-                {{-- DISCOUNT PRICE --}}
-                <div class="mb-3">
-                    <label>Discount Price</label>
-
-                    <input type="number"
-                           name="discount_price"
-                           class="form-control">
-                </div>
-
-                {{-- WEIGHT --}}
-                <div class="mb-3">
-                    <label>Weight (gram)</label>
-
-                    <input type="number"
-                           name="weight_gram"
-                           class="form-control"
-                           required>
-                </div>
-
-                {{-- FEATURED --}}
-                <div class="mb-3">
-
-                    <div class="form-check">
-
-                        <input type="checkbox"
-                               name="is_featured"
-                               value="1"
-                               class="form-check-input"
-                               id="featured">
-
-                        <label class="form-check-label"
-                               for="featured">
-                            Featured Product
-                        </label>
-
+                    {{-- DYNAMIC SKU VARIATION --}}
+                    <div class="card border-0 shadow-sm flex-fill" style="background: var(--dark-card); border: 1px solid var(--border-glass) !important;">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: transparent; border-bottom: 1px solid var(--border-glass);">
+                            <h5 class="card-title mb-0 fw-bold" style="color: var(--primary-neon); font-size: 1.05rem; letter-spacing: 0.5px;">
+                                <i class="fas fa-boxes me-1"></i> Variasi SKU & Stok
+                            </h5>
+                            <button type="button" class="btn btn-outline-danger btn-sm px-3" id="btn-add-sku">
+                                <i class="fas fa-plus me-1"></i> Tambah Varian
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0" id="sku-table" style="color: var(--text-pure);">
+                                    <thead class="fs-7 text-uppercase text-white-50" style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-glass);">
+                                        <tr>
+                                            <th class="ps-3" width="110">Ukuran (Size)*</th>
+                                            <th width="110">Warna*</th>
+                                            <th width="140">Harga Dasar*</th>
+                                            <th width="140">Harga Diskon</th>
+                                            <th width="100">Stok*</th>
+                                            <th class="text-end pe-3" width="50">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sku-tbody">
+                                        @if(old('skus'))
+                                            @foreach(old('skus') as $index => $oldSku)
+                                                <tr class="sku-row" data-index="{{ $index }}" style="border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                                                    <td class="ps-3">
+                                                        <input type="text" name="skus[{{ $index }}][size]" value="{{ $oldSku['size'] }}" class="form-control form-control-sm" placeholder="S / 39" required>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" name="skus[{{ $index }}][color]" value="{{ $oldSku['color'] }}" class="form-control form-control-sm" placeholder="Hitam" required>
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" name="skus[{{ $index }}][base_price]" value="{{ $oldSku['base_price'] }}" class="form-control form-control-sm" placeholder="150000" min="0" required>
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" name="skus[{{ $index }}][discount_price]" value="{{ $oldSku['discount_price'] }}" class="form-control form-control-sm" placeholder="120000" min="0">
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" name="skus[{{ $index }}][stock]" value="{{ $oldSku['stock'] }}" class="form-control form-control-sm" placeholder="10" min="0" required>
+                                                    </td>
+                                                    <td class="text-end pe-3">
+                                                        <button type="button" class="btn btn-outline-danger btn-sm border-0 btn-delete-sku" onclick="deleteSkuRow(this)">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @else
+                                            <!-- Row Default Pertama -->
+                                            <tr class="sku-row" data-index="0" style="border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                                                <td class="ps-3">
+                                                    <input type="text" name="skus[0][size]" class="form-control form-control-sm" placeholder="S / 39" required>
+                                                </td>
+                                                <td>
+                                                    <input type="text" name="skus[0][color]" class="form-control form-control-sm" placeholder="Hitam" required>
+                                                </td>
+                                                <td>
+                                                    <input type="number" name="skus[0][base_price]" class="form-control form-control-sm" placeholder="150000" min="0" required>
+                                                </td>
+                                                <td>
+                                                    <input type="number" name="skus[0][discount_price]" class="form-control form-control-sm" placeholder="120000" min="0">
+                                                </td>
+                                                <td>
+                                                    <input type="number" name="skus[0][stock]" class="form-control form-control-sm" placeholder="10" min="0" required>
+                                                </td>
+                                                <td class="text-end pe-3">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm border-0 btn-delete-sku" onclick="deleteSkuRow(this)">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
-
-                {{-- BUTTON --}}
-                <button class="btn btn-primary">
-                    Simpan Product
-                </button>
-
-                <a href="{{ route('admin.products.index') }}"
-                   class="btn btn-secondary">
-                    Kembali
-                </a>
-
-            </form>
-
+            </div>
         </div>
 
-    </div>
+        <!-- FORM ACTIONS -->
+        <div class="row mt-3">
+            <div class="col-12 text-end mb-5">
+                <hr style="border-top: 1px solid var(--border-glass);">
+                <a href="{{ route('admin.products.index') }}" class="btn btn-secondary px-4 py-2 me-2">
+                    Batal
+                </a>
+                <button type="submit" class="btn btn-primary px-5 py-2 shadow-sm fw-bold">
+                    <i class="fas fa-save me-1"></i> Simpan Produk Lengkap
+                </button>
+            </div>
+        </div>
 
+    </form>
 </div>
 
-{{-- FILTER SUBCATEGORY --}}
+<style>
+    .fs-7 { font-size: 0.8rem; }
+    .border-dashed { border-style: dashed !important; border-width: 2px !important; }
+    
+    /* Premium Thumbnail cards */
+    .preview-card {
+        transition: all 0.25s ease-in-out;
+        background: var(--dark-card) !important;
+        border: 1px solid var(--border-glass) !important;
+    }
+    .preview-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(229, 9, 20, 0.15) !important;
+    }
+    .preview-card.is-primary-card {
+        border-color: var(--primary-neon) !important;
+        background-color: rgba(229, 9, 20, 0.05) !important;
+        box-shadow: 0 0 10px rgba(229, 9, 20, 0.2) !important;
+    }
+</style>
+
 <script>
+// Filter Subcategory Berdasarkan Kategori
 document.getElementById('category_id').addEventListener('change', function () {
-
     let categoryId = this.value;
-
     let subcategorySelect = document.getElementById('subcategory_id');
-
     let options = subcategorySelect.querySelectorAll('option');
 
     options.forEach(option => {
-
         if(option.value === '') {
             option.style.display = 'block';
             return;
@@ -203,11 +342,168 @@ document.getElementById('category_id').addEventListener('change', function () {
         } else {
             option.style.display = 'none';
         }
-
     });
 
     subcategorySelect.value = '';
 });
-</script>
 
+// Dynamic SKU Variation Builder
+let skuIndex = {{ old('skus') ? count(old('skus')) : 1 }};
+
+document.getElementById('btn-add-sku').addEventListener('click', function() {
+    let tbody = document.getElementById('sku-tbody');
+    let tr = document.createElement('tr');
+    tr.className = 'sku-row';
+    tr.dataset.index = skuIndex;
+    tr.innerHTML = `
+        <td class="ps-3">
+            <input type="text" name="skus[${skuIndex}][size]" class="form-control form-control-sm" placeholder="S / 39" required>
+        </td>
+        <td>
+            <input type="text" name="skus[${skuIndex}][color]" class="form-control form-control-sm" placeholder="Hitam" required>
+        </td>
+        <td>
+            <input type="number" name="skus[${skuIndex}][base_price]" class="form-control form-control-sm" placeholder="150000" min="0" required>
+        </td>
+        <td>
+            <input type="number" name="skus[${skuIndex}][discount_price]" class="form-control form-control-sm" placeholder="120000" min="0">
+        </td>
+        <td>
+            <input type="number" name="skus[${skuIndex}][stock]" class="form-control form-control-sm" placeholder="10" min="0" required>
+        </td>
+        <td class="text-end pe-3">
+            <button type="button" class="btn btn-outline-danger btn-sm border-0 btn-delete-sku" onclick="deleteSkuRow(this)">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    skuIndex++;
+    toggleDeleteButtons();
+});
+
+function deleteSkuRow(button) {
+    let row = button.closest('tr');
+    row.remove();
+    toggleDeleteButtons();
+}
+
+function toggleDeleteButtons() {
+    let rows = document.querySelectorAll('.sku-row');
+    rows.forEach(row => {
+        let btn = row.querySelector('.btn-delete-sku');
+        if (rows.length === 1) {
+            btn.setAttribute('disabled', 'true');
+        } else {
+            btn.removeAttribute('disabled');
+        }
+    });
+}
+
+// Jalankan saat load awal
+toggleDeleteButtons();
+
+// Trigger filter subcategory jika ada input lama (e.g. validasi error)
+document.addEventListener("DOMContentLoaded", function() {
+    let catId = document.getElementById('category_id').value;
+    if (catId) {
+        let subcatSelect = document.getElementById('subcategory_id');
+        let currentSubcatVal = subcatSelect.value;
+        let options = subcatSelect.querySelectorAll('option');
+        options.forEach(option => {
+            if (option.value === '') return;
+            if (option.dataset.category === catId) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        subcatSelect.value = currentSubcatVal;
+    }
+});
+
+// Interactive Multi-Image Upload Preview & Primary Selection
+let uploadZone = document.getElementById('upload-zone');
+let fileInput = document.getElementById('image-input');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+
+uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = '#e50914';
+    uploadZone.style.background = 'rgba(229, 9, 20, 0.04)';
+});
+
+uploadZone.addEventListener('dragleave', () => {
+    uploadZone.style.borderColor = 'rgba(229, 9, 20, 0.25)';
+    uploadZone.style.background = 'rgba(255, 255, 255, 0.01)';
+});
+
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = 'rgba(229, 9, 20, 0.25)';
+    uploadZone.style.background = 'rgba(255, 255, 255, 0.01)';
+    if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+    }
+});
+
+fileInput.addEventListener('change', function(event) {
+    let previewGrid = document.getElementById('image-preview-grid');
+    let hint = document.getElementById('primary-hint');
+    previewGrid.innerHTML = '';
+    
+    let files = event.target.files;
+    
+    if (files.length > 0) {
+        hint.classList.remove('d-none');
+        
+        Array.from(files).forEach((file, index) => {
+            let reader = new FileReader();
+            
+            reader.onload = function(e) {
+                let col = document.createElement('div');
+                col.className = 'col';
+                col.innerHTML = `
+                    <div class="card preview-card h-100 shadow-xs text-center border p-1 rounded position-relative ${index === 0 ? 'is-primary-card' : ''}" id="preview-card-${index}">
+                        <img src="${e.target.result}" class="card-img-top rounded" style="height: 100px; object-fit: cover;">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-center align-items-center mb-0">
+                                <input class="cursor-pointer primary-radio" 
+                                       type="radio" 
+                                       name="primary_image_index" 
+                                       id="primary_${index}" 
+                                       value="${index}" 
+                                       ${index === 0 ? 'checked' : ''} 
+                                       onchange="setPrimaryCard(${index})"
+                                       style="width: 16px; height: 16px; accent-color: var(--primary-neon); cursor: pointer; margin: 0;">
+                                <label class="fs-7 cursor-pointer text-white-50 fw-semibold mb-0" for="primary_${index}" style="cursor: pointer; margin-left: 6px;">
+                                    Utama
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                previewGrid.appendChild(col);
+            }
+            
+            reader.readAsDataURL(file);
+        });
+    } else {
+        hint.classList.add('d-none');
+    }
+});
+
+function setPrimaryCard(activeIndex) {
+    let cards = document.querySelectorAll('.preview-card');
+    cards.forEach((card, idx) => {
+        if (idx === activeIndex) {
+            card.classList.add('is-primary-card');
+        } else {
+            card.classList.remove('is-primary-card');
+        }
+    });
+}
+</script>
 @endsection
