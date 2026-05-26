@@ -37,8 +37,11 @@ class CleanupExpiredOrders implements ShouldQueue
                 foreach ($order->items as $item) {
                     $sku = $item->sku;
                     if ($sku) {
-                        $sku->decrement('reserved_stock', $item->quantity);
-                        $sku->increment('stock', $item->quantity);
+                        $currentReserved = $sku->reserved_stock;
+                        $amountToDecrement = min($item->quantity, $currentReserved);
+                        if ($amountToDecrement > 0) {
+                            $sku->decrement('reserved_stock', $amountToDecrement);
+                        }
                     }
                 }
                 

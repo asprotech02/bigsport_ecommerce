@@ -68,7 +68,7 @@ class OrderController extends Controller
             'payment_status' => 'required|in:unpaid,pending,paid,failed,expired,refunded',
         ]);
 
-        $order = Order::with(['shippingDetail', 'user'])->findOrFail($id);
+        $order = Order::with(['shippingDetail', 'user', 'items.sku'])->findOrFail($id);
         $oldStatus = $order->status;
         $newStatus = $request->status;
         $oldPaymentStatus = $order->payment_status;
@@ -79,6 +79,29 @@ class OrderController extends Controller
                 'status' => $newStatus,
                 'payment_status' => $newPaymentStatus,
             ]);
+
+            // Restore Stock if order is being cancelled
+            if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
+                $isPaid = ($oldPaymentStatus === 'paid');
+                foreach ($order->items as $item) {
+                    $sku = $item->sku;
+                    if ($sku) {
+                        if ($isPaid) {
+                            // KASUS: Pesanan sudah dibayar, stok utama sudah terpotong
+                            // Aksi: Kembalikan stok ke etalase (Increment Stok Utama)
+                            $sku->increment('stock', $item->quantity);
+                        } else {
+                            // KASUS: Pesanan belum dibayar, baru reserved
+                            // Aksi: Kurangi angka reserved_stock, tapi pastikan tidak pernah di bawah 0
+                            $currentReserved = $sku->reserved_stock;
+                            $amountToDecrement = min($item->quantity, $currentReserved);
+                            if ($amountToDecrement > 0) {
+                                $sku->decrement('reserved_stock', $amountToDecrement);
+                            }
+                        }
+                    }
+                }
+            }
 
             // Synchronize with payments table if exists
             $payment = Payment::where('order_id', $order->id)->first();

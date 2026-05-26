@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;   // 🌟 INI OBAT ERROR 500 NYA, BRO!
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 
 class ProfileController extends Controller
@@ -300,7 +301,7 @@ public function storeReview(Request $request)
     // Cek duplikasi
     $existing = DB::table('reviews')
         ->where('user_id', auth()->id())
-        ->where('order_item', $request->order_item_id)
+        ->where('order_item_id', $request->order_item_id)
         ->exists();
 
     if ($existing) {
@@ -310,7 +311,7 @@ public function storeReview(Request $request)
     DB::table('reviews')->insert([
         'user_id'    => auth()->id(),
         'product_id' => $orderItem->sku->product_id, // Ambil dari SKU
-        'order_item' => $request->order_item_id,
+        'order_item_id' => $request->order_item_id,
         'rating'     => $request->rating,
         'comment'    => $request->comment,
         'created_at' => now(),

@@ -275,18 +275,14 @@
                                                             @endif
 
                                                             @php
-                                                                // Ambil semua ID produk SKU dari pesanan ini
-                                                                $skuIds = $order->items->pluck('product_sku_id')->toArray();
+                                                                // Ambil semua ID Item Pesanan dari pesanan ini
+                                                                $itemIds = $order->items->pluck('id')->toArray();
                                                                 
-                                                                // Cek apakah user sudah mengulas produk di pesanan ini (tanpa pakai order_id)
-                                                                try {
-                                                                    $hasReviewed = \Illuminate\Support\Facades\DB::table('reviews')
-                                                                                    ->where('user_id', auth()->id())
-                                                                                    ->whereIn('product_sku_id', $skuIds)
-                                                                                    ->exists();
-                                                                } catch (\Exception $e) {
-                                                                    $hasReviewed = false; // Pencegah error 500
-                                                                }
+                                                                // Cek apakah user sudah mengulas item di pesanan ini
+                                                                $hasReviewed = \Illuminate\Support\Facades\DB::table('reviews')
+                                                                                ->where('user_id', auth()->id())
+                                                                                ->whereIn('order_item_id', $itemIds)
+                                                                                ->exists();
                                                             @endphp
 
                                                            @if($order->status == 'completed')
