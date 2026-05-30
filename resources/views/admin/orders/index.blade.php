@@ -97,29 +97,40 @@
                                 </td>
                                 <td class="fw-semibold text-white">Rp {{ number_format($order->grand_total, 0, ',', '.') }}</td>
                                 <td>
-                                    <span class="badge bg-{{ 
-                                        $order->payment_status === 'paid' ? 'success' : 
-                                        ($order->payment_status === 'failed' || $order->payment_status === 'expired' ? 'danger' : 'warning') 
-                                    }} text-white">
-                                        {{ strtoupper($order->payment_status) }}
+                                    @php
+                                        $payStatus = strtolower($order->payment_status);
+                                        $payBg = $payStatus === 'paid' ? 'success' : 
+                                            (($payStatus === 'failed' || $payStatus === 'expired') ? 'danger' : 'warning');
+                                    @endphp
+                                    <span class="badge bg-{{ $payBg }} text-white text-uppercase px-3 py-1.5 rounded-pill fs-7 fw-semibold">
+                                        {{ $order->payment_status }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ 
-                                        $order->status === 'completed' ? 'success' : 
-                                        ($order->status === 'cancelled' ? 'danger' : 
-                                        (in_array($order->status, ['processing', 'preparing', 'shipped', 'delivered']) ? 'info' : 'secondary')) 
-                                    }} text-white">
-                                        {{ strtoupper($order->status) }}
+                                    @php
+                                        $orderStatus = strtolower($order->status);
+                                        $orderBg = $orderStatus === 'completed' ? 'success' : 
+                                            (($orderStatus === 'cancelled' || $orderStatus === 'failed') ? 'danger' : 
+                                            (in_array($orderStatus, ['processing', 'preparing', 'shipped', 'delivered', 'confirmed']) ? 'info' : 'warning'));
+                                    @endphp
+                                    <span class="badge bg-{{ $orderBg }} text-white text-uppercase px-3 py-1.5 rounded-pill fs-7 fw-semibold">
+                                        {{ $order->status }}
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
-                                        <a href="{{ route('admin.orders.show', $order->id) }}" class="btn btn-sm btn-outline-primary px-2 py-1" style="font-size: 0.72rem; border-radius: 6px;" title="Detail">
-                                            <i class="fas fa-eye"></i> Detail
+                                        <a href="{{ route('admin.orders.show', $order->id) }}" 
+                                           class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
+                                           style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);" 
+                                           title="Detail">
+                                            <i class="fas fa-eye me-1.5"></i> Detail
                                         </a>
-                                        <button class="btn btn-sm btn-outline-primary px-2 py-1" style="font-size: 0.72rem; border-radius: 6px;" data-toggle="modal" data-target="#statusModal{{ $order->id }}" title="Ubah Status">
-                                            <i class="fas fa-edit"></i> Status
+                                        <button class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
+                                                style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);" 
+                                                data-toggle="modal" 
+                                                data-target="#statusModal{{ $order->id }}" 
+                                                title="Ubah Status">
+                                            <i class="fas fa-edit me-1.5"></i> Status
                                         </button>
                                     </div>
 

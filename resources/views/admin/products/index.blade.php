@@ -56,33 +56,32 @@
                                 <span class="text-muted small text-monospace">Slug: {{ $product->slug }}</span>
                             </td>
                             <td>
-                                <div class="mb-1">
-                                    <span class="badge bg-light text-dark border">
-                                        {{ $product->category->name ?? '-' }}
-                                    </span>
-                                    <i class="fas fa-angle-right text-muted small mx-1"></i>
-                                    <span class="text-secondary small">{{ $product->subcategory->name ?? '-' }}</span>
+                                <div class="text-white fw-semibold" style="font-size: 0.9rem;">
+                                    {{ $product->category->name ?? '-' }}
                                 </div>
-                                <div class="text-primary small fw-semibold">
-                                    <i class="fas fa-tag me-1 small"></i>{{ $product->brand->name ?? '-' }}
+                                <div class="text-muted small d-flex align-items-center mt-1" style="font-size: 0.75rem; gap: 4px;">
+                                    <span>{{ $product->subcategory->name ?? '-' }}</span>
+                                    <span class="text-secondary opacity-50">•</span>
+                                    <span class="fw-semibold" style="color: var(--primary-neon, #00b4d8);">{{ $product->brand->name ?? '-' }}</span>
                                 </div>
                             </td>
                             <td>
                                 @php
-                                    $genderBadges = [
-                                        'Laki-laki' => 'bg-info text-white',
-                                        'Perempuan' => 'bg-danger text-white',
-                                        'Anak-anak' => 'bg-warning text-white',
-                                        'Unisex' => 'bg-dark text-white'
+                                    $genderStyles = [
+                                        'Laki-laki' => 'background-color: rgba(0, 180, 216, 0.12); color: #00b4d8; border: 1px solid rgba(0, 180, 216, 0.2);',
+                                        'Perempuan' => 'background-color: rgba(217, 4, 41, 0.12); color: #ff4d6d; border: 1px solid rgba(217, 4, 41, 0.2);',
+                                        'Anak-anak' => 'background-color: rgba(255, 183, 3, 0.12); color: #ffb703; border: 1px solid rgba(255, 183, 3, 0.2);',
+                                        'Unisex' => 'background-color: rgba(46, 196, 182, 0.12); color: #2ec4b6; border: 1px solid rgba(46, 196, 182, 0.2);'
                                     ];
-                                    $badgeClass = $genderBadges[$product->gender] ?? 'bg-secondary text-white';
+                                    $defaultStyle = 'background-color: rgba(108, 117, 125, 0.12); color: #6c757d; border: 1px solid rgba(108, 117, 125, 0.2);';
+                                    $currentStyle = $genderStyles[$product->gender] ?? $defaultStyle;
                                 @endphp
-                                <span class="badge {{ $badgeClass }} px-2 py-1.5 rounded-pill fs-7">
+                                <span class="badge px-3 py-1.5 rounded-pill fs-7 fw-semibold" style="{{ $currentStyle }}">
                                     {{ $product->gender }}
                                 </span>
                             </td>
                             <td>
-                                <span class="fw-bold text-success">
+                                <span class="fw-bold text-white" style="font-size: 0.95rem;">
                                     Rp {{ number_format($product->lowest_price, 0, ',', '.') }}
                                 </span>
                             </td>
@@ -91,56 +90,51 @@
                                     $totalStock = $product->total_stock;
                                 @endphp
                                 @if($totalStock == 0)
-                                    <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1.5 border border-danger border-opacity-25 rounded fs-7">
-                                        Habis
+                                    <span class="badge px-2 py-1.5 rounded fw-semibold" style="background-color: rgba(217, 4, 41, 0.12); color: #ff4d6d; border: 1px solid rgba(217, 4, 41, 0.2); font-size: 0.75rem;">
+                                        <i class="fas fa-exclamation-circle me-1"></i>Habis
                                     </span>
                                 @elseif($totalStock <= 5)
-                                    <span class="badge bg-warning bg-opacity-10 text-warning px-2.5 py-1.5 border border-warning border-opacity-25 rounded fs-7">
-                                        Kritis ({{ $totalStock }})
+                                    <span class="badge px-2 py-1.5 rounded fw-semibold" style="background-color: rgba(255, 183, 3, 0.12); color: #ffb703; border: 1px solid rgba(255, 183, 3, 0.2); font-size: 0.75rem;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Kritis ({{ $totalStock }})
                                     </span>
                                 @else
-                                    <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1.5 border border-success border-opacity-25 rounded fs-7">
-                                        {{ $totalStock }} pcs
+                                    <span class="text-white-50 fw-semibold" style="font-size: 0.9rem;">
+                                        {{ $totalStock }} <span class="small text-muted">pcs</span>
                                     </span>
                                 @endif
                             </td>
                             <td class="text-center">
                                 @if($product->is_featured)
-                                    <span class="badge bg-warning text-dark border border-warning-subtle shadow-sm py-1.5 px-2.5 rounded-pill" title="Unggulan">
-                                        <i class="fas fa-star text-orange me-1"></i> YES
-                                    </span>
+                                    <i class="fas fa-star text-warning" style="font-size: 1.1rem;" title="Featured Produk"></i>
                                 @else
-                                    <span class="badge bg-light text-secondary border py-1.5 px-2.5 rounded-pill">
-                                        NO
-                                    </span>
+                                    <i class="far fa-star text-muted opacity-40" style="font-size: 1rem;" title="Bukan Featured"></i>
                                 @endif
                             </td>
                             <td class="pe-4 text-end">
-                                <div class="d-flex justify-content-end align-items-center" style="gap: 4px;">
-                                    <!-- Tombol Detail / Lihat di Toko -->
+                                <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
                                     <a href="{{ route('product.detail', $product->slug) }}" 
                                        target="_blank" 
-                                       class="btn btn-sm btn-outline-info px-2 py-1" 
+                                       class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
                                        title="Lihat di Toko"
-                                       style="font-size: 0.72rem; border-radius: 4px;">
-                                        <i class="fas fa-external-link-alt"></i> Detail
+                                       style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);">
+                                        <i class="fas fa-external-link-alt me-1.5"></i> Detail
                                     </a>
-
+ 
                                     <a href="{{ route('admin.products.edit', $product->id) }}" 
-                                       class="btn btn-sm btn-outline-warning px-2 py-1" 
+                                       class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
                                        title="Edit Produk"
-                                       style="font-size: 0.72rem; border-radius: 4px;">
-                                        <i class="fas fa-edit"></i> Edit
+                                       style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);">
+                                        <i class="fas fa-edit me-1.5"></i> Edit
                                     </a>
-
+ 
                                     <form action="{{ route('admin.products.destroy', $product->id) }}" 
                                           method="POST" 
                                           class="d-inline mb-0"
                                           onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini? Semua gambar dan variasi SKU-nya juga akan terhapus permanen.')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="Hapus Produk" style="font-size: 0.72rem; border-radius: 4px;">
-                                            <i class="fas fa-trash-alt"></i> Hapus
+                                        <button type="submit" class="btn btn-sm btn-outline-danger px-2.5 py-1.5 d-flex align-items-center" title="Hapus Produk" style="font-size: 0.75rem; border-radius: 6px;">
+                                            <i class="fas fa-trash-alt me-1.5"></i> Hapus
                                         </button>
                                     </form>
                                 </div>

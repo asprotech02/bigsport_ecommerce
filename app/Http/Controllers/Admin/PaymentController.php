@@ -11,6 +11,9 @@ class PaymentController extends Controller
 {
     public function index(Request $request)
     {
+        // 🌟 Sinkronisasi status pembayaran dengan Midtrans secara otomatis di localhost
+        \App\Models\Order::syncAllUnpaid();
+
         $query = Payment::with('order.user')->orderByDesc('created_at');
 
         // Search payment by Midtrans Transaction ID or Invoice Number

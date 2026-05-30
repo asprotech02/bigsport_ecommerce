@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">CMS Banner (Halaman Depan)</h1>
+        <h1 class="h3 mb-0 text-white font-weight-bold">CMS Banner (Halaman Depan)</h1>
         <a href="{{ route('admin.banners.create') }}" class="btn btn-primary shadow-sm">
             <i class="fas fa-plus me-1"></i> Tambah Banner Baru
         </a>
@@ -37,13 +37,13 @@
                                     <img src="{{ asset('storage/' . $banner->image_path) }}" alt="Banner" class="rounded border" style="height: 60px; width: 120px; object-fit: cover;">
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ $banner->type === 'slider' ? 'primary' : 'info' }}">
+                                    <span class="badge bg-{{ $banner->type === 'slider' ? 'primary' : 'info' }} text-white px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         {{ strtoupper($banner->type) }}
                                     </span>
                                     <div class="text-muted small mt-1">Urutan: {{ $banner->order }}</div>
                                 </td>
                                 <td>
-                                    <span class="fw-bold d-block">{{ $banner->title ?? '-' }}</span>
+                                    <span class="fw-bold d-block text-white">{{ $banner->title ?? '-' }}</span>
                                     <small class="text-muted">{{ $banner->subtitle ?? '-' }}</small>
                                 </td>
                                 <td>
@@ -56,23 +56,23 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ $banner->is_active ? 'success' : 'danger' }}">
+                                    <span class="badge bg-{{ $banner->is_active ? 'success' : 'danger' }} text-white px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         {{ $banner->is_active ? 'Aktif' : 'Nonaktif' }}
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <div class="d-flex justify-content-end align-items-center" style="gap: 4px;">
+                                    <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
                                         <a href="{{ route('admin.banners.edit', $banner->id) }}" 
-                                           class="btn btn-sm btn-outline-warning px-2 py-1" 
+                                           class="btn btn-sm btn-outline-warning px-2.5 py-1.5 d-flex align-items-center" 
                                            title="Edit Banner"
-                                           style="font-size: 0.72rem; border-radius: 4px;">
-                                            <i class="fas fa-edit"></i> Edit
+                                           style="font-size: 0.75rem; border-radius: 6px;">
+                                            <i class="fas fa-edit me-1.5"></i> Edit
                                         </a>
                                         <form action="{{ route('admin.banners.destroy', $banner->id) }}" method="POST" class="d-inline mb-0">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="Hapus Banner" style="font-size: 0.72rem; border-radius: 4px;" onclick="return confirm('Hapus banner ini?')">
-                                                <i class="fas fa-trash-alt"></i> Hapus
+                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2.5 py-1.5 d-flex align-items-center" title="Hapus Banner" style="font-size: 0.75rem; border-radius: 6px;" onclick="return confirm('Hapus banner ini?')">
+                                                <i class="fas fa-trash-alt me-1.5"></i> Hapus
                                             </button>
                                         </form>
                                     </div>

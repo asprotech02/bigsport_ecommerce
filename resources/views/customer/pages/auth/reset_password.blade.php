@@ -74,13 +74,13 @@
                     </button>
                     
                     {{-- Tombol Batal Hanya Muncul Kalau Lagi Login --}}
-                    <!-- @if(auth()->check() && !isset($token))
+                    @if(auth()->check() && !isset($token))
                         <div class="text-center">
                             <a href="{{ route('profile') }}" class="text-secondary text-decoration-none fw-bold" style="font-size: 13px;">
                                 <i class="bi bi-arrow-left me-1"></i> Batal & Kembali
                             </a>
                         </div>
-                    @endif -->
+                    @endif
 
                 </form>
             </div>

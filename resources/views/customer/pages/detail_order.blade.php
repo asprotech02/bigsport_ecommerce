@@ -13,7 +13,7 @@
         if ($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired', 'refunded'])) {
             $statusLabel = 'Pesanan Dibatalkan';
             $statusIcon = 'bi-x-circle';
-        } elseif (in_array($order->payment_status, ['unpaid', 'pending'])) {
+        } elseif ($order->status == 'pending' && in_array($order->payment_status, ['unpaid', 'pending'])) {
             $statusLabel = 'Menunggu Pembayaran';
             $statusIcon = 'bi-wallet2';
         } else {
@@ -23,16 +23,26 @@
                     $statusIcon = 'bi-hourglass-split';
                     break;
                 case 'confirmed': 
+                case 'preparing': 
+                case 'processing': 
                     $statusLabel = 'Sedang Dikemas'; 
                     $statusIcon = 'bi-box-seam';
                     break;
-                case 'processing': 
+                case 'shipped': 
                     $statusLabel = 'Sedang Dikirim'; 
                     $statusIcon = 'bi-truck';
+                    break;
+                case 'delivered': 
+                    $statusLabel = 'Tiba di Tujuan'; 
+                    $statusIcon = 'bi-geo-fill';
                     break;
                 case 'completed': 
                     $statusLabel = 'Pesanan Selesai'; 
                     $statusIcon = 'bi-check-circle-fill';
+                    break;
+                default: 
+                    $statusLabel = 'Diproses'; 
+                    $statusIcon = 'bi-gear';
                     break;
             }
         }
@@ -44,6 +54,11 @@
     <section class="py-4 py-lg-5 bg-white text-dark" style="min-height: 70vh;">
         <div class="container" style="max-width: 800px;">
             
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 1px;">Detail Pesanan</h4>
+                <a href="{{ route('order') }}" class="btn btn-sm btn-outline-dark rounded-0 px-3 fw-bold" style="font-size: 11px;">KEMBALI</a>
+            </div>
+
             {{-- 1. BANNER STATUS --}}
             <div class="card rounded-0 mb-4 bg-black text-white border-0">
                 <div class="card-body p-4 d-flex align-items-center gap-3">
@@ -270,7 +285,7 @@
                 @endif
 
                 {{-- Bayar Sekarang --}}
-                @if(in_array($order->payment_status, ['unpaid', 'pending']) && $order->status != 'cancelled')
+                @if(in_array($order->payment_status, ['unpaid', 'pending']) && $order->status === 'pending')
                     <button type="button" class="btn btn-dark fw-bold text-uppercase btn-lanjut-bayar rounded-0 py-2.5 w-100" style="font-size: 12px; letter-spacing: 0.5px;" data-token="{{ $order->snap_token }}">Bayar Sekarang</button>
                 @endif
                 
@@ -428,28 +443,74 @@
         // 2. PESANAN DITERIMA LOGIC
         // ==========================================
         function submitOrderReceived(orderId) {
-            if (confirm('Apakah Anda yakin paket telah diterima dengan aman dan ingin menyelesaikan pesanan ini?')) {
-                const btn = document.getElementById('btn-complete-order');
-                btn.disabled = true;
-                btn.innerText = 'MEMPROSES...';
-
-                axios.post(`/profile/order/${orderId}/complete`, {
-                    _token: '{{ csrf_token() }}'
-                })
-                .then(res => {
-                    if (res.data.success) {
-                        window.location.reload();
-                    } else {
-                        alert(res.data.message);
-                        btn.disabled = false;
-                        btn.innerText = 'Pesanan Diterima';
+            Swal.fire({
+                title: 'Konfirmasi Penerimaan',
+                text: 'Apakah Anda yakin paket telah diterima dengan aman dan ingin menyelesaikan pesanan ini?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'YA, SELESAIKAN',
+                cancelButtonText: 'BATAL',
+                customClass: {
+                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2 me-2',
+                    cancelButton: 'btn btn-outline-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const btn = document.getElementById('btn-complete-order');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerText = 'MEMPROSES...';
                     }
-                }).catch(() => {
-                    alert('Terjadi kesalahan koneksi server.');
-                    btn.disabled = false;
-                    btn.innerText = 'Pesanan Diterima';
-                });
-            }
+
+                    axios.post(`/profile/order/${orderId}/complete`, {
+                        _token: '{{ csrf_token() }}'
+                    })
+                    .then(res => {
+                        if (res.data.success) {
+                            Swal.fire({
+                                title: 'Berhasil!',
+                                text: 'Pesanan berhasil diselesaikan! Terima kasih telah berbelanja di BigSport.',
+                                icon: 'success',
+                                customClass: {
+                                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                                },
+                                buttonsStyling: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Gagal',
+                                text: res.data.message,
+                                icon: 'error',
+                                customClass: {
+                                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                                },
+                                buttonsStyling: false
+                            });
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.innerText = 'Pesanan Diterima';
+                            }
+                        }
+                    }).catch(() => {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Terjadi kesalahan koneksi server.',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                            },
+                            buttonsStyling: false
+                        });
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerText = 'Pesanan Diterima';
+                        }
+                    });
+                }
+            });
         }
 
         // ==========================================
@@ -475,14 +536,43 @@
                 _token: '{{ csrf_token() }}'
             };
 
-            axios.post("{{ route('order.review', $order->id) }}", payload)
+            axios.post("{{ route('order.review') }}", payload)
                 .then(res => {
                     if (res.data.success) {
-                        alert(res.data.message);
-                        window.location.reload();
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: res.data.message || 'Terima kasih atas ulasannya! ⭐',
+                            icon: 'success',
+                            customClass: {
+                                confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                            },
+                            buttonsStyling: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Gagal',
+                            text: res.data.message || 'Gagal mengirim ulasan.',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                            },
+                            buttonsStyling: false
+                        });
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = 'Kirim Ulasan';
                     }
                 }).catch(() => {
-                    alert('Gagal mengirim ulasan.');
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Gagal mengirim ulasan.',
+                        icon: 'error',
+                        customClass: {
+                            confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                        },
+                        buttonsStyling: false
+                    });
                     submitBtn.disabled = false;
                     submitBtn.innerText = 'Kirim Ulasan';
                 });
@@ -559,10 +649,27 @@
             })
             .then(response => {
                 if (response.data.success) {
-                    // Jika sukses, arahkan kembali ke tab pesanan
-                    window.location.href = "{{ route('profile') }}?tab=orders";
+                    Swal.fire({
+                        title: 'Sukses',
+                        text: 'Pesanan berhasil dibatalkan!',
+                        icon: 'success',
+                        customClass: {
+                            confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                        },
+                        buttonsStyling: false
+                    }).then(() => {
+                        window.location.href = "{{ route('profile') }}?tab=orders";
+                    });
                 } else {
-                    alert(response.data.message || 'Gagal membatalkan pesanan.');
+                    Swal.fire({
+                        title: 'Gagal',
+                        text: response.data.message || 'Gagal membatalkan pesanan.',
+                        icon: 'error',
+                        customClass: {
+                            confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                        },
+                        buttonsStyling: false
+                    });
                     if (confirmBtn) {
                         confirmBtn.innerHTML = originalText;
                         confirmBtn.disabled = false;
@@ -571,7 +678,15 @@
             })
             .catch(error => {
                 console.error("Cancel Error:", error);
-                alert('Terjadi kesalahan koneksi server.');
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Terjadi kesalahan koneksi server.',
+                    icon: 'error',
+                    customClass: {
+                        confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                    },
+                    buttonsStyling: false
+                });
                 if (confirmBtn) {
                     confirmBtn.innerHTML = originalText;
                     confirmBtn.disabled = false;

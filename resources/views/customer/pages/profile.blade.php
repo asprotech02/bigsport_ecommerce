@@ -17,7 +17,7 @@
                         <a class="sidebar-link" id="tab-alamat" data-bs-toggle="tab" href="#content-alamat" role="tab" style="cursor: pointer;">Alamat</a>
                         <div class="sidebar-divider"></div>
                         <a class="sidebar-link" id="tab-pesanan" data-bs-toggle="tab" href="#content-pesanan" role="tab" style="cursor: pointer;">Pesanan</a>
-                        <a class="sidebar-link" id="tab-status" data-bs-toggle="tab" href="#content-status" role="tab" style="cursor: pointer;">Status Pesanan</a>
+                        <a class="sidebar-link" id="tab-lacak" data-bs-toggle="tab" href="#content-lacak" role="tab" style="cursor: pointer;">Lacak Pesanan</a>
                         <div class="sidebar-divider"></div>
                         <a class="sidebar-link" id="tab-kontak" data-bs-toggle="tab" href="#content-kontak" role="tab" style="cursor: pointer;">Kontak Kami</a>
                         <a class="sidebar-link" id="tab-lokasi" data-bs-toggle="tab" href="#content-lokasi" role="tab" style="cursor: pointer;">Lokasi Toko</a>
@@ -113,7 +113,7 @@
                             <ul class="nav border-bottom border-secondary-subtle mb-4 gap-3 gap-md-4 d-flex flex-nowrap overflow-x-auto thumbnail-scroll" id="orderTabs" role="tablist">
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 active text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#semua" type="button">Semua</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#belum-bayar" type="button">Belum Bayar</button></li>
-                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dikemas" type="button">Dikemas</button></li>
+                                <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#diproses" type="button">Diproses</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dikirim" type="button">Dikirim</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#selesai" type="button">Selesai</button></li>
                                 <li class="nav-item"><button class="nav-link nav-tab-custom fw-bold fs-6 pb-3 px-1 text-dark opacity-75 hover-opacity-100 text-nowrap" data-bs-toggle="tab" data-bs-target="#dibatalkan" type="button">Dibatalkan</button></li>
@@ -124,18 +124,25 @@
 
                                 function getCustomerStatus($order) {
                                     if ($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired', 'refunded'])) {
-                                        return ['label' => 'Dibatalkan', 'class' => 'text-dark'];
+                                        return ['label' => 'Dibatalkan', 'class' => 'text-danger'];
                                     }
                                     if (in_array($order->payment_status, ['unpaid', 'pending'])) {
-                                        return ['label' => 'Belum Dibayar', 'class' => 'text-danger'];
+                                        return ['label' => 'Menunggu Pembayaran', 'class' => 'text-warning'];
                                     }
-                                    switch ($order->status) {
-                                        case 'pending': return ['label' => 'Menunggu Konfirmasi', 'class' => 'text-dark'];
-                                        case 'confirmed': return ['label' => 'Sedang Dikemas', 'class' => 'text-dark'];
-                                        case 'processing': return ['label' => 'Sedang Dikirim', 'class' => 'text-dark'];
-                                        case 'completed': return ['label' => 'Selesai', 'class' => 'text-dark'];
-                                        default: return ['label' => 'Status Tidak Diketahui', 'class' => 'text-dark'];
+                                    // Jika sudah bayar
+                                    if ($order->payment_status == 'paid') {
+                                        // Jika pesanan sudah selesai
+                                        if ($order->status == 'completed') {
+                                            return ['label' => 'Selesai', 'class' => 'text-dark'];
+                                        }
+                                        // Jika resi sudah diinput (shippingDetail memiliki tracking_number)
+                                        if ($order->shippingDetail && !empty($order->shippingDetail->tracking_number)) {
+                                            return ['label' => 'Sedang Dikirim', 'class' => 'text-success'];
+                                        }
+                                        // Jika resi belum diinput
+                                        return ['label' => 'Diproses', 'class' => 'text-primary'];
                                     }
+                                    return ['label' => 'Diproses', 'class' => 'text-primary'];
                                 }
 
                                 $tabData = [
@@ -143,12 +150,12 @@
                                     'belum-bayar' => ['data' => $orderList->filter(function($o) {
                                         return in_array($o->payment_status, ['unpaid', 'pending']) && $o->status != 'cancelled';
                                     }), 'empty' => 'Tidak ada pesanan yang belum dibayar'],
-                                    'dikemas' => ['data' => $orderList->filter(function($o) {
-                                        return $o->payment_status == 'paid' && in_array($o->status, ['pending', 'confirmed']);
-                                    }), 'empty' => 'Tidak ada pesanan yang sedang dikemas'],
+                                    'diproses' => ['data' => $orderList->filter(function($o) {
+                                        return $o->payment_status == 'paid' && $o->status != 'cancelled' && $o->status != 'completed' && (!$o->shippingDetail || empty($o->shippingDetail->tracking_number));
+                                    }), 'empty' => 'Tidak ada pesanan yang sedang diproses'],
                                     'dikirim' => ['data' => $orderList->filter(function($o) {
-                                        return $o->payment_status == 'paid' && $o->status == 'processing';
-                                    }), 'empty' => 'Tidak ada pesanan yang sedang dalam pengiriman'],
+                                        return $o->payment_status == 'paid' && $o->status != 'cancelled' && $o->status != 'completed' && $o->shippingDetail && !empty($o->shippingDetail->tracking_number);
+                                    }), 'empty' => 'Tidak ada pesanan yang sedang dikirim'],
                                     'selesai' => ['data' => $orderList->where('status', 'completed'), 'empty' => 'Belum ada pesanan yang selesai'],
                                     'dibatalkan' => ['data' => $orderList->filter(function($o) {
                                         return $o->status == 'cancelled' || in_array($o->payment_status, ['failed', 'expired']);
@@ -174,7 +181,31 @@
                                                         @if($isPickup)
                                                             <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-shop-window me-1"></i> AMBIL DI TOKO</span>
                                                         @else
-                                                            <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
+                                                            @if($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired']))
+                                                                 <span class="badge border border-danger text-danger rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-x-circle me-1"></i> DIBATALKAN</span>
+                                                             @elseif(in_array($order->payment_status, ['unpaid', 'pending']))
+                                                                 <span class="badge border border-warning text-warning rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-clock me-1"></i> MENUNGGU PEMBAYARAN</span>
+                                                             @elseif($order->payment_status == 'paid' && in_array($order->status, ['pending', 'confirmed', 'preparing', 'processing']))
+                                                                 <span class="badge border border-primary text-primary rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-gear me-1"></i> DIPROSES</span>
+                                                             @elseif(in_array($order->status, ['shipped', 'delivered']))
+                                                                 <span class="badge border border-success text-success rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
+                                                             @elseif($order->status == 'completed')
+                                                                 <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-check-circle me-1"></i> SELESAI</span>
+                                                             @else
+                                                                 @if($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired']))
+                                                                 <span class="badge border border-danger text-danger rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-x-circle me-1"></i> DIBATALKAN</span>
+                                                             @elseif(in_array($order->payment_status, ['unpaid', 'pending']))
+                                                                 <span class="badge border border-warning text-warning rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-clock me-1"></i> MENUNGGU PEMBAYARAN</span>
+                                                             @elseif($order->payment_status == 'paid' && in_array($order->status, ['pending', 'confirmed', 'preparing', 'processing']))
+                                                                 <span class="badge border border-primary text-primary rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-gear me-1"></i> DIPROSES</span>
+                                                             @elseif(in_array($order->status, ['shipped', 'delivered']))
+                                                                 <span class="badge border border-success text-success rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
+                                                             @elseif($order->status == 'completed')
+                                                                 <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-check-circle me-1"></i> SELESAI</span>
+                                                             @else
+                                                                 <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
+                                                             @endif
+                                                             @endif
                                                         @endif
                                                     </div>
                                                     <span class="fw-bold text-uppercase {{ $statusData['class'] }}" style="font-size: 12px; letter-spacing: 0.5px;">{{ $statusData['label'] }}</span>
@@ -265,14 +296,17 @@
                                                             {{-- 🌟 TOMBOL YANG TERSISA HANYA INI --}}
                                                             <a href="{{ route('order.detail', $order->id) }}" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Detail Pesanan</a>
 
-                                                            @if(in_array($order->payment_status, ['unpaid', 'pending']) && $order->status != 'cancelled')
+                                                            @if(!in_array($order->status, ['shipped', 'delivered', 'completed', 'cancelled']) && (!$order->shippingDetail || empty($order->shippingDetail->tracking_number)))
+                                                                <button type="button" onclick="cancelOrder({{ $order->id }})" class="btn btn-outline-danger fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Batalkan Pesanan</button>
+                                                            @endif
+
+                                                            @if(in_array($order->payment_status, ['unpaid', 'pending']) && $order->status === 'pending')
                                                                 <button type="button" class="btn btn-dark fw-bold text-uppercase btn-lanjut-bayar rounded-0" style="font-size: 11px; padding: 8px 15px;" data-token="{{ $order->snap_token }}">Bayar Sekarang</button>
                                                             @endif
 
-                                                            @if($order->status == 'processing' && !$isPickup)
-                                                                {{-- Tambahkan ID dinamis dan onclick yang membawa ID pesanan --}}
-                                                                <button type="button" onclick="submitOrderReceived({{ $order->id }})" id="btn-complete-{{ $order->id }}" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Pesanan Diterima</button>
-                                                            @endif
+                                                             @if($order->payment_status == 'paid' && $order->status != 'cancelled' && $order->status != 'completed' && (($order->shippingDetail && !empty($order->shippingDetail->tracking_number)) || $order->status == 'processing' || $order->status == 'shipped' || $order->status == 'delivered'))
+                                                                 <button type="button" onclick="submitOrderReceived({{ $order->id }})" id="btn-complete-{{ $order->id }}" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 8px 15px;">Pesanan Diterima</button>
+                                                             @endif
 
                                                             @php
                                                                 // Ambil semua ID Item Pesanan dari pesanan ini
@@ -289,7 +323,7 @@
     @if(!$hasReviewed)
         {{-- Ganti <a> menjadi <button> agar memicu modal --}}
         <button type="button" 
-                onclick="openReviewModal({{ $order->id }})" 
+                onclick="openReviewModal({{ $order->id }}, {{ json_encode($order->items->map(fn($item) => ['id' => $item->id, 'product_name' => $item->product_name, 'product_size' => $item->product_size])) }})" 
                 class="btn btn-dark fw-bold text-uppercase rounded-0" 
                 style="font-size: 11px; padding: 8px 15px;">
             Beri Ulasan
@@ -326,6 +360,82 @@
                             </div>
                         </div>
 
+                        {{-- TAB: LACAK PESANAN --}}
+                        <div class="tab-pane fade" id="content-lacak" role="tabpanel">
+                            <div class="mb-4">
+                                <h3 class="fw-bold text-uppercase m-0" style="font-size: 24px; letter-spacing: 1px;">Lacak Pesanan</h3>
+                                <p class="text-secondary mt-1" style="font-size: 13px;">Daftar pesanan Anda yang sedang dalam proses pengiriman kurir.</p>
+                            </div>
+
+                            @php
+                                $lacakOrders = $orders->filter(function($o) {
+                                    return $o->payment_status == 'paid' && in_array($o->status, ['processing', 'shipped']);
+                                });
+                            @endphp
+
+                            <div class="lacak-orders-list">
+                                @forelse($lacakOrders as $order)
+                                    @php
+                                        $isPickup = $order->shippingDetail && $order->shippingDetail->courier_company === 'pickup';
+                                    @endphp
+                                    <div class="card rounded-0 mb-4 border-dark shadow-sm">
+                                        <div class="card-header bg-light border-bottom border-dark py-3 px-3 d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-box-seam fs-5 text-dark"></i>
+                                                <span class="fw-bold text-uppercase" style="font-size: 13px;">#{{ $order->invoice_number }}</span>
+                                            </div>
+                                            <span class="badge bg-dark text-white rounded-0 px-2 py-1" style="font-size: 10px; letter-spacing: 0.5px;">DALAM PENGIRIMAN</span>
+                                        </div>
+
+                                        <div class="card-body p-4">
+                                            <div class="row g-3">
+                                                <div class="col-12 col-md-8">
+                                                    <div class="mb-2">
+                                                        <span class="text-secondary d-block" style="font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Kurir</span>
+                                                        <span class="fw-bold text-uppercase" style="font-size: 14px;">
+                                                            {{ $order->shippingDetail->courier_company ?? 'Kurir' }} - {{ $order->shippingDetail->courier_type ?? 'Reguler' }}
+                                                        </span>
+                                                    </div>
+                                                    @if($order->shippingDetail && $order->shippingDetail->tracking_number)
+                                                        <div class="mb-2">
+                                                            <span class="text-secondary d-block" style="font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Nomor Resi</span>
+                                                            <span class="fw-bold font-monospace" style="font-size: 14px;">{{ $order->shippingDetail->tracking_number }}</span>
+                                                        </div>
+                                                    @endif
+                                                    <div>
+                                                        <span class="text-secondary d-block" style="font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Alamat Tujuan</span>
+                                                        @php
+                                                            $addressParts = explode(' | ', $order->shipping_address);
+                                                            $fullAddr = $addressParts[1] ?? $order->shipping_address;
+                                                        @endphp
+                                                        <span class="text-dark small" style="font-size: 13px; line-height: 1.5;">{{ $fullAddr }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 col-md-4 d-flex flex-column justify-content-end align-items-md-end">
+                                                    <div class="text-md-end mb-3">
+                                                        <span class="text-secondary d-block" style="font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Total Belanja</span>
+                                                        <span class="fw-bold text-dark fs-5">Rp {{ number_format($order->grand_total, 0, ',', '.') }}</span>
+                                                    </div>
+                                                    <a href="{{ route('order.track', $order->id) }}" class="btn btn-dark w-100 rounded-0 py-2.5 fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                                                        <i class="bi bi-geo-alt me-1"></i> Lacak Pengiriman
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-center py-5 bg-white border border-secondary-subtle">
+                                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                            <i class="bi bi-truck display-5 text-secondary opacity-50"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-uppercase mb-2">Tidak Ada Pengiriman Aktif</h6>
+                                        <p class="text-secondary mb-4" style="font-size: 14px;">Saat ini tidak ada pesanan Anda yang sedang dalam proses pengiriman.</p>
+                                        <a href="{{ route('product.index') }}" class="btn btn-dark rounded-0 fw-bold px-4 py-2 text-uppercase" style="font-size: 12px; letter-spacing: 1px;">Belanja Sekarang</a>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+
                         {{-- TAB: KONTAK KAMI --}}
                         <div class="tab-pane fade" id="content-kontak" role="tabpanel">
                             <div class="mb-4"><h3 class="fw-bold text-uppercase m-0" style="font-size: 24px; letter-spacing: 1px;">Hubungi Kami</h3><p class="text-secondary mt-1" style="font-size: 13px;">Kami siap membantu Anda.</p></div>
@@ -339,11 +449,24 @@
                                     </div>
                                 </div>
                                 <div class="col-12 col-xl-7">
-                                    <form action="#"><div class="row g-3">
-                                        <div class="col-md-6"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Nama</label><input type="text" class="form-control rounded-0 border-dark p-3 shadow-none" placeholder="John Doe"></div>
-                                        <div class="col-md-6"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Email</label><input type="email" class="form-control rounded-0 border-dark p-3 shadow-none" placeholder="john@example.com"></div>
-                                        <div class="col-12"><label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Pesan</label><textarea class="form-control rounded-0 border-dark p-3 shadow-none" rows="5" placeholder="Pesan Anda..."></textarea></div>
-                                        <div class="col-12 mt-4"><button type="submit" class="btn btn-dark w-100 rounded-0 py-3 fw-bold text-uppercase">KIRIM PESAN</button></div>
+                                    <form onsubmit="sendContactToWhatsApp(event)"><div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Nama Lengkap</label>
+                                            <input type="text" id="contact-name" class="form-control rounded-0 border-dark p-3 shadow-none" placeholder="Nama Anda" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Alamat Email</label>
+                                            <input type="email" id="contact-email" class="form-control rounded-0 border-dark p-3 shadow-none" placeholder="Email Anda" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="fw-bold mb-2 text-uppercase" style="font-size: 11px;">Pesan Anda</label>
+                                            <textarea id="contact-message" class="form-control rounded-0 border-dark p-3 shadow-none" rows="5" placeholder="Tulis pesan Anda..." required></textarea>
+                                        </div>
+                                        <div class="col-12 mt-4">
+                                            <button type="submit" class="btn btn-dark w-100 rounded-0 py-3 fw-bold text-uppercase">
+                                                KIRIM PESAN
+                                            </button>
+                                        </div>
                                     </div></form>
                                 </div>
                             </div>
@@ -388,11 +511,8 @@
                         <div class="modal-body p-4">
                             <div class="mb-3">
                                 <label class="fw-bold small text-uppercase mb-2">Pilih Produk Untuk Diulas</label>
-                               <select id="review-product-sku" name="order_item_id" class="form-select ..." required>
-                                    @foreach($order->items as $item)
-                                        {{-- Kita kirim $item->id karena itulah yang disimpan di kolom 'order_item' di DB --}}
-                                        <option value="{{ $item->id }}">{{ $item->product_name }} (Size: {{ $item->product_size }})</option>
-                                    @endforeach
+                                <select id="review-product-sku" name="order_item_id" class="form-select rounded-0 border-dark shadow-none small" required>
+                                    <!-- Dinamis diisi lewat JavaScript -->
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -438,7 +558,7 @@
                 const tabMapping = {
                     'orders': 'tab-pesanan',
                     'alamat': 'tab-alamat',
-                    'status': 'tab-status'
+                    'lacak': 'tab-lacak'
                 };
 
                 const targetTabId = tabMapping[tabParam];
@@ -544,32 +664,69 @@ function submitReviewProduk(e) {
     })
     .then(res => {
         if (res.data.success) {
-            alert(res.data.message);
-            window.location.reload();
+            Swal.fire({
+                title: 'Berhasil!',
+                text: res.data.message || 'Terima kasih atas ulasannya! ⭐',
+                icon: 'success',
+                customClass: {
+                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                },
+                buttonsStyling: false
+            }).then(() => {
+                window.location.reload();
+            });
         } else {
-            alert(res.data.message);
+            Swal.fire({
+                title: 'Gagal',
+                text: res.data.message || 'Gagal mengirim ulasan.',
+                icon: 'error',
+                customClass: {
+                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                },
+                buttonsStyling: false
+            });
             submitBtn.disabled = false;
             submitBtn.innerText = 'Kirim Ulasan';
         }
     }).catch(err => {
-        console.error(err.response.data); // LIHAT ERROR DETAIL DI CONSOLE
-        alert('Gagal mengirim ulasan. Pastikan Anda belum pernah mengulas produk ini.');
+        console.error(err);
+        Swal.fire({
+            title: 'Error',
+            text: 'Gagal mengirim ulasan. Pastikan Anda belum pernah mengulas produk ini.',
+            icon: 'error',
+            customClass: {
+                confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+            },
+            buttonsStyling: false
+        });
         submitBtn.disabled = false;
         submitBtn.innerText = 'Kirim Ulasan';
     });
 }
 
 
-        function openReviewModal(orderId) {
+        function openReviewModal(orderId, items) {
     // 1. Tampilkan modal
     const myModal = new bootstrap.Modal(document.getElementById('reviewOrderModal'));
     myModal.show();
 
-    // 2. Jika kamu punya form di dalam modal, kamu bisa set action URL-nya secara dinamis
+    // 2. Isi select secara dinamis
+    const select = document.getElementById('review-product-sku');
+    select.innerHTML = '';
+    if (items && items.length > 0) {
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = `${item.product_name} (Size: ${item.product_size || '-'})`;
+            select.appendChild(option);
+        });
+    }
+
+    // 3. Jika kamu punya form di dalam modal, kamu bisa set action URL-nya secara dinamis
     const form = document.getElementById('form-review-produk');
     form.setAttribute('action', `/order/${orderId}/review`); 
     
-    // 3. Simpan orderId di input hidden agar bisa dikirim ke server
+    // 4. Simpan orderId di input hidden agar bisa dikirim ke server
     let hiddenInput = form.querySelector('input[name="order_id"]');
     if (!hiddenInput) {
         hiddenInput = document.createElement('input');
@@ -578,6 +735,190 @@ function submitReviewProduk(e) {
         form.appendChild(hiddenInput);
     }
     hiddenInput.value = orderId;
+}
+
+function cancelOrder(id) {
+    Swal.fire({
+        title: 'Batal Pesanan',
+        text: 'Apakah Anda yakin ingin membatalkan pesanan ini?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'YA, BATALKAN',
+        cancelButtonText: 'TIDAK',
+        customClass: {
+            confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2 me-2',
+            cancelButton: 'btn btn-outline-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Alasan Pembatalan',
+                text: 'Silakan masukkan alasan Anda membatalkan pesanan ini:',
+                input: 'text',
+                inputPlaceholder: 'Contoh: Berubah pikiran / Salah pilih ukuran',
+                showCancelButton: true,
+                confirmButtonText: 'KIRIM',
+                cancelButtonText: 'BATAL',
+                customClass: {
+                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2 me-2',
+                    cancelButton: 'btn btn-outline-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                },
+                inputAttributes: {
+                    style: 'width: 85%; max-width: 100%; margin: 15px auto; border-radius: 0; border: 1px solid #000000; box-shadow: none; font-size: 14px; padding: 10px 15px; font-family: inherit; display: block;'
+                },
+                buttonsStyling: false,
+                inputValidator: (value) => {
+                    if (!value || value.trim() === '') {
+                        return 'Alasan pembatalan wajib diisi!';
+                    }
+                }
+            }).then((inputResult) => {
+                if (inputResult.isConfirmed) {
+                    const reason = inputResult.value;
+                    axios.post(`/profile/order/${id}/cancel-manual`, {
+                        reason: reason,
+                        _token: '{{ csrf_token() }}'
+                    })
+                    .then(res => {
+                        if (res.data.success) {
+                            Swal.fire({
+                                title: 'Sukses',
+                                text: 'Pesanan berhasil dibatalkan!',
+                                icon: 'success',
+                                customClass: {
+                                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                                },
+                                buttonsStyling: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Gagal',
+                                text: res.data.message || 'Gagal membatalkan pesanan.',
+                                icon: 'error',
+                                customClass: {
+                                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                                },
+                                buttonsStyling: false
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Terjadi kesalahan sistem saat membatalkan pesanan.',
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                            },
+                            buttonsStyling: false
+                        });
+                    });
+                }
+            });
+        }
+    });
+}
+
+function sendContactToWhatsApp(event) {
+    event.preventDefault();
+    const name = document.getElementById('contact-name').value.trim();
+    const email = document.getElementById('contact-email').value.trim();
+    const message = document.getElementById('contact-message').value.trim();
+    
+    if (!name || !email || !message) {
+        Swal.fire({
+            title: 'Form Belum Lengkap',
+            text: 'Harap isi semua kolom formulir kontak!',
+            icon: 'warning',
+            customClass: {
+                confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+            },
+            buttonsStyling: false
+        });
+        return;
+    }
+    
+    const waNumber = "6281234567890"; // WhatsApp CS Toko Utama
+    const text = `Halo CS BigSport, saya ingin menghubungi Anda:\n\n*Nama:* ${name}\n*Email:* ${email}\n*Pesan:* ${message}`;
+    const encodedText = encodeURIComponent(text);
+    
+    const waUrl = `https://api.whatsapp.com/send?phone=${waNumber}&text=${encodedText}`;
+    window.open(waUrl, '_blank');
+}
+
+function submitOrderReceived(orderId) {
+    Swal.fire({
+        title: 'Konfirmasi Penerimaan',
+        text: 'Apakah Anda yakin paket telah diterima dengan aman dan ingin menyelesaikan pesanan ini?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'YA, SELESAIKAN',
+        cancelButtonText: 'BATAL',
+        customClass: {
+            confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2 me-2',
+            cancelButton: 'btn btn-outline-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const btn = document.getElementById('btn-complete-' + orderId);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'MEMPROSES...';
+            }
+
+            axios.post(`/profile/order/${orderId}/complete`, {
+                _token: '{{ csrf_token() }}'
+            })
+            .then(res => {
+                if (res.data.success) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Pesanan berhasil diselesaikan! Terima kasih telah berbelanja di BigSport.',
+                        icon: 'success',
+                        customClass: {
+                            confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                        },
+                        buttonsStyling: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Gagal',
+                        text: res.data.message,
+                        icon: 'error',
+                        customClass: {
+                            confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                        },
+                        buttonsStyling: false
+                    });
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerText = 'Pesanan Diterima';
+                    }
+                }
+            }).catch(() => {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Terjadi kesalahan koneksi server.',
+                    icon: 'error',
+                    customClass: {
+                        confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                    },
+                    buttonsStyling: false
+                });
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Pesanan Diterima';
+                }
+            });
+        }
+    });
 }
     </script>
     @endpush

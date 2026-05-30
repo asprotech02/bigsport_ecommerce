@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">CMS Halaman Statis</h1>
+        <h1 class="h3 mb-0 text-white font-weight-bold">CMS Halaman Statis</h1>
         <a href="{{ route('admin.pages.create') }}" class="btn btn-primary shadow-sm">
             <i class="fas fa-plus me-1"></i> Buat Halaman Baru
         </a>
@@ -32,27 +32,31 @@
                     <tbody>
                         @forelse($pages as $page)
                             <tr>
-                                <td class="ps-4 fw-bold text-dark">{{ $page->title }}</td>
-                                <td><span class="badge bg-light text-primary border px-2 py-1">{{ $page->slug }}</span></td>
+                                <td class="ps-4 fw-bold text-white">{{ $page->title }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $page->is_active ? 'success' : 'danger' }}">
+                                    <span class="badge bg-light text-primary border px-3 py-1.5 rounded-pill fs-7 fw-semibold">
+                                        {{ $page->slug }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ $page->is_active ? 'success' : 'danger' }} text-white px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         {{ $page->is_active ? 'Aktif' : 'Draft' }}
                                     </span>
                                 </td>
                                 <td><span class="text-muted small">{{ $page->updated_at->format('d M Y, H:i') }}</span></td>
                                 <td class="text-end pe-4">
-                                    <div class="d-flex justify-content-end align-items-center" style="gap: 4px;">
+                                    <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
                                         <a href="{{ route('admin.pages.edit', $page->id) }}" 
-                                           class="btn btn-sm btn-outline-warning px-2 py-1" 
+                                           class="btn btn-sm btn-outline-warning px-2.5 py-1.5 d-flex align-items-center" 
                                            title="Edit Halaman"
-                                           style="font-size: 0.72rem; border-radius: 4px;">
-                                            <i class="fas fa-edit"></i> Edit
+                                           style="font-size: 0.75rem; border-radius: 6px;">
+                                            <i class="fas fa-edit me-1.5"></i> Edit
                                         </a>
                                         <form action="{{ route('admin.pages.destroy', $page->id) }}" method="POST" class="d-inline mb-0">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="Hapus Halaman" style="font-size: 0.72rem; border-radius: 4px;" onclick="return confirm('Hapus halaman ini secara permanen?')">
-                                                <i class="fas fa-trash-alt"></i> Hapus
+                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2.5 py-1.5 d-flex align-items-center" title="Hapus Halaman" style="font-size: 0.75rem; border-radius: 6px;" onclick="return confirm('Hapus halaman ini secara permanen?')">
+                                                <i class="fas fa-trash-alt me-1.5"></i> Hapus
                                             </button>
                                         </form>
                                     </div>

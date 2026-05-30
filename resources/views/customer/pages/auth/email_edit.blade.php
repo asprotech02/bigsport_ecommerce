@@ -27,11 +27,11 @@
 
                     <button type="submit" class="btn btn-dark w-100 py-3 fw-bold text-uppercase rounded-0 mb-3" style="letter-spacing: 1px;">SIMPAN EMAIL</button>
                     
-                    <!-- <div class="text-center">
+                    <div class="text-center">
                         <a href="{{ route('profile') }}" class="text-secondary text-decoration-none fw-bold" style="font-size: 13px;">
                             <i class="bi bi-arrow-left me-1"></i> Batal & Kembali
                         </a>
-                    </div> -->
+                    </div>
                 </form>
             </div>
 

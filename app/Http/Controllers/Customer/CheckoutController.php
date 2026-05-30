@@ -83,7 +83,7 @@ class CheckoutController extends Controller
                 'authorization' => env('BITESHIP_API_KEY'),
                 'content-type'  => 'application/json'
             ])->post('https://api.biteship.com/v1/rates/couriers', [
-                'origin_postal_code'      => 15710,
+                'origin_postal_code'      => 15154,
                 'destination_postal_code' => (int) $address->postal_code,
                 'couriers'                => 'jne,jnt,sicepat',
                 'items'                   => $items
@@ -197,6 +197,10 @@ class CheckoutController extends Controller
                 $address = Address::where('id', $request->address_id)->where('user_id', $user->id)->first();
                 if (!$address) throw new \Exception('Alamat tidak valid');
 
+                if (!$request->filled('courier_company') || !$request->filled('courier_type')) {
+                    throw new \Exception('Silakan pilih kurir dan layanan pengiriman terlebih dahulu.');
+                }
+
                 $shippingCost = (int) preg_replace('/[^0-9]/', '', $request->shipping_cost);
                 $addressId = $address->id;
                 
@@ -293,6 +297,9 @@ class CheckoutController extends Controller
             $snapToken = \Midtrans\Snap::getSnapToken([
                 'transaction_details' => ['order_id' => $invoiceNumber, 'gross_amount' => (int)$grandTotal],
                 'customer_details' => ['first_name' => $user->name, 'email' => $user->email],
+                'callbacks' => [
+                    'finish' => route('profile') . '?tab=orders'
+                ]
             ]);
 
             // Update token ke order yang sudah tersimpan

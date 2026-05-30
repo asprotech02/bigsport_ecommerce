@@ -34,6 +34,16 @@
         .select2-selection__rendered {
             margin-top: 2px;
         }
+
+        .btn-outline-light:hover {
+            color: #111111 !important;
+            background-color: #ffffff !important;
+            border-color: #ffffff !important;
+        }
+        
+        .btn-outline-light:hover i {
+            color: #111111 !important;
+        }
     </style>
 </head>
 

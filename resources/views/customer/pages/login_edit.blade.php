@@ -31,7 +31,12 @@
                                 <input type="email" name="new_email" class="form-control rounded-0 shadow-none auth-input" required>
                             </div>
 
-                            <button type="submit" class="btn btn-black w-100 py-2 mt-auto">SIMPAN</button>
+                            <button type="submit" class="btn btn-black w-100 py-2 mt-auto mb-3">SIMPAN</button>
+                            <div class="text-center">
+                                <a href="{{ route('profile') }}" class="text-secondary text-decoration-none fw-bold" style="font-size: 13px;">
+                                    <i class="bi bi-arrow-left me-1"></i> Batal & Kembali
+                                </a>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -72,18 +77,17 @@
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-black w-100 py-2">SIMPAN</button>
+                            <button type="submit" class="btn btn-black w-100 py-2 mb-3">SIMPAN</button>
+                            <div class="text-center">
+                                <a href="{{ route('profile') }}" class="text-secondary text-decoration-none fw-bold" style="font-size: 13px;">
+                                    <i class="bi bi-arrow-left me-1"></i> Batal & Kembali
+                                </a>
+                            </div>
                         </form>
                     </div>
                 </div>
 
             </div>
-            
-            <!-- <div class="text-center mt-5">
-                <a href="{{ route('profile') }}" class="text-dark text-decoration-none fw-bold" style="font-size: 14px;">
-                    <i class="bi bi-arrow-left me-1"></i> Kembali ke Profil
-                </a>
-            </div> -->
             
         </div>
     </section>

@@ -442,6 +442,17 @@ document.addEventListener('DOMContentLoaded', function() {
             
             errorMsgBox.style.display = 'none';
 
+            // Validate courier selection if delivery_type is delivery
+            const deliveryType = document.querySelector('input[name="delivery_type"]:checked')?.value;
+            if (deliveryType === 'delivery') {
+                const courierCompany = document.getElementById('input-courier-company').value;
+                const courierType = document.getElementById('input-courier-type').value;
+                if (!courierCompany || !courierType) {
+                    showCheckoutError('Silakan pilih layanan kurir pengiriman terlebih dahulu.');
+                    return;
+                }
+            }
+
             const btnSubmit = this.querySelector('button[type="submit"]');
             const originalText = btnSubmit.innerHTML;
             btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> MEMPROSES...';

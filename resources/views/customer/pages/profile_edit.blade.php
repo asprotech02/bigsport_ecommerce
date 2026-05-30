@@ -39,11 +39,11 @@
                     <button type="submit" class="btn btn-dark w-100 mb-4 rounded-0 fw-bold text-uppercase" style="padding: 12px; letter-spacing: 1px;">SIMPAN PERUBAHAN</button>
                     
                     {{-- Tombol Batal --}}
-                    <!-- <div class="text-center">
+                    <div class="text-center">
                         <a href="{{ route('profile') }}" class="text-secondary text-decoration-none fw-bold" style="font-size: 13px;">
                             <i class="bi bi-arrow-left me-1"></i> Batal & Kembali
                         </a>
-                    </div> -->
+                    </div>
                 </form>
             </div>
 

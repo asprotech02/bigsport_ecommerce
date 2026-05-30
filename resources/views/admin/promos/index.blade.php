@@ -37,7 +37,7 @@
                             <tr>
                                 <td class="ps-4 fw-bold text-white">{{ $promo->code }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $promo->type === 'percentage' ? 'info' : 'secondary' }} text-white">
+                                    <span class="badge bg-{{ $promo->type === 'percentage' ? 'info' : 'secondary' }} text-white px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         {{ ucfirst($promo->type) }}
                                     </span>
                                 </td>
@@ -59,23 +59,23 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ $promo->is_active ? 'success' : 'danger' }} text-white">
+                                    <span class="badge bg-{{ $promo->is_active ? 'success' : 'danger' }} text-white px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         {{ $promo->is_active ? 'Aktif' : 'Nonaktif' }}
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <div class="d-flex justify-content-end align-items-center" style="gap: 4px;">
+                                    <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
                                         <a href="{{ route('admin.promos.edit', $promo->id) }}" 
-                                           class="btn btn-sm btn-outline-warning px-2 py-1" 
+                                           class="btn btn-sm btn-outline-warning px-2.5 py-1.5 d-flex align-items-center" 
                                            title="Edit Promo"
-                                           style="font-size: 0.72rem; border-radius: 4px;">
-                                            <i class="fas fa-edit"></i> Edit
+                                           style="font-size: 0.75rem; border-radius: 6px;">
+                                            <i class="fas fa-edit me-1.5"></i> Edit
                                         </a>
                                         <form action="{{ route('admin.promos.destroy', $promo->id) }}" method="POST" class="d-inline mb-0">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="Hapus Promo" style="font-size: 0.72rem; border-radius: 4px;" onclick="return confirm('Apakah Anda yakin ingin menghapus promo ini?')">
-                                                <i class="fas fa-trash-alt"></i> Hapus
+                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2.5 py-1.5 d-flex align-items-center" title="Hapus Promo" style="font-size: 0.75rem; border-radius: 6px;" onclick="return confirm('Apakah Anda yakin ingin menghapus promo ini?')">
+                                                <i class="fas fa-trash-alt me-1.5"></i> Hapus
                                             </button>
                                         </form>
                                     </div>

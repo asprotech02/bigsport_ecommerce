@@ -18,6 +18,9 @@ class ProfileController extends Controller
 {
     public function index()
     {
+        // 🌟 Sinkronisasi status pembayaran dengan Midtrans secara otomatis di localhost
+        Order::syncAllUnpaid();
+
         $user = Auth::user();
         $addresses = Address::where('user_id', $user->id)->orderByDesc('is_default')->get();
         
@@ -225,7 +228,7 @@ class ProfileController extends Controller
         // Membersihkan spasi jika ada typo saat ketik manual di database
         $cleanStatus = trim(strtolower($order->status));
 
-        if ($cleanStatus !== 'processing') {
+        if (!in_array($cleanStatus, ['processing', 'shipped', 'delivered'])) {
             // Akan memunculkan status asli dari DB agar kita tahu apa yang salah
             return response()->json(['success' => false, 'message' => 'Gagal! Status di database saat ini: "' . $order->status . '"']);
         }
@@ -240,7 +243,11 @@ class ProfileController extends Controller
             'message' => "Terima kasih! Pesanan #{$order->invoice_number} telah selesai. Jangan lupa beri ulasan produk pilihanmu ya!"
         ]);
         
-        broadcast(new \App\Events\RealTimeNotification($notif));
+        try {
+            broadcast(new \App\Events\RealTimeNotification($notif));
+        } catch (\Exception $e) {
+            \Log::warning("RealTimeNotification broadcast failed: " . $e->getMessage());
+        }
 
         return response()->json(['success' => true]);
     }
@@ -333,6 +340,59 @@ public function storeReview(Request $request)
         $trackingData = null;
         $errorMessage = null;
 
+        // --- SERVER-SIDE GEOCODING (NOMINATIM) DENGAN TIMEOUT 1.5 DETIK ---
+        $destLat = -6.1783; // Default: Tangerang Kota
+        $destLng = 106.6319;
+
+        if ($shipping && !empty($order->shipping_address)) {
+            $addressParts = explode(' | ', $order->shipping_address);
+            $cleanAddress = $addressParts[1] ?? $order->shipping_address;
+            $cleanAddress = trim(str_replace(["\r", "\n", "'", '"'], ' ', $cleanAddress));
+            
+            try {
+                // Coba 1: Alamat Lengkap
+                $geoResponse = Http::timeout(1.5)
+                    ->withHeaders([
+                        'User-Agent' => 'BigSportEcommerceApp/1.0 (achma.wisnu@gmail.com)'
+                    ])
+                    ->get('https://nominatim.openstreetmap.org/search', [
+                        'format' => 'json',
+                        'q' => $cleanAddress,
+                        'limit' => 1
+                    ]);
+
+                if ($geoResponse->successful()) {
+                    $geoData = $geoResponse->json();
+                    if (!empty($geoData) && isset($geoData[0]['lat'])) {
+                        $destLat = (float) $geoData[0]['lat'];
+                        $destLng = (float) $geoData[0]['lon'];
+                    } else {
+                        // Coba 2: Sederhanakan jika gagal
+                        $parts = explode(',', $cleanAddress);
+                        if (count($parts) > 2) {
+                            $simpler = implode(',', array_slice($parts, -3));
+                            $geoResponse2 = Http::timeout(1.2)
+                                ->withHeaders(['User-Agent' => 'BigSportEcommerceApp/1.0 (achma.wisnu@gmail.com)'])
+                                ->get('https://nominatim.openstreetmap.org/search', [
+                                    'format' => 'json',
+                                    'q' => $simpler,
+                                    'limit' => 1
+                                ]);
+                            if ($geoResponse2->successful()) {
+                                $geoData2 = $geoResponse2->json();
+                                if (!empty($geoData2) && isset($geoData2[0]['lat'])) {
+                                    $destLat = (float) $geoData2[0]['lat'];
+                                    $destLng = (float) $geoData2[0]['lon'];
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Server-side geocoding failed: " . $e->getMessage());
+            }
+        }
+
         if (!$shipping || empty($shipping->tracking_number) || empty($shipping->courier_company)) {
             $errorMessage = 'Resi belum tersedia atau pesanan menggunakan metode Ambil di Toko.';
         } else {
@@ -395,13 +455,30 @@ public function storeReview(Request $request)
                         'history' => $historyIndo // Masukkan data yang sudah di-translate
                     ];
                 } else {
-                    $errorMessage = 'Biteship Error: ' . ($result['error'] ?? 'Data tracking belum diupdate oleh kurir.');
+                    $errorText = $result['error'] ?? '';
+                    if (strpos(strtolower($errorText), 'not found') !== false || strpos(strtolower($errorText), 'tidak ditemukan') !== false) {
+                        // Resi baru dibuat, belum di-pickup kurir
+                        $trackingData = [
+                            'courier_company' => strtoupper($shipping->courier_company),
+                            'waybill_id' => $shipping->tracking_number,
+                            'status' => 'DIPROSES',
+                            'history' => [
+                                [
+                                    'updated_at' => $order->updated_at->toIso8601String(),
+                                    'status' => 'PESANAN DIPROSES',
+                                    'note' => 'Nomor resi pengiriman telah diterbitkan oleh penjual. Menunggu paket dijemput oleh kurir ekspedisi.'
+                                ]
+                            ]
+                        ];
+                    } else {
+                        $errorMessage = 'Biteship Error: ' . ($result['error'] ?? 'Data tracking belum diupdate oleh kurir.');
+                    }
                 }
             } catch (\Exception $e) {
                 $errorMessage = 'System Error: Gagal terhubung ke server ekspedisi.';
             }
         }
 
-        return view('customer.pages.track_order', compact('order', 'trackingData', 'errorMessage'));
+        return view('customer.pages.track_order', compact('order', 'trackingData', 'errorMessage', 'destLat', 'destLng'));
     }
 }

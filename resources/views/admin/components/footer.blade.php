@@ -3,17 +3,7 @@
     <i class="fas fa-angle-up"></i>
 </a>
 
-<!-- JQuery -->
-<script src="{{ asset('assets/admin/vendor/jquery/jquery.min.js') }}"></script>
-
-<!-- Bootstrap -->
-<script src="{{ asset('assets/admin/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-
-<!-- Select2 -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-@stack('scripts')
-
+@push('scripts')
 <script>
 $(document).ready(function () {
 
@@ -319,6 +309,4 @@ $(document).ready(function () {
 
 });
 </script>
-
-</body>
-</html>
+@endpush

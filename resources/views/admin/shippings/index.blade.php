@@ -79,29 +79,45 @@
                                 </td>
                                 <td>
                                     @if($shipping->tracking_number)
-                                        <span class="badge bg-primary text-white fs-6 font-monospace px-2.5 py-1.5 rounded">{{ $shipping->tracking_number }}</span>
+                                        <span class="badge bg-primary text-white font-monospace px-2.5 py-1.5 rounded" style="font-size: 0.85rem;">{{ $shipping->tracking_number }}</span>
                                     @else
-                                        <span class="badge bg-secondary text-white px-2.5 py-1.5 rounded">Menunggu Resi</span>
+                                        <span class="badge bg-secondary text-white px-2.5 py-1.5 rounded" style="font-size: 0.8rem;">Menunggu Resi</span>
                                     @endif
                                 </td>
                                 <td class="fw-bold text-white">Rp {{ number_format($shipping->cost, 0, ',', '.') }}</td>
                                 <td>
-                                    <span class="badge bg-{{ 
-                                        ($shipping->order->status ?? '') === 'completed' ? 'success' : 
-                                        ((($shipping->order->status ?? '') === 'cancelled') ? 'danger' : 
-                                        (in_array(($shipping->order->status ?? ''), ['processing', 'preparing', 'shipped', 'delivered']) ? 'info' : 'secondary')) 
-                                    }} text-white">
-                                        {{ strtoupper($shipping->order->status ?? '-') }}
+                                    @php
+                                        $orderStatus = strtolower($shipping->order->status ?? '');
+                                        $orderBg = $orderStatus === 'completed' ? 'success' : 
+                                            (($orderStatus === 'cancelled' || $orderStatus === 'failed') ? 'danger' : 
+                                            (in_array($orderStatus, ['processing', 'preparing', 'shipped', 'delivered', 'confirmed']) ? 'info' : 'warning'));
+                                    @endphp
+                                    <span class="badge bg-{{ $orderBg }} text-white text-uppercase px-3 py-1.5 rounded-pill fs-7 fw-semibold">
+                                        {{ $shipping->order->status ?? '-' }}
                                     </span>
                                 </td>
                                 <td><span class="text-muted small text-monospace">{{ $shipping->biteship_order_id ?? '-' }}</span></td>
                                 <td class="text-end pe-4">
-                                    <div class="d-flex justify-content-end align-items-center" style="gap: 4px;">
-                                        <button class="btn btn-sm btn-outline-primary px-2 py-1" style="font-size: 0.72rem; border-radius: 6px;" data-toggle="modal" data-target="#shippingModal{{ $shipping->id }}" title="Edit Pengiriman & Status">
-                                            <i class="fas fa-edit"></i> Edit / Status
+                                    <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
+                                        @if(strtolower($shipping->courier_company) !== 'pickup' && !$shipping->biteship_order_id)
+                                            <form action="{{ route('admin.shippings.bookBiteship', $shipping->id) }}" method="POST" class="d-inline mb-0">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-success px-2.5 py-1.5 d-flex align-items-center" 
+                                                        style="font-size: 0.75rem; border-radius: 6px;" 
+                                                        title="Request Pickup & Resi Biteship secara Otomatis">
+                                                    <i class="fas fa-shipping-fast me-1.5"></i> Kirim Otomatis
+                                                </button>
+                                            </form>
+                                        @endif
+                                        <button class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
+                                                style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);" 
+                                                data-toggle="modal" 
+                                                data-target="#shippingModal{{ $shipping->id }}" 
+                                                title="Edit Pengiriman & Status">
+                                            <i class="fas fa-edit me-1.5"></i> Edit / Status
                                         </button>
                                     </div>
-
+                                </td>
                                     <!-- Modal Edit Pengiriman & Status -->
                                     <div class="modal fade text-start" id="shippingModal{{ $shipping->id }}" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog modal-dialog-centered modal-lg">

@@ -23,6 +23,7 @@
                id="userDropdown"
                role="button"
                data-toggle="dropdown"
+               data-bs-toggle="dropdown"
                aria-expanded="false">
 
                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">

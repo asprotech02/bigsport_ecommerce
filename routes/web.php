@@ -65,6 +65,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,sales,manager'])->group(
     Route::get('/shippings', [ShippingController::class, 'index'])->name('admin.shippings.index');
     Route::get('/shippings/{id}/edit', [ShippingController::class, 'edit'])->name('admin.shippings.edit');
     Route::put('/shippings/{id}', [ShippingController::class, 'update'])->name('admin.shippings.update');
+    Route::post('/shippings/{id}/book-biteship', [ShippingController::class, 'bookBiteship'])->name('admin.shippings.bookBiteship');
 
     // Pembayaran
     Route::get('/payments', [PaymentController::class, 'index'])->name('admin.payments.index');
@@ -133,6 +134,28 @@ Route::get('/api/biteship/search-area', function (Request $request) {
 
     return $response->json();
 });
+
+// Rute Proxy API untuk data wilayah (Emsifa) guna menghindari CORS policy block
+Route::get('/api/wilayah/provinces', function () {
+    $response = Http::get("https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json");
+    return response()->json($response->json(), $response->status());
+});
+
+Route::get('/api/wilayah/regencies/{province_id}', function ($province_id) {
+    $response = Http::get("https://www.emsifa.com/api-wilayah-indonesia/api/regencies/{$province_id}.json");
+    return response()->json($response->json(), $response->status());
+});
+
+Route::get('/api/wilayah/districts/{city_id}', function ($city_id) {
+    $response = Http::get("https://www.emsifa.com/api-wilayah-indonesia/api/districts/{$city_id}.json");
+    return response()->json($response->json(), $response->status());
+});
+
+Route::get('/api/wilayah/villages/{district_id}', function ($district_id) {
+    $response = Http::get("https://www.emsifa.com/api-wilayah-indonesia/api/villages/{$district_id}.json");
+    return response()->json($response->json(), $response->status());
+});
+
 
 
 // ==========================================
@@ -205,7 +228,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 🌟 RUTE BARU UNTUK FITUR TOMBOL AKSI 🌟
     Route::post('/profile/order/{id}/complete', [ProfileController::class, 'completeOrder'])->name('order.complete');
     Route::get('/profile/order/{id}/buy-again', [ProfileController::class, 'buyAgain'])->name('order.buy-again');
-    Route::post('/profile/order/{id}/review', [ProfileController::class, 'storeReview'])->name('order.review');
+    Route::post('/profile/order/review', [ProfileController::class, 'storeReview'])->name('order.review');
 
 
     // --- BAGIAN WISHLIST ---

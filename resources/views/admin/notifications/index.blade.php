@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Riwayat Pesan Notifikasi</h1>
+        <h1 class="h3 mb-0 text-white font-weight-bold">Riwayat Pesan Notifikasi</h1>
         <a href="{{ route('admin.notifications.create') }}" class="btn btn-primary shadow-sm">
             <i class="fas fa-paper-plane me-1"></i> Kirim Notifikasi Baru
         </a>
@@ -34,18 +34,15 @@
                         @forelse($notifications as $notif)
                             <tr>
                                 <td class="ps-4">
-                                    <span class="badge bg-{{ 
-                                        $notif->type === 'promo' ? 'info' : 
-                                        ($notif->type === 'system' ? 'warning text-dark' : 'primary') 
-                                    }}">
+                                    <span class="badge bg-{{ $notif->type === 'promo' ? 'info' : ($notif->type === 'system' ? 'warning text-dark' : 'primary') }} text-white px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         {{ strtoupper($notif->type) }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="fw-semibold">{{ $notif->user->name ?? 'Semua Pengguna' }}</span>
+                                    <span class="fw-semibold text-white">{{ $notif->user->name ?? 'Semua Pengguna' }}</span>
                                 </td>
                                 <td>
-                                    <span class="fw-bold d-block">{{ $notif->title }}</span>
+                                    <span class="fw-bold d-block text-white">{{ $notif->title }}</span>
                                     <small class="text-muted text-wrap d-inline-block text-truncate" style="max-width: 300px;">
                                         {{ $notif->message }}
                                     </small>
@@ -59,10 +56,10 @@
                                 </td>
                                 <td>{{ $notif->created_at->format('d M Y, H:i') }}</td>
                                 <td class="text-end pe-4">
-                                    <form action="{{ route('admin.notifications.destroy', $notif->id) }}" method="POST" class="d-inline">
+                                    <form action="{{ route('admin.notifications.destroy', $notif->id) }}" method="POST" class="d-inline mb-0">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus pesan ini dari riwayat?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger px-2.5 py-1.5 d-inline-flex align-items-center" style="font-size: 0.75rem; border-radius: 6px;" title="Hapus" onclick="return confirm('Hapus pesan ini dari riwayat?')">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>

@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Daftar Pelanggan</h1>
+        <h1 class="h3 mb-0 text-white font-weight-bold">Daftar Pelanggan</h1>
     </div>
 
     @if(session('success'))
@@ -44,8 +44,11 @@
                                 <td>{{ $customer->phone_number ?? '-' }}</td>
                                 <td>{{ $customer->created_at->format('d M Y') }}</td>
                                 <td class="text-end pe-4">
-                                    <a href="{{ route('admin.customers.show', $customer->id) }}" class="btn btn-sm btn-outline-primary" title="Lihat Detail & Aktivitas">
-                                        <i class="fas fa-user-circle"></i> Detail User
+                                    <a href="{{ route('admin.customers.show', $customer->id) }}" 
+                                       class="btn btn-sm btn-outline-primary px-2.5 py-1.5 d-inline-flex align-items-center" 
+                                       style="font-size: 0.75rem; border-radius: 6px;"
+                                       title="Lihat Detail & Aktivitas">
+                                        <i class="fas fa-user-circle me-1.5"></i> Detail User
                                     </a>
                                 </td>
                             </tr>

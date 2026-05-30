@@ -88,14 +88,18 @@
                                 <td><small class="text-muted text-monospace">{{ $payment->midtrans_transaction_id ?? '-' }}</small></td>
                                 <td class="fw-bold text-white">Rp {{ number_format($payment->gross_amount, 0, ',', '.') }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $badgeColor }} text-white text-uppercase">
+                                    <span class="badge bg-{{ $badgeColor }} text-white text-uppercase px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         {{ $displayStatus }}
                                     </span>
                                 </td>
                                 <td>{{ $payment->created_at->format('d M Y, H:i') }}</td>
                                 <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-outline-primary px-2 py-1" style="font-size: 0.72rem; border-radius: 6px;" data-toggle="modal" data-target="#paymentStatusModal{{ $payment->id }}" title="Ubah Status">
-                                        <i class="fas fa-edit"></i> Status
+                                    <button class="btn btn-sm btn-outline-primary px-2.5 py-1.5 d-inline-flex align-items-center" 
+                                            style="font-size: 0.75rem; border-radius: 6px;" 
+                                            data-toggle="modal" 
+                                            data-target="#paymentStatusModal{{ $payment->id }}" 
+                                            title="Ubah Status">
+                                        <i class="fas fa-edit me-1.5"></i> Status
                                     </button>
 
                                     <!-- Modal Ubah Status Pembayaran -->

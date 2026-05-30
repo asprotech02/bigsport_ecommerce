@@ -17,6 +17,9 @@ class OrderController extends Controller
     // List all orders with filters and pagination
     public function index(Request $request)
     {
+        // 🌟 Sinkronisasi status pembayaran dengan Midtrans secara otomatis di localhost
+        \App\Models\Order::syncAllUnpaid();
+
         $query = Order::with(['items.sku.product', 'shippingDetail', 'payment', 'user']);
 
         // Search invoice or customer name

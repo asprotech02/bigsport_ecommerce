@@ -125,7 +125,7 @@
         };
 
         // --- 1. LOAD PROVINSI ---
-        axios.get('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json')
+        axios.get('/api/wilayah/provinces')
             .then(response => {
                 let options = '<option value="">-- Pilih Provinsi --</option>';
                 response.data.forEach(prov => {
@@ -142,7 +142,7 @@
             if (!provinceId) return;
 
             citySelect.disabled = true;
-            axios.get(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinceId}.json`)
+            axios.get(`/api/wilayah/regencies/${provinceId}`)
                 .then(response => {
                     let options = '<option value="">-- Pilih Kota/Kab. --</option>';
                     response.data.forEach(city => {
@@ -161,7 +161,7 @@
             if (!cityId) return;
 
             districtSelect.disabled = true;
-            axios.get(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${cityId}.json`)
+            axios.get(`/api/wilayah/districts/${cityId}`)
                 .then(response => {
                     let options = '<option value="">-- Pilih Kecamatan --</option>';
                     let hasMatch = false;
@@ -192,7 +192,7 @@
             if (!districtId) return;
 
             villageSelect.disabled = true;
-            axios.get(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${districtId}.json`)
+            axios.get(`/api/wilayah/villages/${districtId}`)
                 .then(response => {
                     let options = '<option value="">-- Pilih Kelurahan/Desa --</option>';
                     response.data.forEach(vill => {

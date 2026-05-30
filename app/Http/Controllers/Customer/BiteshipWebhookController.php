@@ -67,7 +67,11 @@ class BiteshipWebhookController extends Controller
                         'title'   => 'Pesanan Sedang Dikirim 🚚',
                         'message' => "Hore! Pesanan #{$order->invoice_number} sedang dalam perjalanan menuju alamat Anda oleh kurir."
                     ]);
-                    broadcast(new RealTimeNotification($notif));
+                    try {
+                        broadcast(new RealTimeNotification($notif));
+                    } catch (\Exception $e) {
+                        Log::warning("BiteshipWebhook RealTimeNotification (processing) failed: " . $e->getMessage());
+                    }
                 }
             } 
             
@@ -84,7 +88,11 @@ class BiteshipWebhookController extends Controller
                         'title'   => 'Paket Telah Diterima 📦',
                         'message' => "Paket untuk pesanan #{$order->invoice_number} telah berhasil dikirim. Jangan lupa beri ulasan terbaikmu!"
                     ]);
-                    broadcast(new RealTimeNotification($notif));
+                    try {
+                        broadcast(new RealTimeNotification($notif));
+                    } catch (\Exception $e) {
+                        Log::warning("BiteshipWebhook RealTimeNotification (completed) failed: " . $e->getMessage());
+                    }
                 }
             }
 

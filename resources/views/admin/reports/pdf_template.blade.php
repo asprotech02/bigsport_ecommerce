@@ -146,7 +146,7 @@
         </div>
         <div class="report-info">
             <h1>Sales Report</h1>
-            <p>Periode: <strong>{{ $startDate->format('d M Y') }}</strong> s/d <strong>{{ $endDate->format('d M Y') }}</strong></p>
+            <p>Periode: <strong>{{ $startDate->format('d M Y') }}</strong> s/d <strong>{{ $endDate->format('d M Y') }}</strong> | Status: <strong>{{ strtoupper($status ?? 'Semua') }}</strong></p>
             <p>Dicetak pada: {{ now()->format('d M Y H:i:s') }}</p>
         </div>
         <div class="clear"></div>
@@ -259,12 +259,15 @@
                 </thead>
                 <tbody>
                     @php
-                        $paymentSummary = \Illuminate\Support\Facades\DB::table('payments')
+                        $paymentSummaryQuery = \Illuminate\Support\Facades\DB::table('payments')
                             ->join('orders', 'payments.order_id', '=', 'orders.id')
-                            ->select('payments.payment_type', \Illuminate\Support\Facades\DB::raw('SUM(payments.gross_amount) as total'))
+                            ->select('payments.payment_type', \Illuminate\Support\Facades\DB::raw('SUM(orders.grand_total) as total'))
                             ->whereIn('orders.payment_status', ['paid', 'settlement'])
-                            ->whereBetween('orders.created_at', [$startDate, $endDate])
-                            ->groupBy('payments.payment_type')
+                            ->whereBetween('orders.created_at', [$startDate, $endDate]);
+                        if (isset($status) && $status !== 'all') {
+                            $paymentSummaryQuery->where('orders.status', $status);
+                        }
+                        $paymentSummary = $paymentSummaryQuery->groupBy('payments.payment_type')
                             ->get();
                     @endphp
                     @forelse($paymentSummary as $ps)
