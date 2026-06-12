@@ -8,9 +8,47 @@
             <p class="text-muted small mb-0">Dibuat pada: {{ $order->created_at->format('d M Y, H:i') }}</p>
         </div>
         <div>
-            <button class="btn btn-primary shadow-sm fw-bold me-2" data-toggle="modal" data-target="#statusModal">
-                <i class="fas fa-edit me-1"></i> Ubah Status
-            </button>
+            @if(in_array(strtolower($order->payment_status), ['paid', 'settlement']) || in_array(strtolower($order->status), ['confirmed', 'processing', 'preparing', 'shipped', 'delivered', 'completed']))
+                <a href="{{ route('admin.orders.invoice', $order->id) }}" class="btn btn-info shadow-sm fw-bold me-2">
+                    <i class="fas fa-file-invoice me-1"></i> Invoice
+                </a>
+            @endif
+
+            @php
+                $isPickup = $order->shippingDetail && strtolower($order->shippingDetail->courier_company) === 'pickup';
+            @endphp
+
+            @if(!$isPickup)
+                @if(in_array(strtolower($order->status), ['pending', 'confirmed']))
+                    <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}" class="d-inline-block me-2">
+                        @csrf
+                        <input type="hidden" name="status" value="processing">
+                        <input type="hidden" name="payment_status" value="{{ $order->payment_status }}">
+                        <button type="submit" class="btn btn-warning shadow-sm fw-bold">
+                            <i class="fas fa-box me-1"></i> Proses Pesanan
+                        </button>
+                    </form>
+                @endif
+                <a href="{{ route('admin.shippings.index', ['search' => $order->invoice_number]) }}" class="btn btn-success shadow-sm fw-bold me-2">
+                    <i class="fas fa-truck me-1"></i> Buka Pengiriman
+                </a>
+            @else
+                <a href="{{ route('admin.pickups.index', ['search' => $order->invoice_number]) }}" class="btn btn-success shadow-sm fw-bold me-2">
+                    <i class="fas fa-store me-1"></i> Buka Pick Up
+                </a>
+            @endif
+
+            @if(!in_array(strtolower($order->status), ['completed', 'cancelled']))
+                <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}" class="d-inline-block me-2">
+                    @csrf
+                    <input type="hidden" name="status" value="cancelled">
+                    <input type="hidden" name="payment_status" value="{{ strtolower($order->payment_status) === 'paid' ? 'refunded' : 'failed' }}">
+                    <button type="submit" class="btn btn-danger shadow-sm fw-bold" onclick="return confirm('Apakah Anda yakin ingin membatalkan pesanan ini?')">
+                        <i class="fas fa-times-circle me-1"></i> Batalkan
+                    </button>
+                </form>
+            @endif
+
             <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary shadow-sm">
                 <i class="fas fa-arrow-left me-1"></i> Kembali
             </a>
@@ -183,57 +221,6 @@
             @endif
 
         </div>
-    </div>
-</div>
-
-<!-- Modal Ubah Status -->
-<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}" class="w-100">
-            @csrf
-            @method('PATCH')
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold text-primary"><i class="fas fa-edit me-1"></i> Ubah Status Pesanan & Pembayaran</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label for="status" class="form-label fw-semibold">Status Pesanan</label>
-                        <select class="form-select form-control" name="status" id="status" required>
-                            <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>⏳ Pending (Menunggu Pembayaran)</option>
-                            <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>✅ Confirmed (Dibayar/Dikonfirmasi)</option>
-                            <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>📦 Processing (Sedang Diproses)</option>
-                            <option value="preparing" {{ $order->status === 'preparing' ? 'selected' : '' }}>🛠️ Preparing (Sedang Disiapkan)</option>
-                            <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>🚚 Shipped (Sedang Dikirim)</option>
-                            <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>🏠 Delivered (Telah Sampai)</option>
-                            <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>🎉 Completed (Selesai)</option>
-                            <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>❌ Cancelled (Dibatalkan)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="payment_status" class="form-label fw-semibold">Status Pembayaran</label>
-                        <select class="form-select form-control" name="payment_status" id="payment_status" required>
-                            <option value="unpaid" {{ $order->payment_status === 'unpaid' ? 'selected' : '' }}>❌ Unpaid</option>
-                            <option value="pending" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>⏳ Pending</option>
-                            <option value="paid" {{ $order->payment_status === 'paid' ? 'selected' : '' }}>✅ Paid</option>
-                            <option value="failed" {{ $order->payment_status === 'failed' ? 'selected' : '' }}>❌ Failed</option>
-                            <option value="expired" {{ $order->payment_status === 'expired' ? 'selected' : '' }}>⚠️ Expired</option>
-                            <option value="refunded" {{ $order->payment_status === 'refunded' ? 'selected' : '' }}>💰 Refunded</option>
-                        </select>
-                    </div>
-                    <div class="alert alert-info border-0 bg-light text-muted small mb-0">
-                        <i class="fas fa-info-circle me-1"></i> Perubahan status akan secara otomatis memicu pengiriman notifikasi ke akun pelanggan bersangkutan.
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary fw-bold px-4">Simpan Perubahan</button>
-                </div>
-            </div>
-        </form>
     </div>
 </div>
 @endsection

@@ -6,6 +6,14 @@
         <div>
             <h1 class="h3 mb-0 text-white font-weight-bold">Kelola Transaksi & Pembayaran</h1>
         </div>
+        <div>
+            <form action="{{ route('admin.payments.sync') }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-primary shadow-sm fw-bold d-flex align-items-center">
+                    <i class="fas fa-sync me-1.5"></i> Sync Midtrans
+                </button>
+            </form>
+        </div>
     </div>
 
     @if(session('success'))
@@ -61,7 +69,7 @@
                             <th>Nominal</th>
                             <th>Status Bayar</th>
                             <th>Tanggal</th>
-                            <th class="text-end pe-4" width="120">Aksi</th>
+                            <th class="text-end pe-4" width="150">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -94,48 +102,12 @@
                                 </td>
                                 <td>{{ $payment->created_at->format('d M Y, H:i') }}</td>
                                 <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-outline-primary px-2.5 py-1.5 d-inline-flex align-items-center" 
-                                            style="font-size: 0.75rem; border-radius: 6px;" 
-                                            data-toggle="modal" 
-                                            data-target="#paymentStatusModal{{ $payment->id }}" 
-                                            title="Ubah Status">
-                                        <i class="fas fa-edit me-1.5"></i> Status
-                                    </button>
-
-                                    <!-- Modal Ubah Status Pembayaran -->
-                                    <div class="modal fade text-start" id="paymentStatusModal{{ $payment->id }}" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <form method="POST" action="{{ route('admin.payments.updateStatus', $payment->id) }}" class="w-100">
-                                                @csrf
-                                                @method('PATCH')
-                                                <div class="modal-content border-0 shadow">
-                                                    <div class="modal-header bg-light">
-                                                        <h5 class="modal-title fw-bold text-white"><i class="fas fa-edit me-1"></i> Ubah Status Bayar</h5>
-                                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                                                            <span aria-hidden="true">&times;</span>
-                                                        </button>
-                                                    </div>
-                                                    <div class="modal-body p-4">
-                                                        <div class="mb-3">
-                                                            <label for="payment_status_{{ $payment->id }}" class="form-label fw-semibold text-white">Status Pembayaran</label>
-                                                            <select class="form-select form-control" name="payment_status" id="payment_status_{{ $payment->id }}" required>
-                                                                <option value="unpaid" {{ $rawStatus === 'unpaid' ? 'selected' : '' }}>❌ Unpaid</option>
-                                                                <option value="pending" {{ $rawStatus === 'pending' ? 'selected' : '' }}>⏳ Pending</option>
-                                                                <option value="paid" {{ $isPaid ? 'selected' : '' }}>✅ Paid</option>
-                                                                <option value="failed" {{ $isFailed ? 'selected' : '' }}>❌ Failed</option>
-                                                                <option value="expired" {{ $rawStatus === 'expired' ? 'selected' : '' }}>⚠️ Expired</option>
-                                                                <option value="refunded" {{ $rawStatus === 'refunded' ? 'selected' : '' }}>💰 Refunded</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer bg-light">
-                                                        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Batal</button>
-                                                        <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">Simpan Status</button>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
+                                    <a href="{{ route('admin.orders.show', $payment->order_id) }}" 
+                                       class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-inline-flex align-items-center" 
+                                       style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);" 
+                                       title="Detail Pesanan">
+                                        <i class="fas fa-eye me-1.5"></i> Detail
+                                    </a>
                                 </td>
                             </tr>
                         @empty

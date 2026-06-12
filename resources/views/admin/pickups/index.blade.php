@@ -81,7 +81,9 @@
                                     @endphp
                                     <span class="badge bg-{{ $orderBg }} text-white text-uppercase px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         @if($orderStatus === 'delivered')
-                                            Ready for Pick Up
+                                            Ready to Pick Up
+                                        @elseif($orderStatus === 'completed')
+                                            Picked Up
                                         @else
                                             {{ $pickup->order->status ?? '-' }}
                                         @endif
@@ -90,12 +92,42 @@
                                 <td class="text-muted small">{{ $pickup->created_at->format('d M Y H:i') }}</td>
                                 <td class="text-end pe-4">
                                     <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
+                                        @if(in_array($orderStatus, ['pending', 'confirmed', 'preparing', 'processing']))
+                                            <form method="POST" action="{{ route('admin.shippings.update', $pickup->id) }}" class="d-inline">
+                                                @csrf
+                                                @method('PUT')
+                                                <input type="hidden" name="courier_company" value="pickup">
+                                                <input type="hidden" name="courier_type" value="{{ $pickup->courier_type }}">
+                                                <input type="hidden" name="cost" value="0">
+                                                <input type="hidden" name="tracking_number" value="">
+                                                <input type="hidden" name="biteship_order_id" value="">
+                                                <input type="hidden" name="order_status" value="delivered">
+                                                <button type="submit" class="btn btn-sm btn-info px-2.5 py-1.5 fw-bold d-flex align-items-center" style="font-size: 0.75rem; border-radius: 6px;">
+                                                    <i class="fas fa-check me-1"></i> Siap Diambil
+                                                </button>
+                                            </form>
+                                        @elseif($orderStatus === 'delivered')
+                                            <form method="POST" action="{{ route('admin.shippings.update', $pickup->id) }}" class="d-inline">
+                                                @csrf
+                                                @method('PUT')
+                                                <input type="hidden" name="courier_company" value="pickup">
+                                                <input type="hidden" name="courier_type" value="{{ $pickup->courier_type }}">
+                                                <input type="hidden" name="cost" value="0">
+                                                <input type="hidden" name="tracking_number" value="">
+                                                <input type="hidden" name="biteship_order_id" value="">
+                                                <input type="hidden" name="order_status" value="completed">
+                                                <button type="submit" class="btn btn-sm btn-success px-2.5 py-1.5 fw-bold d-flex align-items-center" style="font-size: 0.75rem; border-radius: 6px;">
+                                                    <i class="fas fa-hand-holding me-1"></i> Sudah Diambil
+                                                </button>
+                                            </form>
+                                        @endif
+
                                         <button class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
                                                 style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);" 
                                                 data-toggle="modal" 
                                                 data-target="#pickupModal{{ $pickup->id }}" 
-                                                title="Edit Status Pick Up">
-                                            <i class="fas fa-edit me-1.5"></i> Edit Status
+                                                title="Atur Status Pick Up">
+                                            <i class="fas fa-edit me-1.5"></i> Atur
                                         </button>
                                     </div>
                                 </td>
@@ -116,7 +148,7 @@
 
                                             <div class="modal-content border-0 shadow">
                                                 <div class="modal-header bg-light">
-                                                    <h5 class="modal-title fw-bold text-white"><i class="fas fa-store me-1"></i> Edit Status Pick Up: #{{ $pickup->order->invoice_number ?? '-' }}</h5>
+                                                    <h5 class="modal-title fw-bold text-white"><i class="fas fa-store me-1"></i> Atur Status Pick Up: #{{ $pickup->order->invoice_number ?? '-' }}</h5>
                                                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                                                         <span aria-hidden="true">&times;</span>
                                                     </button>
@@ -135,9 +167,8 @@
                                                         <select name="order_status" class="form-select form-control" required>
                                                             <option value="pending" {{ ($pickup->order->status ?? '') === 'pending' ? 'selected' : '' }}>⏳ Pending (Menunggu Pembayaran)</option>
                                                             <option value="confirmed" {{ ($pickup->order->status ?? '') === 'confirmed' ? 'selected' : '' }}>✅ Confirmed (Dibayar/Dikonfirmasi)</option>
-                                                            <option value="preparing" {{ ($pickup->order->status ?? '') === 'preparing' ? 'selected' : '' }}>🛠️ Preparing (Sedang Disiapkan)</option>
-                                                            <option value="delivered" {{ ($pickup->order->status ?? '') === 'delivered' ? 'selected' : '' }}>🏪 Ready for Pick Up (Siap Diambil)</option>
-                                                            <option value="completed" {{ ($pickup->order->status ?? '') === 'completed' ? 'selected' : '' }}>🎉 Completed (Selesai/Sudah Diambil)</option>
+                                                            <option value="delivered" {{ ($pickup->order->status ?? '') === 'delivered' ? 'selected' : '' }}>🏪 Ready to Pick Up (Siap Diambil)</option>
+                                                            <option value="completed" {{ ($pickup->order->status ?? '') === 'completed' ? 'selected' : '' }}>🎉 Picked Up (Sudah Diambil)</option>
                                                             <option value="cancelled" {{ ($pickup->order->status ?? '') === 'cancelled' ? 'selected' : '' }}>❌ Cancelled (Dibatalkan)</option>
                                                         </select>
                                                     </div>

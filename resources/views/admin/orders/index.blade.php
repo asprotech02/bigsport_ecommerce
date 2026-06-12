@@ -118,67 +118,64 @@
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
-                                        <a href="{{ route('admin.orders.show', $order->id) }}" 
-                                           class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
-                                           style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);" 
-                                           title="Detail">
-                                            <i class="fas fa-eye me-1.5"></i> Detail
-                                        </a>
-                                        <button class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
-                                                style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);" 
-                                                data-toggle="modal" 
-                                                data-target="#statusModal{{ $order->id }}" 
-                                                title="Ubah Status">
-                                            <i class="fas fa-edit me-1.5"></i> Status
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-light dropdown-toggle px-2.5 py-1.5 d-flex align-items-center" 
+                                                type="button" 
+                                                id="actionDropdown{{ $order->id }}" 
+                                                data-toggle="dropdown" 
+                                                aria-haspopup="true" 
+                                                aria-expanded="false"
+                                                style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);">
+                                            <i class="fas fa-cog me-1.5"></i> Aksi
                                         </button>
-                                    </div>
+                                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="actionDropdown{{ $order->id }}" style="background-color: #1e1e2d; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-radius: 8px;">
+                                            <a class="dropdown-item text-white py-2" href="{{ route('admin.orders.show', $order->id) }}">
+                                                <i class="fas fa-eye me-2 text-primary"></i> Detail
+                                            </a>
+                                            
+                                            @if(in_array(strtolower($order->payment_status), ['paid', 'settlement']) || in_array(strtolower($order->status), ['confirmed', 'processing', 'preparing', 'shipped', 'delivered', 'completed']))
+                                                <a class="dropdown-item text-white py-2" href="{{ route('admin.orders.invoice', $order->id) }}">
+                                                    <i class="fas fa-file-invoice me-2 text-info"></i> Invoice
+                                                </a>
+                                            @endif
 
-                                    <!-- Modal Ubah Status untuk Order Ini -->
-                                    <div class="modal fade text-start" id="statusModal{{ $order->id }}" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}" class="w-100">
-                                                @csrf
-                                                @method('PATCH')
-                                                <div class="modal-content border-0 shadow">
-                                                    <div class="modal-header bg-light">
-                                                        <h5 class="modal-title fw-bold text-white"><i class="fas fa-edit me-1"></i> Ubah Status: #{{ $order->invoice_number }}</h5>
-                                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                                                            <span aria-hidden="true">&times;</span>
+                                            @php
+                                                $isPickup = $order->shippingDetail && strtolower($order->shippingDetail->courier_company) === 'pickup';
+                                            @endphp
+
+                                            @if(!$isPickup)
+                                                <!-- Delivery Order actions -->
+                                                @if(in_array(strtolower($order->status), ['pending', 'confirmed']))
+                                                    <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}" class="d-inline">
+                                                        @csrf
+                                                        <input type="hidden" name="status" value="processing">
+                                                        <input type="hidden" name="payment_status" value="{{ $order->payment_status }}">
+                                                        <button type="submit" class="dropdown-item text-white py-2" style="background: none; border: none; width: 100%; text-align: left;">
+                                                            <i class="fas fa-box me-2 text-warning"></i> Proses Pesanan
                                                         </button>
-                                                    </div>
-                                                    <div class="modal-body p-4">
-                                                        <div class="mb-3">
-                                                            <label for="status_{{ $order->id }}" class="form-label fw-semibold text-white">Status Pesanan</label>
-                                                            <select class="form-select" name="status" id="status_{{ $order->id }}" required>
-                                                                <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>⏳ Pending (Menunggu Pembayaran)</option>
-                                                                <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>✅ Confirmed (Dibayar/Dikonfirmasi)</option>
-                                                                <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>📦 Processing (Sedang Diproses)</option>
-                                                                <option value="preparing" {{ $order->status === 'preparing' ? 'selected' : '' }}>🛠️ Preparing (Sedang Disiapkan)</option>
-                                                                <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>🚚 Shipped (Sedang Dikirim)</option>
-                                                                <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>🏠 Delivered (Telah Sampai)</option>
-                                                                <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>🎉 Completed (Selesai)</option>
-                                                                <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>❌ Cancelled (Dibatalkan)</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label for="payment_status_{{ $order->id }}" class="form-label fw-semibold text-white">Status Pembayaran</label>
-                                                            <select class="form-select" name="payment_status" id="payment_status_{{ $order->id }}" required>
-                                                                <option value="unpaid" {{ $order->payment_status === 'unpaid' ? 'selected' : '' }}>❌ Unpaid</option>
-                                                                <option value="pending" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>⏳ Pending</option>
-                                                                <option value="paid" {{ $order->payment_status === 'paid' ? 'selected' : '' }}>✅ Paid</option>
-                                                                <option value="failed" {{ $order->payment_status === 'failed' ? 'selected' : '' }}>❌ Failed</option>
-                                                                <option value="expired" {{ $order->payment_status === 'expired' ? 'selected' : '' }}>⚠️ Expired</option>
-                                                                <option value="refunded" {{ $order->payment_status === 'refunded' ? 'selected' : '' }}>💰 Refunded</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer bg-light">
-                                                        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Batal</button>
-                                                        <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">Simpan Perubahan</button>
-                                                    </div>
-                                                </div>
-                                            </form>
+                                                    </form>
+                                                @endif
+                                                
+                                                <a class="dropdown-item text-white py-2" href="{{ route('admin.shippings.index', ['search' => $order->invoice_number]) }}">
+                                                    <i class="fas fa-truck me-2 text-success"></i> Buka Pengiriman
+                                                </a>
+                                            @else
+                                                <!-- Pickup Order actions -->
+                                                <a class="dropdown-item text-white py-2" href="{{ route('admin.pickups.index', ['search' => $order->invoice_number]) }}">
+                                                    <i class="fas fa-store me-2 text-success"></i> Buka Pick Up
+                                                </a>
+                                            @endif
+
+                                            @if(!in_array(strtolower($order->status), ['completed', 'cancelled']))
+                                                <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}" class="d-inline">
+                                                    @csrf
+                                                    <input type="hidden" name="status" value="cancelled">
+                                                    <input type="hidden" name="payment_status" value="{{ strtolower($order->payment_status) === 'paid' ? 'refunded' : 'failed' }}">
+                                                    <button type="submit" class="dropdown-item text-danger py-2" style="background: none; border: none; width: 100%; text-align: left;" onclick="return confirm('Apakah Anda yakin ingin membatalkan pesanan ini?')">
+                                                        <i class="fas fa-times-circle me-2"></i> Batalkan Pesanan
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -199,4 +196,11 @@
         @endif
     </div>
 </div>
+
+<style>
+    .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: #ffffff !important;
+    }
+</style>
 @endsection

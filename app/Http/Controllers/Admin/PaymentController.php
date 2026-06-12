@@ -49,51 +49,16 @@ class PaymentController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'payment_status' => 'required|in:unpaid,pending,paid,failed,expired,refunded,settlement',
-        ]);
+        abort(403, 'Aksi ubah status pembayaran secara manual dinonaktifkan demi integritas data Midtrans.');
+    }
 
-        $payment = Payment::findOrFail($id);
-        $newStatus = $request->payment_status;
-
-        // Map settlement to paid to ensure consistency
-        if ($newStatus === 'settlement') {
-            $newStatus = 'paid';
+    public function syncAll()
+    {
+        try {
+            \App\Models\Order::syncAllUnpaid();
+            return redirect()->back()->with('success', 'Sinkronisasi status pembayaran dengan Midtrans berhasil dijalankan.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal melakukan sinkronisasi: ' . $e->getMessage());
         }
-
-        DB::transaction(function () use ($payment, $newStatus) {
-            $payment->update([
-                'payment_status' => $newStatus,
-            ]);
-
-            // Synchronize with the Order payment_status if order exists
-            if ($payment->order) {
-                $payment->order->update([
-                    'payment_status' => $newStatus,
-                ]);
-
-                // Also trigger User Notification for Payment Update
-                $notifTitle = 'Pembayaran Diterima ✅';
-                $notifMsg = "Pembayaran untuk pesanan #{$payment->order->invoice_number} telah berhasil dikonfirmasi.";
-
-                if ($newStatus == 'failed') {
-                    $notifTitle = 'Pembayaran Gagal ❌';
-                    $notifMsg = "Pembayaran untuk pesanan #{$payment->order->invoice_number} gagal diproses.";
-                } elseif ($newStatus == 'refunded') {
-                    $notifTitle = 'Pembayaran Refunded 💰';
-                    $notifMsg = "Dana pembayaran untuk pesanan #{$payment->order->invoice_number} telah di-refund oleh admin.";
-                }
-
-                \App\Models\UserNotification::create([
-                    'user_id' => $payment->order->user_id,
-                    'type'    => 'payment_status',
-                    'title'   => $notifTitle,
-                    'message' => $notifMsg,
-                    'is_read' => 0,
-                ]);
-            }
-        });
-
-        return redirect()->back()->with('success', 'Status pembayaran berhasil diperbarui.');
     }
 }

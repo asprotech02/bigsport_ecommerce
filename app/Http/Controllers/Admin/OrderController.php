@@ -148,6 +148,15 @@ class OrderController extends Controller
             ->with('success', 'Status pesanan & pembayaran berhasil diperbarui.');
     }
 
+    // Download PDF Invoice (admin)
+    public function printInvoice($id)
+    {
+        $order = Order::with(['items', 'user'])->findOrFail($id);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('customer.pages.invoice_pdf', compact('order'));
+        return $pdf->download('INVOICE-' . $order->invoice_number . '.pdf');
+    }
+
     // Soft-delete an order (only admin)
     public function destroy($id)
     {

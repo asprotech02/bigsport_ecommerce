@@ -46,6 +46,10 @@ body#page-top {
 @media (min-width: 768px) {
     .sidebar {
         width: 16rem !important;
+        position: sticky !important;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
     }
 }
 

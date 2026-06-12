@@ -55,6 +55,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,sales,manager'])->group(
     // Pesanan
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
     Route::get('/orders/{id}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
+    Route::get('/orders/{id}/invoice', [AdminOrderController::class, 'printInvoice'])->name('admin.orders.invoice');
     Route::match(['put', 'patch', 'post'], '/orders/{id}/status', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
     Route::delete('/orders/{id}', [AdminOrderController::class, 'destroy'])->name('admin.orders.destroy');
 
@@ -67,12 +68,16 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,sales,manager'])->group(
     Route::put('/shippings/{id}', [ShippingController::class, 'update'])->name('admin.shippings.update');
     Route::post('/shippings/{id}/book-biteship', [ShippingController::class, 'bookBiteship'])->name('admin.shippings.bookBiteship');
     Route::post('/shippings/book-biteship-bulk', [ShippingController::class, 'bookBiteshipBulk'])->name('admin.shippings.bookBiteshipBulk');
+    Route::post('/shippings/complete-bulk', [ShippingController::class, 'completeBulk'])->name('admin.shippings.completeBulk');
+    Route::get('/shippings/{id}/label', [ShippingController::class, 'printLabel'])->name('admin.shippings.label');
+    Route::get('/shippings/{id}/track', [ShippingController::class, 'trackShipment'])->name('admin.shippings.track');
 
     // Pick Up (Ambil di Toko)
     Route::get('/pickups', [ShippingController::class, 'indexPickup'])->name('admin.pickups.index');
 
     // Pembayaran
     Route::get('/payments', [PaymentController::class, 'index'])->name('admin.payments.index');
+    Route::post('/payments/sync', [PaymentController::class, 'syncAll'])->name('admin.payments.sync');
     Route::patch('/payments/{id}/status', [PaymentController::class, 'updateStatus'])->name('admin.payments.updateStatus');
 
     // Reviews (Ulasan)

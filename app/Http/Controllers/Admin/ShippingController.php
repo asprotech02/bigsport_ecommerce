@@ -17,7 +17,10 @@ class ShippingController extends Controller
     public function index(Request $request)
     {
         $query = ShippingDetail::with('order.user')
-            ->where('courier_company', '!=', 'pickup');
+            ->where('courier_company', '!=', 'pickup')
+            ->whereHas('order', function($oq) {
+                $oq->whereIn('status', ['confirmed', 'processing', 'preparing', 'shipped', 'delivered']);
+            });
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -46,7 +49,10 @@ class ShippingController extends Controller
     public function indexPickup(Request $request)
     {
         $query = ShippingDetail::with('order.user')
-            ->where('courier_company', 'pickup');
+            ->where('courier_company', 'pickup')
+            ->whereHas('order', function($oq) {
+                $oq->whereIn('status', ['confirmed', 'processing', 'preparing', 'delivered']);
+            });
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -89,6 +95,11 @@ class ShippingController extends Controller
         $newTracking = $request->tracking_number;
         $oldStatus = $shipping->order->status;
         $newStatus = $request->order_status;
+
+        // Force 'shipped' if tracking number (resi) is provided/issued
+        if (!empty($newTracking)) {
+            $newStatus = 'shipped';
+        }
 
         DB::transaction(function () use ($shipping, $request, $oldTracking, $newTracking, $oldStatus, $newStatus) {
             $shipping->update([
@@ -251,16 +262,12 @@ class ShippingController extends Controller
                         'tracking_number' => $waybillId
                     ]);
 
-                    $newStatus = $waybillId ? 'shipped' : 'processing';
+                    // If resi/waybill is generated/issued, status becomes 'shipped'
+                    $newStatus = 'shipped';
                     $order->update(['status' => $newStatus]);
 
-                    $notifTitle = 'Pesanan Sedang Diproses Biteship 🚚';
-                    $notifMsg = "Yay! Pengiriman untuk pesanan Anda #{$order->invoice_number} berhasil dibooking otomatis ke Biteship (ID: {$biteshipOrderId}).";
-                    
-                    if ($waybillId) {
-                        $notifTitle = 'Pesanan Sedang Dikirim 🚚';
-                        $notifMsg = "Pesanan Anda #{$order->invoice_number} sedang dikirim oleh kurir " . strtoupper($shipping->courier_company) . " dengan nomor resi: {$waybillId}.";
-                    }
+                    $notifTitle = 'Pesanan Sedang Dikirim 🚚';
+                    $notifMsg = "Pesanan Anda #{$order->invoice_number} sedang dikirim oleh kurir " . strtoupper($shipping->courier_company) . " dengan nomor resi: " . ($waybillId ?? '-') . ".";
 
                     UserNotification::create([
                         'user_id' => $order->user_id,
@@ -408,5 +415,112 @@ class ShippingController extends Controller
         }
 
         return redirect()->back()->with('success', $message);
+    }
+
+    // Complete Shipping (Bulk Orders)
+    public function completeBulk(Request $request)
+    {
+        $shippingIds = $request->input('shipping_ids', []);
+        if (empty($shippingIds)) {
+            return redirect()->back()->with('error', 'Pilih minimal satu pesanan untuk diselesaikan.');
+        }
+
+        $shippings = ShippingDetail::with('order')
+            ->whereIn('id', $shippingIds)
+            ->get();
+
+        if ($shippings->isEmpty()) {
+            return redirect()->back()->with('error', 'Tidak ada pesanan valid yang dapat diselesaikan.');
+        }
+
+        $successCount = 0;
+
+        DB::transaction(function () use ($shippings, &$successCount) {
+            foreach ($shippings as $shipping) {
+                if ($shipping->order && $shipping->order->status !== 'completed') {
+                    $shipping->order->update(['status' => 'completed']);
+
+                    UserNotification::create([
+                        'user_id' => $shipping->order->user_id,
+                        'type'    => 'order_status',
+                        'title'   => 'Pesanan Selesai 🎉',
+                        'message' => "Pesanan Anda #{$shipping->order->invoice_number} telah diselesaikan. Terima kasih telah berbelanja di BigSport!",
+                        'is_read' => 0,
+                    ]);
+                    $successCount++;
+                }
+            }
+        });
+
+        return redirect()->back()->with('success', "Berhasil menyelesaikan {$successCount} pesanan pengiriman.");
+    }
+
+    // Print shipping label PDF
+    public function printLabel($id)
+    {
+        $shipping = ShippingDetail::with(['order.items.sku.product', 'order.user'])->findOrFail($id);
+        $order = $shipping->order;
+        $address = \App\Models\Address::find($order->address_id);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.shippings.label_pdf', compact('shipping', 'order', 'address'));
+        return $pdf->download('SHIPPING-LABEL-' . $order->invoice_number . '.pdf');
+    }
+
+    // Track shipment from Biteship API with sandbox fallback
+    public function trackShipment($id)
+    {
+        $shipping = ShippingDetail::findOrFail($id);
+        if (!$shipping->tracking_number || !$shipping->courier_company) {
+            return response()->json(['success' => false, 'message' => 'Nomor resi atau kurir tidak valid.']);
+        }
+
+        try {
+            $apiKey = env('BITESHIP_API_KEY');
+            
+            // Check if test key/sandbox mode
+            if (str_starts_with($apiKey, 'biteship_test.')) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'courier' => [
+                            'company' => strtoupper($shipping->courier_company),
+                            'waybill_id' => $shipping->tracking_number
+                        ],
+                        'status' => 'shipped',
+                        'history' => [
+                            [
+                                'updated_at' => now()->toIso8601String(),
+                                'status' => 'shipped',
+                                'note' => 'Paket sedang dikirim oleh kurir (Sandbox Mode).'
+                            ]
+                        ]
+                    ]
+                ]);
+            }
+
+            $response = Http::withoutVerifying()->withHeaders([
+                'authorization' => $apiKey
+            ])->get("https://api.biteship.com/v1/trackings/{$shipping->tracking_number}/couriers/{$shipping->courier_company}");
+
+            $result = $response->json();
+
+            if ($response->successful() && isset($result['success']) && $result['success'] == true) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'courier' => [
+                            'company' => strtoupper($result['courier']['company'] ?? $shipping->courier_company),
+                            'waybill_id' => $result['waybill_id'] ?? $shipping->tracking_number
+                        ],
+                        'status' => $result['status'] ?? 'Diproses',
+                        'history' => $result['history'] ?? []
+                    ]
+                ]);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Biteship: ' . ($result['error'] ?? 'Data tracking tidak ditemukan.')]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'System Error: ' . $e->getMessage()]);
+        }
     }
 }

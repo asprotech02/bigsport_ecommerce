@@ -54,11 +54,11 @@ class BiteshipWebhookController extends Controller
             // 🌟 LOGIKA ROBOT: UBAH STATUS DATABASE BERDASARKAN KURIR
             // =========================================================
 
-            // A. Kurir menjemput / di jalan -> Ubah ke PROCESSING
+            // A. Kurir menjemput / di jalan -> Ubah ke SHIPPED
             if (in_array($newStatus, ['allocated', 'picking_up', 'picked', 'dropping_off'])) {
                 
-                if ($order->status !== 'processing') {
-                    $order->update(['status' => 'processing']);
+                if ($order->status !== 'shipped') {
+                    $order->update(['status' => 'shipped']);
                     
                     // Tembakkan Pop-up Reverb
                     $notif = UserNotification::create([
@@ -70,7 +70,7 @@ class BiteshipWebhookController extends Controller
                     try {
                         broadcast(new RealTimeNotification($notif));
                     } catch (\Exception $e) {
-                        Log::warning("BiteshipWebhook RealTimeNotification (processing) failed: " . $e->getMessage());
+                        Log::warning("BiteshipWebhook RealTimeNotification (shipped) failed: " . $e->getMessage());
                     }
                 }
             } 
