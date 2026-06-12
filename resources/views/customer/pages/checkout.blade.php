@@ -468,14 +468,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => {
                     if (response.data.success) {
                         if(response.data.is_free) {
-                            window.location.href = "{{ route('order_success') }}";
+                            window.location.href = "{{ route('order_success') }}?order_id=" + response.data.invoice;
                             return;
                         }
 
                         window.snap.pay(response.data.snap_token, {
                             onSuccess: function(result){
                                 sessionStorage.removeItem('checkout_saved_address_id');
-                                window.location.href = "{{ route('order_success') }}";
+                                window.location.href = "{{ route('order_success') }}?order_id=" + response.data.invoice;
                             },
                             onPending: function(result){
                                 sessionStorage.removeItem('checkout_saved_address_id');

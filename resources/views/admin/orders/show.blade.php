@@ -65,7 +65,7 @@
                                     </td>
                                     <td><span class="badge bg-light text-dark border">{{ $item->sku->id ?? '-' }}</span></td>
                                     <td class="text-center">{{ $item->quantity }}</td>
-                                    <td class="text-end pe-4">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                                    <td class="text-end pe-4">Rp {{ number_format($item->sku->discount_price ?? $item->sku->base_price ?? $item->price_at_purchase ?? 0, 0, ',', '.') }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -79,7 +79,7 @@
             
             <div class="card shadow border-0">
                 <div class="card-header bg-white py-3">
-                    <h6 class="m-0 fw-bold text-primary"><i class="fas fa-truck me-1"></i> Informasi Pengiriman</h6>
+                    <h6 class="m-0 fw-bold text-primary"><i class="fas fa-concierge-bell me-1"></i> Informasi Layanan</h6>
                 </div>
                 <div class="card-body">
                     @if($order->shippingDetail)
@@ -105,7 +105,7 @@
                             </div>
                         </div>
                     @else
-                        <div class="text-muted fst-italic py-2">Informasi pengiriman tidak tersedia.</div>
+                        <div class="text-muted fst-italic py-2">Informasi layanan tidak tersedia.</div>
                     @endif
                 </div>
             </div>

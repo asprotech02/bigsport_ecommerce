@@ -110,7 +110,7 @@
                             {{-- GENDER --}}
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold text-white-50">Gender <span class="text-danger">*</span></label>
-                                <select name="gender" class="form-select @error('gender') is-invalid @enderror" required>
+                                <select name="gender" id="gender" class="form-select @error('gender') is-invalid @enderror" required>
                                     <option value="">-- Pilih Gender --</option>
                                     <option value="Laki-laki" {{ old('gender') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
                                     <option value="Perempuan" {{ old('gender') == 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
@@ -218,7 +218,7 @@
                                 <table class="table align-middle mb-0" id="sku-table" style="color: var(--text-pure);">
                                     <thead class="fs-7 text-uppercase text-white-50" style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-glass);">
                                         <tr>
-                                            <th class="ps-3" width="110">Ukuran (Size)*</th>
+                                            <th class="ps-3" width="130">Ukuran (Size)*</th>
                                             <th width="110">Warna*</th>
                                             <th width="140">Harga Dasar*</th>
                                             <th width="140">Harga Diskon</th>
@@ -231,7 +231,9 @@
                                             @foreach(old('skus') as $index => $oldSku)
                                                 <tr class="sku-row" data-index="{{ $index }}" style="border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
                                                     <td class="ps-3">
-                                                        <input type="text" name="skus[{{ $index }}][size]" value="{{ $oldSku['size'] }}" class="form-control form-control-sm" placeholder="S / 39" required>
+                                                        <select name="skus[{{ $index }}][size]" data-value="{{ $oldSku['size'] }}" class="form-select form-select-sm sku-size-select" required>
+                                                            <option value="{{ $oldSku['size'] }}">{{ $oldSku['size'] }}</option>
+                                                        </select>
                                                     </td>
                                                     <td>
                                                         <input type="text" name="skus[{{ $index }}][color]" value="{{ $oldSku['color'] }}" class="form-control form-control-sm" placeholder="Hitam" required>
@@ -256,7 +258,7 @@
                                             <!-- Row Default Pertama -->
                                             <tr class="sku-row" data-index="0" style="border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
                                                 <td class="ps-3">
-                                                    <input type="text" name="skus[0][size]" class="form-control form-control-sm" placeholder="S / 39" required>
+                                                    <select name="skus[0][size]" class="form-select form-select-sm sku-size-select" required></select>
                                                 </td>
                                                 <td>
                                                     <input type="text" name="skus[0][color]" class="form-control form-control-sm" placeholder="Hitam" required>
@@ -347,6 +349,104 @@ document.getElementById('category_id').addEventListener('change', function () {
     subcategorySelect.value = '';
 });
 
+// Dynamic Size Mapping & Dropdown Logic
+function getAvailableSizes(categoryName, subcategoryName, genderName) {
+    categoryName = categoryName ? categoryName.toLowerCase() : '';
+    subcategoryName = subcategoryName ? subcategoryName.toLowerCase() : '';
+    genderName = genderName ? genderName.toLowerCase() : '';
+
+    if (categoryName === 'sepatu') {
+        if (genderName === 'anak-anak') {
+            return ['28', '29', '30', '31', '32', '33', '34', '35'];
+        } else if (genderName === 'perempuan') {
+            return ['36', '37', '38', '39', '40', '41'];
+        } else if (genderName === 'laki-laki') {
+            return ['39', '40', '41', '42', '43', '44', '45'];
+        } else { // Unisex
+            return ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+        }
+    } else if (categoryName === 'pakaian') {
+        if (genderName === 'anak-anak') {
+            return ['XS (Anak)', 'S (Anak)', 'M (Anak)', 'L (Anak)', 'XL (Anak)'];
+        } else {
+            return ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+        }
+    } else if (categoryName === 'aksesoris') {
+        if (subcategoryName === 'kaos kaki') {
+            return ['All Size', 'S', 'M', 'L'];
+        } else if (subcategoryName === 'topi') {
+            return ['All Size', 'S/M', 'M/L'];
+        } else {
+            return ['All Size'];
+        }
+    }
+    
+    // Default fallback
+    return ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', 'All Size'];
+}
+
+function updateAllSizeDropdowns() {
+    let categorySelect = document.getElementById('category_id');
+    let categoryName = categorySelect.options[categorySelect.selectedIndex]?.text.trim();
+    
+    let subcategorySelect = document.getElementById('subcategory_id');
+    let subcategoryName = subcategorySelect.options[subcategorySelect.selectedIndex]?.text.trim();
+    
+    let genderSelect = document.getElementById('gender');
+    let genderName = genderSelect ? genderSelect.value : '';
+
+    let sizes = getAvailableSizes(categoryName, subcategoryName, genderName);
+
+    document.querySelectorAll('.sku-size-select').forEach(select => {
+        let currentValue = select.dataset.value || select.value;
+        select.innerHTML = '';
+
+        // Add a prompt option if no Category/Gender is selected yet
+        if (!categorySelect.value || !genderSelect.value) {
+            let defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = '-- Pilih Ukuran --';
+            select.appendChild(defaultOpt);
+        }
+        
+        // If currentValue is set and not in the list, add it to prevent data loss
+        if (currentValue && !sizes.includes(currentValue)) {
+            let opt = document.createElement('option');
+            opt.value = currentValue;
+            opt.textContent = currentValue;
+            select.appendChild(opt);
+        }
+
+        sizes.forEach(size => {
+            let opt = document.createElement('option');
+            opt.value = size;
+            opt.textContent = size;
+            if (size === currentValue) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        });
+
+        // Retain the current value
+        if (currentValue && sizes.includes(currentValue)) {
+            select.value = currentValue;
+        }
+        select.dataset.value = select.value;
+    });
+}
+
+// Track manually changed size value
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('sku-size-select')) {
+        e.target.dataset.value = e.target.value;
+    }
+});
+
+// Update sizes when inputs change
+document.getElementById('category_id').addEventListener('change', updateAllSizeDropdowns);
+document.getElementById('subcategory_id').addEventListener('change', updateAllSizeDropdowns);
+document.getElementById('gender').addEventListener('change', updateAllSizeDropdowns);
+
 // Dynamic SKU Variation Builder
 let skuIndex = {{ old('skus') ? count(old('skus')) : 1 }};
 
@@ -357,7 +457,7 @@ document.getElementById('btn-add-sku').addEventListener('click', function() {
     tr.dataset.index = skuIndex;
     tr.innerHTML = `
         <td class="ps-3">
-            <input type="text" name="skus[${skuIndex}][size]" class="form-control form-control-sm" placeholder="S / 39" required>
+            <select name="skus[${skuIndex}][size]" class="form-select form-select-sm sku-size-select" required></select>
         </td>
         <td>
             <input type="text" name="skus[${skuIndex}][color]" class="form-control form-control-sm" placeholder="Hitam" required>
@@ -379,6 +479,7 @@ document.getElementById('btn-add-sku').addEventListener('click', function() {
     `;
     tbody.appendChild(tr);
     skuIndex++;
+    updateAllSizeDropdowns();
     toggleDeleteButtons();
 });
 
@@ -420,11 +521,13 @@ document.addEventListener("DOMContentLoaded", function() {
         });
         subcatSelect.value = currentSubcatVal;
     }
+    updateAllSizeDropdowns();
 });
 
 // Interactive Multi-Image Upload Preview & Primary Selection
 let uploadZone = document.getElementById('upload-zone');
 let fileInput = document.getElementById('image-input');
+let selectedFiles = [];
 
 uploadZone.addEventListener('click', () => fileInput.click());
 
@@ -444,29 +547,61 @@ uploadZone.addEventListener('drop', (e) => {
     uploadZone.style.borderColor = 'rgba(229, 9, 20, 0.25)';
     uploadZone.style.background = 'rgba(255, 255, 255, 0.01)';
     if (e.dataTransfer.files.length > 0) {
-        fileInput.files = e.dataTransfer.files;
-        fileInput.dispatchEvent(new Event('change'));
+        handleFiles(e.dataTransfer.files);
     }
 });
 
 fileInput.addEventListener('change', function(event) {
+    handleFiles(event.target.files);
+});
+
+function handleFiles(files) {
+    Array.from(files).forEach(file => {
+        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+            selectedFiles.push(file);
+        }
+    });
+    renderPreviews();
+    updateInputFiles();
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    renderPreviews();
+    updateInputFiles();
+}
+
+function updateInputFiles() {
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    fileInput.files = dt.files;
+}
+
+function renderPreviews() {
     let previewGrid = document.getElementById('image-preview-grid');
     let hint = document.getElementById('primary-hint');
     previewGrid.innerHTML = '';
     
-    let files = event.target.files;
-    
-    if (files.length > 0) {
+    if (selectedFiles.length > 0) {
         hint.classList.remove('d-none');
         
-        Array.from(files).forEach((file, index) => {
+        let primaryIndexInput = document.querySelector('input[name="primary_image_index"]:checked');
+        let primaryIndex = primaryIndexInput ? parseInt(primaryIndexInput.value) : 0;
+        if (primaryIndex >= selectedFiles.length) {
+            primaryIndex = 0;
+        }
+        
+        selectedFiles.forEach((file, index) => {
             let reader = new FileReader();
             
             reader.onload = function(e) {
                 let col = document.createElement('div');
                 col.className = 'col';
                 col.innerHTML = `
-                    <div class="card preview-card h-100 shadow-xs text-center border p-1 rounded position-relative ${index === 0 ? 'is-primary-card' : ''}" id="preview-card-${index}">
+                    <div class="card preview-card h-100 shadow-xs text-center border p-1 rounded position-relative ${index === primaryIndex ? 'is-primary-card' : ''}" id="preview-card-${index}">
+                        <button type="button" class="btn btn-danger btn-xs position-absolute" style="top: 5px; right: 5px; padding: 2px 6px; font-size: 0.75rem; border-radius: 4px; z-index: 10;" onclick="removeFile(${index})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                         <img src="${e.target.result}" class="card-img-top rounded" style="height: 100px; object-fit: cover;">
                         <div class="card-body p-2">
                             <div class="d-flex justify-content-center align-items-center mb-0">
@@ -475,7 +610,7 @@ fileInput.addEventListener('change', function(event) {
                                        name="primary_image_index" 
                                        id="primary_${index}" 
                                        value="${index}" 
-                                       ${index === 0 ? 'checked' : ''} 
+                                       ${index === primaryIndex ? 'checked' : ''} 
                                        onchange="setPrimaryCard(${index})"
                                        style="width: 16px; height: 16px; accent-color: var(--primary-neon); cursor: pointer; margin: 0;">
                                 <label class="fs-7 cursor-pointer text-white-50 fw-semibold mb-0" for="primary_${index}" style="cursor: pointer; margin-left: 6px;">
@@ -493,7 +628,7 @@ fileInput.addEventListener('change', function(event) {
     } else {
         hint.classList.add('d-none');
     }
-});
+}
 
 function setPrimaryCard(activeIndex) {
     let cards = document.querySelectorAll('.preview-card');

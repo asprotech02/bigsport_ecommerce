@@ -49,7 +49,7 @@
     <!-- 2. Pesanan & Transaksi -->
     @if(in_array($role, ['admin', 'sales', 'manager']))
         @php
-            $isTransaksiActive = request()->routeIs('admin.orders.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.shippings.*');
+            $isTransaksiActive = request()->routeIs('admin.orders.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.shippings.*') || request()->routeIs('admin.pickups.*');
         @endphp
         <li class="nav-item {{ $isTransaksiActive ? 'active' : '' }}">
             <a class="nav-link {{ $isTransaksiActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseTransaksi"
@@ -62,6 +62,7 @@
                     <a class="collapse-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">Pesanan</a>
                     <a class="collapse-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}">Pembayaran</a>
                     <a class="collapse-item {{ request()->routeIs('admin.shippings.*') ? 'active' : '' }}" href="{{ route('admin.shippings.index') }}">Pengiriman</a>
+                    <a class="collapse-item {{ request()->routeIs('admin.pickups.*') ? 'active' : '' }}" href="{{ route('admin.pickups.index') }}">Pick Up (Ambil di Toko)</a>
                 </div>
             </div>
         </li>

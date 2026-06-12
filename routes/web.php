@@ -66,6 +66,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,sales,manager'])->group(
     Route::get('/shippings/{id}/edit', [ShippingController::class, 'edit'])->name('admin.shippings.edit');
     Route::put('/shippings/{id}', [ShippingController::class, 'update'])->name('admin.shippings.update');
     Route::post('/shippings/{id}/book-biteship', [ShippingController::class, 'bookBiteship'])->name('admin.shippings.bookBiteship');
+    Route::post('/shippings/book-biteship-bulk', [ShippingController::class, 'bookBiteshipBulk'])->name('admin.shippings.bookBiteshipBulk');
+
+    // Pick Up (Ambil di Toko)
+    Route::get('/pickups', [ShippingController::class, 'indexPickup'])->name('admin.pickups.index');
 
     // Pembayaran
     Route::get('/payments', [PaymentController::class, 'index'])->name('admin.payments.index');
@@ -252,8 +256,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
 
     // --- BAGIAN ORDER SUCCESS ---
-    Route::get('/order_success', function () {
-        $order = \App\Models\Order::where('user_id', auth()->id())->latest()->first();
+    Route::get('/order_success', function (Request $request) {
+        $orderId = $request->query('order_id');
+        if ($orderId) {
+            $order = \App\Models\Order::where('user_id', auth()->id())
+                ->where('invoice_number', $orderId)
+                ->first();
+        } else {
+            $order = \App\Models\Order::where('user_id', auth()->id())->latest()->first();
+        }
         return view('customer.pages.order_success', compact('order'));
     })->name('order_success');
 

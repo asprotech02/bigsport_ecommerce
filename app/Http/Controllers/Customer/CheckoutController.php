@@ -107,8 +107,9 @@ class CheckoutController extends Controller
 
     public function applyPromo(Request $request)
     {
-        $code = $request->promo_code;
+        $code = strtoupper($request->promo_code);
         $subtotal = $request->subtotal;
+        $user = Auth::user();
 
         $promo = Promo::where('code', $code)
             ->where('is_active', true)
@@ -119,6 +120,10 @@ class CheckoutController extends Controller
 
         if (!$promo) {
             return response()->json(['success' => false, 'message' => 'Kode promo tidak valid']);
+        }
+
+        if ($user->usedPromos()->where('promo_id', $promo->id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'Anda sudah menggunakan kode promo ini']);
         }
 
         if ($promo->used_count >= $promo->max_usage) {
@@ -224,8 +229,11 @@ class CheckoutController extends Controller
             $discountAmount = 0;
             $promoId = null;
             if ($request->filled('promo_code')) {
-                $promo = Promo::where('code', $request->promo_code)->where('is_active', true)->lockForUpdate()->first();
+                $promo = Promo::where('code', strtoupper($request->promo_code))->where('is_active', true)->lockForUpdate()->first();
                 if ($promo) {
+                    if ($user->usedPromos()->where('promo_id', $promo->id)->exists()) {
+                        throw new \Exception('Anda sudah menggunakan kode promo ini.');
+                    }
                     if ($promo->used_count >= $promo->max_usage) {
                         throw new \Exception('Maaf, kuota kode promo sudah habis diklaim.');
                     }
@@ -238,6 +246,7 @@ class CheckoutController extends Controller
 
             $invoiceNumber = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(4));
             $grandTotal = ($totalProductPrice + $shippingCost) - $discountAmount;
+            if ($grandTotal < 0) $grandTotal = 0;
 
             $order = Order::create([
                 'user_id' => $user->id,
@@ -275,6 +284,34 @@ class CheckoutController extends Controller
 
             Cart::whereIn('id', $request->cart_ids)->delete();
 
+            // Handle Free Orders directly (Rp 0 total)
+            if ($grandTotal <= 0) {
+                $order->update([
+                    'payment_status' => 'paid',
+                    'status' => 'confirmed',
+                    'payment_type' => 'promo'
+                ]);
+
+                // Deduct stock immediately
+                foreach ($cartItems as $item) {
+                    $sku = $lockedSkus->get($item->product_sku_id);
+                    $sku->stock -= $item->quantity;
+                    $sku->reserved_stock -= $item->quantity;
+                    $sku->save();
+                }
+
+                // Create notification
+                \App\Models\UserNotification::create([
+                    'user_id' => $user->id,
+                    'type'    => 'transaksi',
+                    'title'   => 'Pembayaran Berhasil',
+                    'message' => "Pembayaran pesanan #{$order->invoice_number} sebesar Rp 0 telah kami terima. Pesanan Anda akan segera dikemas."
+                ]);
+
+                DB::commit();
+                return response()->json(['success' => true, 'is_free' => true, 'invoice' => $invoiceNumber]);
+            }
+
             // COMMIT: Lepaskan gembok database SEKARANG
             DB::commit();
 
@@ -298,7 +335,7 @@ class CheckoutController extends Controller
                 'transaction_details' => ['order_id' => $invoiceNumber, 'gross_amount' => (int)$grandTotal],
                 'customer_details' => ['first_name' => $user->name, 'email' => $user->email],
                 'callbacks' => [
-                    'finish' => route('profile') . '?tab=orders'
+                    'finish' => route('order_success') . '?order_id=' . $invoiceNumber
                 ]
             ]);
 
