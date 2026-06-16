@@ -152,14 +152,50 @@ class ProfileController extends Controller
     }
 
 
-    public function notifications()
+    public function notifications(Request $request)
     {
-        // Ambil notifikasi user yang login, urutkan dari yang paling baru
-        $notifications = \App\Models\UserNotification::where('user_id', auth()->id())
-                            ->orderBy('created_at', 'desc')
-                            ->get();
+        $type = $request->query('type');
+        
+        $query = \App\Models\UserNotification::where('user_id', auth()->id());
+        
+        if ($type === 'transaksi') {
+            $query->whereIn('type', ['transaksi', 'transaction']);
+        } elseif ($type === 'promo') {
+            $query->where('type', 'promo');
+        }
+        
+        $notifications = $query->orderBy('created_at', 'desc')->get();
 
         return view('customer.pages.notification', compact('notifications'));
+    }
+
+    public function markAsRead($id)
+    {
+        $notification = \App\Models\UserNotification::where('user_id', auth()->id())->findOrFail($id);
+        if (!$notification->is_read) {
+            $notification->update(['is_read' => true]);
+        }
+
+        $unreadCount = \App\Models\UserNotification::where('user_id', auth()->id())
+                                                    ->where('is_read', false)
+                                                    ->count();
+
+        return response()->json([
+            'success' => true,
+            'unread_count' => $unreadCount
+        ]);
+    }
+
+    public function markAllAsRead()
+    {
+        \App\Models\UserNotification::where('user_id', auth()->id())
+                                    ->where('is_read', false)
+                                    ->update(['is_read' => true]);
+
+        return response()->json([
+            'success' => true,
+            'unread_count' => 0
+        ]);
     }
 
 
@@ -353,7 +389,7 @@ public function storeReview(Request $request)
                 // Coba 1: Alamat Lengkap
                 $geoResponse = Http::timeout(1.5)
                     ->withHeaders([
-                        'User-Agent' => 'BigSportEcommerceApp/1.0 (achma.wisnu@gmail.com)'
+                        'User-Agent' => 'BagindoJayaEcommerceApp/1.0 (achma.wisnu@gmail.com)'
                     ])
                     ->get('https://nominatim.openstreetmap.org/search', [
                         'format' => 'json',
@@ -372,7 +408,7 @@ public function storeReview(Request $request)
                         if (count($parts) > 2) {
                             $simpler = implode(',', array_slice($parts, -3));
                             $geoResponse2 = Http::timeout(1.2)
-                                ->withHeaders(['User-Agent' => 'BigSportEcommerceApp/1.0 (achma.wisnu@gmail.com)'])
+                                ->withHeaders(['User-Agent' => 'BagindoJayaEcommerceApp/1.0 (achma.wisnu@gmail.com)'])
                                 ->get('https://nominatim.openstreetmap.org/search', [
                                     'format' => 'json',
                                     'q' => $simpler,

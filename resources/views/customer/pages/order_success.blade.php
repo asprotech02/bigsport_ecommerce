@@ -27,7 +27,7 @@
                 <div class="text-center mb-4">
                     <h2 class="fw-black text-uppercase mb-2" style="font-size: 26px; letter-spacing: 1px;">Pembayaran Berhasil</h2>
                     <p class="text-secondary" style="font-size: 14px; line-height: 1.6;">
-                        Terima kasih telah berbelanja di Big Sport, Pesanan Anda telah kami terima dan akan segera kami proses.
+                        Terima kasih telah berbelanja di Bagindo Jaya, Pesanan Anda telah kami terima dan akan segera kami proses.
                     </p>
                 </div>
 

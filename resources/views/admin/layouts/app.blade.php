@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Admin Panel BigSport' }}</title>
+    <title>{{ $title ?? 'Admin Panel Bagindo Jaya' }}</title>
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{{ asset('assets/admin/vendor/fontawesome-free/css/all.min.css') }}">
@@ -43,6 +43,36 @@
         
         .btn-outline-light:hover i {
             color: #111111 !important;
+        }
+
+        /* Fix close buttons for alert dismissible in SB Admin 2 (Bootstrap 4) */
+        .alert-dismissible .btn-close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 2;
+            padding: 0.75rem 1.25rem;
+            color: inherit;
+            background: transparent;
+            border: 0;
+            opacity: 0.5;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+            text-shadow: 0 1px 0 #fff;
+            cursor: pointer;
+            transition: opacity 0.15s ease-in-out;
+        }
+        .alert-dismissible .btn-close:hover {
+            opacity: 0.75;
+            text-decoration: none;
+        }
+        .alert-dismissible .btn-close::before {
+            content: "×";
+        }
+        .alert-dismissible .btn-close.btn-close-white {
+            color: #fff;
+            text-shadow: 0 1px 0 #000;
         }
     </style>
 </head>
@@ -105,6 +135,15 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     @stack('scripts')
+
+    <script>
+        $(document).ready(function() {
+            // Fix Bootstrap 5 style close buttons for Bootstrap 4 alert dismissal
+            $(document).on('click', '[data-bs-dismiss="alert"]', function() {
+                $(this).closest('.alert').alert('close');
+            });
+        });
+    </script>
 
 </body>
 

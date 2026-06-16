@@ -34,7 +34,7 @@ class PromoController extends Controller
             'is_active'        => 'nullable|boolean',
         ]);
 
-        Promo::create([
+        $promo = Promo::create([
             'code'             => strtoupper($request->code),
             'type'             => $request->type,
             'reward'           => $request->reward,
@@ -44,6 +44,43 @@ class PromoController extends Controller
             'is_active'        => $request->has('is_active') ? 1 : 0,
             'used_count'       => 0,
         ]);
+
+        if ($promo->is_active) {
+            $rewardStr = ($promo->type === 'percentage') 
+                ? $promo->reward . '%' 
+                : 'Rp ' . number_format($promo->reward, 0, ',', '.');
+                
+            $title = 'Promo Baru Tersedia! 🏷️';
+            $message = "Sedang ada promo baru menarik untukmu! Gunakan kode promo " . $promo->code . " untuk mendapatkan potongan " . $rewardStr . ". Buruan belanja!";
+            
+            $customers = \App\Models\User::where('role', 'customer')->get();
+            
+            if ($customers->isNotEmpty()) {
+                // 1. Bulk insert ke database (Hanya 1 Query untuk seluruh user!)
+                $notificationsData = [];
+                $userIds = [];
+                foreach ($customers as $customer) {
+                    $userIds[] = $customer->id;
+                    $notificationsData[] = [
+                        'user_id'    => $customer->id,
+                        'type'       => 'promo',
+                        'title'      => $title,
+                        'message'    => $message,
+                        'is_read'    => false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                \App\Models\UserNotification::insert($notificationsData);
+
+                // 2. Broadcast ke seluruh user sekaligus (Hanya 1 Request Ke WebSockets/Reverb!)
+                try {
+                    broadcast(new \App\Events\RealTimePromoNotification($title, $message, $userIds));
+                } catch (\Exception $e) {
+                    \Log::warning("RealTimePromoNotification broadcast failed: " . $e->getMessage());
+                }
+            }
+        }
 
         return redirect()->route('admin.promos.index')
             ->with('success', 'Promo berhasil ditambahkan.');

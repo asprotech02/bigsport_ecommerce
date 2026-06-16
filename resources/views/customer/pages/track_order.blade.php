@@ -65,7 +65,7 @@
                 <div class="card-footer bg-light border-top border-dark p-3">
                     <div class="d-flex align-items-start gap-2 small text-secondary">
                         <i class="bi bi-info-circle-fill text-dark mt-0.5"></i>
-                        <span id="map-status-text">Menginisialisasi titik rute dari Toko BigSport ke alamat Anda...</span>
+                        <span id="map-status-text">Menginisialisasi titik rute dari Toko Bagindo Jaya ke alamat Anda...</span>
                     </div>
                 </div>
             </div>
@@ -250,10 +250,10 @@
                     throw new Error("Leaflet.js library is not loaded.");
                 }
 
-                // 1. Titik Asal (Store BigSport Larangan)
+                // 1. Titik Asal (Store Bagindo Jaya Larangan)
                 const originLat = -6.2263;
                 const originLng = 106.7291;
-                const originName = "BigSport Store (Larangan)";
+                const originName = "Bagindo Jaya Store (Larangan)";
 
                 // 2. Alamat User & Koordinat dari Server
                 const destLat = parseFloat({!! json_encode($destLat ?? -6.1783) !!});

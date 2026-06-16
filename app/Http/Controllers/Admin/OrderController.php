@@ -120,7 +120,7 @@ class OrderController extends Controller
 
             if ($newStatus == 'processing' || $newStatus == 'preparing') {
                 $notifTitle = 'Pesanan Sedang Disiapkan 📦';
-                $notifMsg = "Pesanan Anda #{$order->invoice_number} sedang disiapkan oleh tim logistik BigSport.";
+                $notifMsg = "Pesanan Anda #{$order->invoice_number} sedang disiapkan oleh tim logistik Bagindo Jaya.";
             } elseif ($newStatus == 'shipped') {
                 $courier = $order->shippingDetail->courier_company ?? 'Kurir';
                 $resi = $order->shippingDetail->tracking_number ?? '-';
@@ -131,7 +131,7 @@ class OrderController extends Controller
                 $notifMsg = "Pesanan Anda #{$order->invoice_number} telah sampai di alamat tujuan. Silakan konfirmasi penyelesaian pesanan.";
             } elseif ($newStatus == 'completed') {
                 $notifTitle = 'Pesanan Selesai 🎉';
-                $notifMsg = "Pesanan Anda #{$order->invoice_number} telah selesai. Terima kasih telah berbelanja di BigSport!";
+                $notifMsg = "Pesanan Anda #{$order->invoice_number} telah selesai. Terima kasih telah berbelanja di Bagindo Jaya!";
             }
 
             // Create notification row

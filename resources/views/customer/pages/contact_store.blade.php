@@ -27,7 +27,7 @@
             @else
                 <div class="text-center mb-5">
                     <h3 class="fw-bold text-uppercase m-0" style="font-size: 30px; font-weight: 800; letter-spacing: 1px;">Hubungi Kami</h3>
-                    <p class="text-secondary mt-3">Hubungi tim BigSport Customer Service</p>
+                    <p class="text-secondary mt-3">Hubungi tim Bagindo Jaya Customer Service</p>
                 </div>
 
                 <div class="content-policy" style="line-height: 1.8; font-size: 15px;">
@@ -35,7 +35,7 @@
                         <div class="col-md-6">
                             <h5 class="fw-bold text-uppercase mb-3" style="font-size: 18px; letter-spacing: 0.5px;">Informasi Kontak</h5>
                             <p class="text-secondary">
-                                <i class="bi bi-envelope-fill me-2"></i> <strong>Email:</strong> support@bigsport.com<br>
+                                <i class="bi bi-envelope-fill me-2"></i> <strong>Email:</strong> support@bagindojaya.com<br>
                                 <i class="bi bi-telephone-fill me-2"></i> <strong>Telepon:</strong> (021) 500-888<br>
                                 <i class="bi bi-whatsapp me-2"></i> <strong>WhatsApp CS:</strong> +62 812-3456-7890
                             </p>
@@ -43,9 +43,9 @@
                         <div class="col-md-6">
                             <h5 class="fw-bold text-uppercase mb-3" style="font-size: 18px; letter-spacing: 0.5px;">Sosial Media Resmi</h5>
                             <p class="text-secondary">
-                                <i class="bi bi-instagram me-2"></i> @bigsport_id<br>
-                                <i class="bi bi-tiktok me-2"></i> @bigsport.official<br>
-                                <i class="bi bi-youtube me-2"></i> BigSport Official Channel
+                                <i class="bi bi-instagram me-2"></i> @bagindojaya_id<br>
+                                <i class="bi bi-tiktok me-2"></i> @bagindojaya.official<br>
+                                <i class="bi bi-youtube me-2"></i> Bagindo Jaya Official Channel
                             </p>
                         </div>
                     </div>

@@ -125,10 +125,10 @@ class ShippingController extends Controller
                     $notifMsg = "Admin sedang menyiapkan barang pesanan Anda #{$shipping->order->invoice_number}. Mohon tunggu update ketika siap diambil.";
                 } elseif ($newStatus === 'delivered') {
                     $notifTitle = 'Pesanan Siap Diambil 🏪';
-                    $notifMsg = "Hore! Pesanan Anda #{$shipping->order->invoice_number} sudah siap untuk diambil di Toko Utama BigSport.";
+                    $notifMsg = "Hore! Pesanan Anda #{$shipping->order->invoice_number} sudah siap untuk diambil di Toko Utama Bagindo Jaya.";
                 } elseif ($newStatus === 'completed') {
                     $notifTitle = 'Pesanan Selesai 🎉';
-                    $notifMsg = "Pesanan Anda #{$shipping->order->invoice_number} telah diambil dan diselesaikan. Terima kasih telah berbelanja di BigSport!";
+                    $notifMsg = "Pesanan Anda #{$shipping->order->invoice_number} telah diambil dan diselesaikan. Terima kasih telah berbelanja di Bagindo Jaya!";
                 }
             } else {
                 // Condition 1: Admin menyiapkan barang
@@ -149,7 +149,7 @@ class ShippingController extends Controller
                 // Condition 4: Completed
                 elseif ($newStatus === 'completed') {
                     $notifTitle = 'Pesanan Selesai 🎉';
-                    $notifMsg = "Pesanan Anda #{$shipping->order->invoice_number} telah diselesaikan. Terima kasih telah berbelanja di BigSport!";
+                    $notifMsg = "Pesanan Anda #{$shipping->order->invoice_number} telah diselesaikan. Terima kasih telah berbelanja di Bagindo Jaya!";
                 }
             }
 
@@ -215,14 +215,14 @@ class ShippingController extends Controller
 
         // Biteship Create Order Payload
         $payload = [
-            'shipper_contact_name' => 'BigSport Store',
+            'shipper_contact_name' => 'Bagindo Jaya Store',
             'shipper_contact_phone' => '081234567890',
-            'shipper_contact_email' => 'admin@bigsport.com',
-            'shipper_organization' => 'BigSport Indonesia',
-            'origin_contact_name' => 'BigSport Store',
+            'shipper_contact_email' => 'admin@bagindojaya.com',
+            'shipper_organization' => 'Bagindo Jaya Indonesia',
+            'origin_contact_name' => 'Bagindo Jaya Store',
             'origin_contact_phone' => '081234567890',
             'origin_address' => 'Jl. HOS Cokroaminoto No.52, Larangan',
-            'origin_note' => 'Toko BigSport Larangan',
+            'origin_note' => 'Toko Bagindo Jaya Larangan',
             'origin_postal_code' => 15154,
             'origin_area_id' => 'IDNP3IDNC445IDND5606', // Larangan, Tangerang area ID
             
@@ -444,7 +444,7 @@ class ShippingController extends Controller
                         'user_id' => $shipping->order->user_id,
                         'type'    => 'order_status',
                         'title'   => 'Pesanan Selesai 🎉',
-                        'message' => "Pesanan Anda #{$shipping->order->invoice_number} telah diselesaikan. Terima kasih telah berbelanja di BigSport!",
+                        'message' => "Pesanan Anda #{$shipping->order->invoice_number} telah diselesaikan. Terima kasih telah berbelanja di Bagindo Jaya!",
                         'is_read' => 0,
                     ]);
                     $successCount++;

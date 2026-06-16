@@ -150,7 +150,7 @@
                                     <i class="bi bi-shop fs-4"></i>
                                 </div>
                                 <div>
-                                    <p class="fw-bold mb-1" style="font-size: 14px;">Big Sport Tangerang (Toko Utama)</p>
+                                    <p class="fw-bold mb-1" style="font-size: 14px;">Bagindo Jaya Tangerang (Toko Utama)</p>
                                     <p class="text-secondary mb-0 small" style="line-height: 1.5;">
                                         Jl. HOS Cokroaminoto No.52, RT.001/RW.005, Larangan, Kec. Larangan, Kota Tangerang
                                     </p>

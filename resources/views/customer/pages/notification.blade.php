@@ -15,17 +15,14 @@
                     {{-- HEADER TAB NOTIFIKASI --}}
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center border-bottom border-dark pb-3 mb-4">
                         <div class="d-flex gap-4 mb-3 mb-sm-0 fw-bold text-uppercase" style="font-size: 13px; letter-spacing: 1px;">
-                            <a href="#" class="text-dark text-decoration-none border-bottom border-dark border-2 pb-1">Semua</a>
-                            <a href="#" class="text-secondary text-decoration-none hover-text-dark pb-1">Transaksi</a>
-                            <a href="#" class="text-secondary text-decoration-none hover-text-dark pb-1">Promo</a>
+                            <a href="{{ route('notification') }}" class="{{ !request('type') ? 'text-dark border-bottom border-dark border-2' : 'text-secondary hover-text-dark' }} text-decoration-none pb-1">Semua</a>
+                            <a href="{{ route('notification', ['type' => 'transaksi']) }}" class="{{ request('type') == 'transaksi' ? 'text-dark border-bottom border-dark border-2' : 'text-secondary hover-text-dark' }} text-decoration-none pb-1">Transaksi</a>
+                            <a href="{{ route('notification', ['type' => 'promo']) }}" class="{{ request('type') == 'promo' ? 'text-dark border-bottom border-dark border-2' : 'text-secondary hover-text-dark' }} text-decoration-none pb-1">Promo</a>
                         </div>
-                        {{-- Tombol Tandai Dibaca (Bisa lu kasih fitur AJAX nanti) --}}
-                        <form action="#" method="POST" class="m-0">
-                            @csrf
-                            <button type="submit" class="btn btn-link p-0 text-secondary text-decoration-none text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px; border-bottom: 1px dashed #ccc;">
-                                Tandai Semua Dibaca
-                            </button>
-                        </form>
+                        {{-- Tombol Tandai Dibaca --}}
+                        <button type="button" id="mark-all-read-btn" class="btn btn-link p-0 text-secondary text-decoration-none text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px; border-bottom: 1px dashed #ccc;">
+                            Tandai Semua Dibaca
+                        </button>
                     </div>
 
                     {{-- LOOPING DATA DARI DATABASE --}}
@@ -63,11 +60,11 @@
                             }
                         @endphp
 
-                        <a href="#" class="text-decoration-none text-dark d-block p-4 mb-3 notification-item position-relative {{ $itemBg }}">
+                        <a href="#" data-id="{{ $notif->id }}" data-read="{{ $notif->is_read ? 'true' : 'false' }}" class="text-decoration-none text-dark d-block p-4 mb-3 notification-item position-relative {{ $itemBg }}">
                             
                             {{-- Titik Hitam (Muncul cuma kalau belum dibaca) --}}
                             @if(!$notif->is_read)
-                                <div class="position-absolute bg-dark" style="top: 15px; right: 15px; width: 10px; height: 10px;"></div>
+                                <div class="position-absolute bg-dark unread-dot" style="top: 15px; right: 15px; width: 10px; height: 10px;"></div>
                             @endif
                             
                             <div class="d-flex align-items-start {{ $opacity }}">
@@ -123,5 +120,119 @@
     <style>
         .bg-light-gray { background-color: #f8f9fa; }
     </style>
+    @endpush
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // 1. Single Notification Click Handler
+        const notificationItems = document.querySelectorAll('.notification-item');
+        notificationItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                // Prevent default hash jump
+                e.preventDefault();
+
+                const isRead = this.getAttribute('data-read') === 'true';
+                const notifId = this.getAttribute('data-id');
+
+                if (!isRead) {
+                    fetch(`/notification/${notifId}/read`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update UI of this item to Read
+                            this.setAttribute('data-read', 'true');
+                            this.classList.remove('bg-light-gray', 'border', 'border-dark');
+                            this.classList.add('bg-white', 'border-bottom', 'border-secondary-subtle');
+                            
+                            // Set opacity on the content
+                            const dFlex = this.querySelector('.d-flex');
+                            if (dFlex) dFlex.classList.add('opacity-75');
+
+                            // Change text color from text-dark to text-secondary
+                            const msgPara = this.querySelector('p');
+                            if (msgPara) {
+                                msgPara.classList.remove('text-dark');
+                                msgPara.classList.add('text-secondary');
+                            }
+
+                            // Remove unread dot
+                            const dot = this.querySelector('.unread-dot');
+                            if (dot) dot.remove();
+
+                            // Update navbar badge
+                            updateNavbarBadge(data.unread_count);
+                        }
+                    })
+                    .catch(err => console.error('Error marking notification as read:', err));
+                }
+            });
+        });
+
+        // 2. Mark All as Read Button Handler
+        const markAllBtn = document.getElementById('mark-all-read-btn');
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                fetch('/notification/read-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update all unread items
+                        notificationItems.forEach(item => {
+                            item.setAttribute('data-read', 'true');
+                            item.classList.remove('bg-light-gray', 'border', 'border-dark');
+                            item.classList.add('bg-white', 'border-bottom', 'border-secondary-subtle');
+                            
+                            const dFlex = item.querySelector('.d-flex');
+                            if (dFlex) dFlex.classList.add('opacity-75');
+
+                            const msgPara = item.querySelector('p');
+                            if (msgPara) {
+                                msgPara.classList.remove('text-dark');
+                                msgPara.classList.add('text-secondary');
+                            }
+
+                            const dot = item.querySelector('.unread-dot');
+                            if (dot) dot.remove();
+                        });
+
+                        // Update navbar badge
+                        updateNavbarBadge(0);
+                    }
+                })
+                .catch(err => console.error('Error marking all notifications as read:', err));
+            });
+        }
+
+        // Helper to update navbar badge
+        function updateNavbarBadge(count) {
+            const badge = document.getElementById('notif-badge-count');
+            if (badge) {
+                if (count > 0) {
+                    badge.innerText = count > 99 ? '99+' : count;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+            }
+        }
+    });
+    </script>
     @endpush
 @endsection

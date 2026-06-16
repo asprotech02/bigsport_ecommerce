@@ -162,7 +162,7 @@
                     </td>
                     <td style="width: 45%; padding-left: 5px;">
                         <div class="section-label">Pengirim:</div>
-                        <div class="address-name">BigSport Store</div>
+                        <div class="address-name">Bagindo Jaya Store</div>
                         <div class="address-text">
                             0812-3456-7890<br>
                             Ruko Golden Boulevard Blok C No. 12, Kel. BSD City, Kec. Serpong, Tangerang Selatan, Banten
@@ -195,7 +195,7 @@
         </div>
 
         <div class="footer">
-            BigSport - Terima kasih atas pesanan Anda!
+            Bagindo Jaya - Terima kasih atas pesanan Anda!
         </div>
     </div>
 </body>

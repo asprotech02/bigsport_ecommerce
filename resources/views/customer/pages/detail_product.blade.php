@@ -1179,13 +1179,13 @@
                     if (navigator.share) {
                         navigator.share({
                             title: productName,
-                            text: 'Cek produk ' + productName + ' di BigSport!',
+                            text: 'Cek produk ' + productName + ' di Bagindo Jaya!',
                             url: productUrl
                         }).catch(err => console.log('Share cancelled:', err));
                     } else {
                         const shareOptions = [
-                            { name: 'WhatsApp', url: 'https://wa.me/?text=' + encodeURIComponent('Cek produk ' + productName + ' di BigSport! ' + productUrl) },
-                            { name: 'Twitter / X', url: 'https://twitter.com/intent/tweet?text=' + encodeURIComponent('Cek produk ' + productName + ' di BigSport! ') + '&url=' + encodeURIComponent(productUrl) },
+                            { name: 'WhatsApp', url: 'https://wa.me/?text=' + encodeURIComponent('Cek produk ' + productName + ' di Bagindo Jaya! ' + productUrl) },
+                            { name: 'Twitter / X', url: 'https://twitter.com/intent/tweet?text=' + encodeURIComponent('Cek produk ' + productName + ' di Bagindo Jaya! ') + '&url=' + encodeURIComponent(productUrl) },
                             { name: 'Salin Tautan', url: 'copy' }
                         ];
 

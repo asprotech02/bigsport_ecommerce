@@ -44,9 +44,9 @@
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">Tipe Pesan <span class="text-danger">*</span></label>
                         <select name="type" class="form-select" required>
-                            <option value="transaction" {{ old('type') == 'transaction' ? 'selected' : '' }}>Transaksi (Update Pesanan/Pengiriman)</option>
+                            <option value="transaksi" {{ old('type') == 'transaksi' ? 'selected' : '' }}>Transaksi (Update Pesanan/Pengiriman)</option>
                             <option value="promo" {{ old('type') == 'promo' ? 'selected' : '' }}>Promo & Diskon (Voucher/Deals)</option>
-                            <option value="system" {{ old('type') == 'system' ? 'selected' : '' }}>Sistem (Pengumuman Akun/Perbaikan)</option>
+                            <option value="sistem" {{ old('type') == 'sistem' ? 'selected' : '' }}>Sistem (Pengumuman Akun/Perbaikan)</option>
                         </select>
                     </div>
                 </div>

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('promos', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique(); // Contoh: BIGSPORT10
+            $table->string('code')->unique(); // Contoh: BAGINDOJAYA10
             $table->enum('type', ['fixed', 'percentage']); // Potongan harga flat atau persen
             $table->decimal('reward', 15, 2); // Nilai potongan (misal: 10000 atau 10)
             $table->integer('max_usage')->default(100); // Maksimal berapa kali kode bisa dipakai

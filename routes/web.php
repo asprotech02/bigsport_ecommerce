@@ -129,6 +129,26 @@ Route::get('/kebijakan-keamanan-data', function () {
     return view('customer.pages.privacy', compact('page')); 
 })->name('privacy');
 
+Route::get('/tentang-kami', function () { 
+    $page = \App\Models\StaticPage::where('slug', 'about')->where('is_active', true)->first();
+    return view('customer.pages.about', compact('page')); 
+})->name('about');
+
+Route::get('/syarat-ketentuan', function () { 
+    $page = \App\Models\StaticPage::where('slug', 'terms')->where('is_active', true)->first();
+    return view('customer.pages.terms', compact('page')); 
+})->name('terms');
+
+Route::get('/faq', function () { 
+    $page = \App\Models\StaticPage::where('slug', 'faq')->where('is_active', true)->first();
+    return view('customer.pages.faq', compact('page')); 
+})->name('faq');
+
+Route::get('/kebijakan-pengembalian', function () { 
+    $page = \App\Models\StaticPage::where('slug', 'returns')->where('is_active', true)->first();
+    return view('customer.pages.returns', compact('page')); 
+})->name('returns');
+
 // Rute API Publik untuk mencari area kecamatan dari Biteship
 Route::get('/api/biteship/search-area', function (Request $request) {
     $input = $request->query('input');
@@ -276,6 +296,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- LAIN-LAIN ---
     Route::get('/notification', [ProfileController::class, 'notifications'])->name('notification');
+    Route::post('/notification/{id}/read', [ProfileController::class, 'markAsRead'])->name('notification.read');
+    Route::post('/notification/read-all', [ProfileController::class, 'markAllAsRead'])->name('notification.readAll');
     Route::get('/chatbot', function () { return view('customer.pages.chatbot'); })->name('chatbot');
 
 }); // <-- PENUTUP BLOK AUTH

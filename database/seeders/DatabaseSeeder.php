@@ -28,8 +28,8 @@ class DatabaseSeeder extends Seeder
 
         // 1. USER ADMIN & CUSTOMER UTAMA
         User::create([
-            'name' => 'Admin Big Sport',
-            'email' => 'admin@bigsport.com',
+            'name' => 'Admin Bagindo Jaya',
+            'email' => 'admin@bagindojaya.com',
             'password' => Hash::make('password'),
             'role' => 'admin',
         ]);
@@ -178,7 +178,7 @@ class DatabaseSeeder extends Seeder
         // 6. GENERATE DATA PROMO 
         // ==========================================
         Promo::create([
-            'code' => 'BIGSPORT10',
+            'code' => 'BAGINDOJAYA10',
             'type' => 'fixed',
             'reward' => 10000,
             'max_usage' => 100,

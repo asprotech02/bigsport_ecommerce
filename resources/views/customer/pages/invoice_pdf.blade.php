@@ -21,7 +21,7 @@
 <body>
 
     <div class="header">
-        <div class="logo">BIG SPORT</div>
+        <div class="logo">BAGINDO JAYA</div>
         <div class="invoice-title">INVOICE</div>
         <div class="clear"></div>
     </div>
@@ -30,9 +30,9 @@
         <tr>
             <td width="50%">
                 <strong>Diterbitkan Oleh:</strong><br>
-                Big Sport Tangerang<br>
-                Jl. Jenderal Sudirman No. 45<br>
-                Tangerang
+                Bagindo Jaya Tangerang<br>
+                Jl. Moh. Toha No.87, RT.001/RW.004, Gerendeng,<br>
+                Kec. Karawaci, Kota Tangerang, Banten 15115
             </td>
             <td width="50%" class="text-right">
                 <strong>Tagihan Untuk:</strong><br>
@@ -87,7 +87,7 @@
     </table>
 
     <div style="text-align: center; margin-top: 50px; font-size: 11px; color: #777;">
-        Terima kasih telah berbelanja di Big Sport.<br>
+        Terima kasih telah berbelanja di Bagindo Jaya.<br>
         Ini adalah bukti pembayaran yang sah dan dicetak oleh komputer.
     </div>
 

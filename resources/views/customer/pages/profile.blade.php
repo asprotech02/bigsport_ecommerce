@@ -177,7 +177,7 @@
                                                 <div class="card-header bg-light border-bottom border-secondary-subtle py-2 px-3 d-flex justify-content-between align-items-center">
                                                     <div class="d-flex align-items-center gap-2">
                                                         <i class="bi bi-shop fs-5"></i>
-                                                        <span class="fw-bold text-uppercase" style="font-size: 13px;">Big Sport Tangerang</span>
+                                                        <span class="fw-bold text-uppercase" style="font-size: 13px;">Bagindo Jaya Tangerang</span>
                                                         @if($isPickup)
                                                             <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-shop-window me-1"></i> AMBIL DI TOKO</span>
                                                         @else
@@ -443,8 +443,8 @@
                                 <div class="col-12 col-xl-5">
                                     <div class="bg-light p-4 p-md-5 border border-secondary-subtle rounded-0 h-100">
                                         <h5 class="fw-bold text-uppercase mb-4" style="font-size: 16px;">Informasi Kontak</h5>
-                                        <div class="d-flex align-items-start mb-4"><i class="bi bi-geo-alt fs-5 me-3 text-dark"></i><div><h6 class="fw-bold mb-1" style="font-size: 13px;">Alamat Toko Utama</h6><p class="text-secondary mb-0" style="font-size: 12px;">Jl. Jenderal Sudirman No. 45, Tangerang</p></div></div>
-                                        <div class="d-flex align-items-start mb-4"><i class="bi bi-envelope fs-5 me-3 text-dark"></i><div><h6 class="fw-bold mb-1" style="font-size: 13px;">Email</h6><p class="text-secondary mb-0" style="font-size: 12px;">support@bigsport.com</p></div></div>
+                                        <div class="d-flex align-items-start mb-4"><i class="bi bi-geo-alt fs-5 me-3 text-dark"></i><div><h6 class="fw-bold mb-1" style="font-size: 13px;">Alamat Toko Utama</h6><p class="text-secondary mb-0" style="font-size: 12px;">Jl. Moh. Toha No.87, RT.001/RW.004, Gerendeng, Kec. Karawaci, Kota Tangerang, Banten 15115</p></div></div>
+                                        <div class="d-flex align-items-start mb-4"><i class="bi bi-envelope fs-5 me-3 text-dark"></i><div><h6 class="fw-bold mb-1" style="font-size: 13px;">Email</h6><p class="text-secondary mb-0" style="font-size: 12px;">support@bagindojaya.com</p></div></div>
                                         <div class="d-flex align-items-start"><i class="bi bi-telephone fs-5 me-3 text-dark"></i><div><h6 class="fw-bold mb-1" style="font-size: 13px;">WhatsApp</h6><p class="text-secondary mb-0" style="font-size: 12px;">+62 812 3456 7890</p></div></div>
                                     </div>
                                 </div>
@@ -477,8 +477,8 @@
                             <h3 class="fw-bold mb-5 text-uppercase" style="letter-spacing: 0.5px;">INFORMASI LOKASI TOKO</h3>
                             @php
                                 $locations = [
-                                    ['title' => 'Bigsport Tangerang Selatan', 'addr' => 'Jl. HOS Cokroaminoto No.52, Larangan', 'map' => 'https://maps.google.com/maps?q=Bigsport+Tangerang+Selatan&t=&z=13&ie=UTF8&iwloc=&output=embed', 'link' => '#'],
-                                    ['title' => 'Bigsport Citra Raya', 'addr' => 'QG7F+2JW, Cikupa, Tangerang', 'map' => 'https://maps.google.com/maps?q=Cikupa+Tangerang&t=&z=13&ie=UTF8&iwloc=&output=embed', 'link' => '#'],
+                                    ['title' => 'Bagindo Jaya Tangerang Selatan', 'addr' => 'Jl. HOS Cokroaminoto No.52, Larangan', 'map' => 'https://maps.google.com/maps?q=Bagindo+Jaya+Tangerang+Selatan&t=&z=13&ie=UTF8&iwloc=&output=embed', 'link' => '#'],
+                                    ['title' => 'Bagindo Jaya Citra Raya', 'addr' => 'QG7F+2JW, Cikupa, Tangerang', 'map' => 'https://maps.google.com/maps?q=Cikupa+Tangerang&t=&z=13&ie=UTF8&iwloc=&output=embed', 'link' => '#'],
                                 ];
                             @endphp
                             @foreach($locations as $loc)
@@ -527,7 +527,7 @@
                             </div>
                             <div class="mb-2">
                                 <label class="fw-bold small text-uppercase mb-2">Komentar / Ulasan</label>
-                                <textarea name="comment" rows="4" class="form-control rounded-0 border-dark shadow-none small" placeholder="Bagikan pengalaman produk belanjamu di Big Sport..." required></textarea>
+                                <textarea name="comment" rows="4" class="form-control rounded-0 border-dark shadow-none small" placeholder="Bagikan pengalaman produk belanjamu di Bagindo Jaya..." required></textarea>
                             </div>
                         </div>
                         <div class="modal-footer bg-white border-top border-light p-3">
@@ -843,7 +843,7 @@ function sendContactToWhatsApp(event) {
     }
     
     const waNumber = "6281234567890"; // WhatsApp CS Toko Utama
-    const text = `Halo CS BigSport, saya ingin menghubungi Anda:\n\n*Nama:* ${name}\n*Email:* ${email}\n*Pesan:* ${message}`;
+    const text = `Halo CS Bagindo Jaya, saya ingin menghubungi Anda:\n\n*Nama:* ${name}\n*Email:* ${email}\n*Pesan:* ${message}`;
     const encodedText = encodeURIComponent(text);
     
     const waUrl = `https://api.whatsapp.com/send?phone=${waNumber}&text=${encodedText}`;
@@ -878,7 +878,7 @@ function submitOrderReceived(orderId) {
                 if (res.data.success) {
                     Swal.fire({
                         title: 'Berhasil!',
-                        text: 'Pesanan berhasil diselesaikan! Terima kasih telah berbelanja di BigSport.',
+                        text: 'Pesanan berhasil diselesaikan! Terima kasih telah berbelanja di Bagindo Jaya.',
                         icon: 'success',
                         customClass: {
                             confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'

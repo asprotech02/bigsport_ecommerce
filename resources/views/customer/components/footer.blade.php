@@ -3,7 +3,7 @@
         
         <div class="text-center mb-5">
             <a href="/" class="d-inline-block">
-                <img src="{{ asset('assets/logo.png') }}" alt="BigSport Logo" style="height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.25));">
+                <img src="{{ asset('assets/logo.png') }}" alt="Bagindo Jaya Logo" style="height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.25));">
             </a>
         </div>
 
@@ -17,7 +17,7 @@
                     08:00 - 22:00
                 </div>
                 <div class="footer-text">
-                    Email : adidasstore@gmail.com<br>
+                    Email : bagindojaya@gmail.com<br>
                     Whatsapp : +62 0899 0689 0788
                 </div>
             </div>
@@ -25,18 +25,18 @@
             <div class="col-12 col-md-6 col-lg-auto mb-4 mb-lg-0">
                 <h6 class="fw-bold mb-4 text-white">Tentang Kami</h6>
                 <ul class="list-unstyled footer-links m-0 p-0">
-                    <li class="mb-3"><a href="#">Tentang Kami</a></li>
-                    <li class="mb-3"><a href="#">Syarat & Ketentuan</a></li>
-                    <li class="mb-3"><a href="#">Kebijakan Privasi</a></li>
+                    <li class="mb-3"><a href="{{ route('about') }}">Tentang Kami</a></li>
+                    <li class="mb-3"><a href="{{ route('terms') }}">Syarat & Ketentuan</a></li>
+                    <li class="mb-3"><a href="{{ route('privacy') }}">Kebijakan Privasi</a></li>
                 </ul>
             </div>
 
             <div class="col-12 col-md-6 col-lg-auto mb-4 mb-lg-0">
                 <h6 class="fw-bold mb-4 text-white">Pelayanan Pelanggan</h6>
                 <ul class="list-unstyled footer-links m-0 p-0">
-                    <li class="mb-3"><a href="#">Pertanyaan yang sering diajukan (FAQ)</a></li>
-                    <li class="mb-3"><a href="#">Kebijakan Pengembalian</a></li>
-                    <li class="mb-3"><a href="#">Lokasi Toko</a></li>
+                    <li class="mb-3"><a href="{{ route('faq') }}">Pertanyaan yang sering diajukan (FAQ)</a></li>
+                    <li class="mb-3"><a href="{{ route('returns') }}">Kebijakan Pengembalian</a></li>
+                    <li class="mb-3"><a href="{{ route('store_location') }}">Lokasi Toko</a></li>
                 </ul>
             </div>
 
@@ -58,7 +58,7 @@
         </div>
 
         <div class="text-center pt-3 footer-copyright">
-            <p class="mb-0">2026 &copy; ADIDASSTORE. SEMUA HAK CIPTA DILINDUNGI</p>
+            <p class="mb-0">2026 &copy; BAGINDO JAYA. SEMUA HAK CIPTA DILINDUNGI</p>
         </div>
 
     </div>

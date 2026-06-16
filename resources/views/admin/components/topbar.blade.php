@@ -8,7 +8,7 @@
 
     <!-- Judul Halaman -->
     <h5 class="m-0 font-weight-bold text-uppercase tracking-wider" style="color: var(--primary-neon, #e50914) !important; font-size: 1.1rem;">
-        BigSport
+        Bagindo Jaya
     </h5>
 
     <!-- Navbar kanan -->

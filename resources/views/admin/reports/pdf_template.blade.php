@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Penjualan BigSport</title>
+    <title>Laporan Penjualan Bagindo Jaya</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -139,9 +139,9 @@
     <div class="header">
         <div class="logo-container">
             @if(!empty($logoBase64))
-                <img src="{{ $logoBase64 }}" alt="BigSport Logo">
+                <img src="{{ $logoBase64 }}" alt="Bagindo Jaya Logo">
             @else
-                <h2 style="margin:0; color:#d90429; font-weight:800; font-style:italic;">BIGSPORT</h2>
+                <h2 style="margin:0; color:#d90429; font-weight:800; font-style:italic;">BAGINDO JAYA</h2>
             @endif
         </div>
         <div class="report-info">
@@ -287,7 +287,7 @@
     </div>
 
     <div class="footer">
-        BigSport Premium E-commerce Admin Command Center &copy; {{ date('Y') }}
+        Bagindo Jaya Premium E-commerce Admin Command Center &copy; {{ date('Y') }}
     </div>
 
 </body>

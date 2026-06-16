@@ -80,7 +80,7 @@
                             <div class="form-check mb-4">
                                 <input class="form-check-input rounded-0 shadow-none mt-1" type="checkbox" name="terms" id="termsCheck" required>
                                 <label class="form-check-label auth-terms" for="termsCheck">
-                                    Dengan mendaftar, saya menyetujui pemberian data personal saya ke Big Sport yang dilindungi oleh <a href="{{ route('privacy') }}" class="text-dark fw-bold text-decoration-underline" target="_blank">kebijakan keamanan data</a> <span class="text-danger">*</span>
+                                    Dengan mendaftar, saya menyetujui pemberian data personal saya ke Bagindo Jaya yang dilindungi oleh <a href="{{ route('privacy') }}" class="text-dark fw-bold text-decoration-underline" target="_blank">kebijakan keamanan data</a> <span class="text-danger">*</span>
                                 </label>
                             </div>
 

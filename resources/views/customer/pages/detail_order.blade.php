@@ -72,7 +72,7 @@
                         @elseif($order->status == 'processing')
                             <p class="mb-0 text-white" style="font-size: 13px;">Pesanan Anda sedang dalam perjalanan kurir ekspedisi</p>
                         @elseif($order->status == 'completed')
-                            <p class="mb-0 text-white" style="font-size: 13px;">Terima kasih telah berbelanja di Big Sport Tangerang</p>
+                            <p class="mb-0 text-white" style="font-size: 13px;">Terima kasih telah berbelanja di Bagindo Jaya Tangerang</p>
                         @endif
                     </div>
                 </div>
@@ -87,7 +87,7 @@
                                 <div class="d-flex flex-column justify-content-center h-100">
                                     <p class="text-dark fw-bold mb-1" style="font-size: 18px;">Ambil di Toko</p>
                                     <p class="text-secondary mb-0" style="font-size: 13px; line-height: 1.5;">
-                                        <strong class="text-dark">Big Sport Tangerang (Toko Utama)</strong><br>
+                                        <strong class="text-dark">Bagindo Jaya Tangerang (Toko Utama)</strong><br>
                                         Jl. HOS Cokroaminoto No.52, Larangan, Kota Tangerang
                                     </p>
                                 </div>
@@ -470,7 +470,7 @@
                         if (res.data.success) {
                             Swal.fire({
                                 title: 'Berhasil!',
-                                text: 'Pesanan berhasil diselesaikan! Terima kasih telah berbelanja di BigSport.',
+                                text: 'Pesanan berhasil diselesaikan! Terima kasih telah berbelanja di Bagindo Jaya.',
                                 icon: 'success',
                                 customClass: {
                                     confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'

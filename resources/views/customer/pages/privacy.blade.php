@@ -32,7 +32,7 @@
 
                 <div class="content-policy" style="line-height: 1.8; font-size: 15px;">
                     <p class="mb-4 text-secondary">
-                        Selamat datang di Big Sport. Kami sangat menghargai privasi Anda dan berkomitmen untuk melindungi informasi pribadi yang Anda berikan kepada kami. Kebijakan ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi data Anda saat menggunakan layanan platform kami.
+                        Selamat datang di Bagindo Jaya. Kami sangat menghargai privasi Anda dan berkomitmen untuk melindungi informasi pribadi yang Anda berikan kepada kami. Kebijakan ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi data Anda saat menggunakan layanan platform kami.
                     </p>
 
                     <h5 class="fw-bold text-uppercase mb-3 mt-5" style="font-size: 16px; letter-spacing: 0.5px;">1. Pengumpulan Data Informasi</h5>
@@ -50,17 +50,17 @@
 
                     <h5 class="fw-bold text-uppercase mb-3 mt-4" style="font-size: 16px; letter-spacing: 0.5px;">3. Perlindungan & Pembagian Data</h5>
                     <p class="mb-4 text-secondary">
-                        Big Sport <strong>tidak akan pernah</strong> menjual, menyewakan, atau menukar data pribadi Anda kepada pihak ketiga untuk tujuan pemasaran. Data Anda hanya akan dibagikan kepada pihak ketiga yang berwenang (seperti Midtrans untuk pemrosesan pembayaran dan layanan ekspedisi) semata-mata untuk keperluan penyelesaian pesanan Anda.
+                        Bagindo Jaya <strong>tidak akan pernah</strong> menjual, menyewakan, atau menukar data pribadi Anda kepada pihak ketiga untuk tujuan pemasaran. Data Anda hanya akan dibagikan kepada pihak ketiga yang berwenang (seperti Midtrans untuk pemrosesan pembayaran dan layanan ekspedisi) semata-mata untuk keperluan penyelesaian pesanan Anda.
                     </p>
 
                     <h5 class="fw-bold text-uppercase mb-3 mt-4" style="font-size: 16px; letter-spacing: 0.5px;">4. Keamanan Pembayaran</h5>
                     <p class="mb-4 text-secondary">
-                        Semua transaksi pembayaran di Big Sport diproses melalui gerbang pembayaran resmi berstandar internasional (Payment Gateway - Midtrans). Kami tidak pernah menyimpan detail kartu kredit atau informasi perbankan rahasia Anda di dalam server kami.
+                        Semua transaksi pembayaran di Bagindo Jaya diproses melalui gerbang pembayaran resmi berstandar internasional (Payment Gateway - Midtrans). Kami tidak pernah menyimpan detail kartu kredit atau informasi perbankan rahasia Anda di dalam server kami.
                     </p>
 
                     <h5 class="fw-bold text-uppercase mb-3 mt-4" style="font-size: 16px; letter-spacing: 0.5px;">5. Hak Pengguna</h5>
                     <p class="mb-5 text-secondary">
-                        Anda memiliki hak penuh untuk mengakses, memperbarui, atau meminta penghapusan data pribadi Anda kapan saja melalui menu Profil. Jika Anda membutuhkan bantuan lebih lanjut, silakan hubungi tim dukungan kami di <a href="mailto:support@bigsport.com" class="text-dark fw-bold text-decoration-underline">support@bigsport.com</a>.
+                        Anda memiliki hak penuh untuk mengakses, memperbarui, atau meminta penghapusan data pribadi Anda kapan saja melalui menu Profil. Jika Anda membutuhkan bantuan lebih lanjut, silakan hubungi tim dukungan kami di <a href="mailto:support@bagindojaya.com" class="text-dark fw-bold text-decoration-underline">support@bagindojaya.com</a>.
                     </p>
                     
                     <hr class="border-secondary-subtle my-5">

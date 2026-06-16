@@ -8,7 +8,7 @@
 
     <!-- Brand -->
     <a class="sidebar-brand d-flex align-items-center justify-content-center py-4" href="{{ $dashboardUrl }}">
-        <img src="{{ asset('assets/logo.png') }}" class="logo-img img-fluid" alt="BigSport Logo" style="max-height: 50px;">
+        <img src="{{ asset('assets/logo.png') }}" class="logo-img img-fluid" alt="Bagindo Jaya Logo" style="max-height: 50px;">
     </a>
 
     <hr class="sidebar-divider my-0">

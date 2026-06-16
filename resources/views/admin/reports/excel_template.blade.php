@@ -19,7 +19,7 @@
     <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 20px;">
         <tr>
             <td colspan="3" style="text-align: left; vertical-align: middle;">
-                <h1 style="margin: 0; color: #d90429; font-size: 22pt; font-weight: 800; font-style: italic;">BIGSPORT</h1>
+                <h1 style="margin: 0; color: #d90429; font-size: 22pt; font-weight: 800; font-style: italic;">BAGINDO JAYA</h1>
                 <span style="font-size: 9pt; color: #888888;">Premium E-Commerce Admin Center</span>
             </td>
             <td colspan="3" style="text-align: right; vertical-align: middle;">
@@ -239,7 +239,7 @@
         </tr>
         <tr>
             <td colspan="6" style="text-align: center; font-size: 8.5pt; color: #888888; border-top: 1px solid #eeeeee; padding-top: 10px;">
-                BigSport Premium E-commerce Admin Command Center &copy; {{ date('Y') }}
+                Bagindo Jaya Premium E-commerce Admin Command Center &copy; {{ date('Y') }}
             </td>
         </tr>
     </table>

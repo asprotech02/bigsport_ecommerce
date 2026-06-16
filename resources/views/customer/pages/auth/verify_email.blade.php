@@ -14,7 +14,7 @@
                 <h4 class="fw-bold mt-4 mb-3">VERIFIKASI EMAIL ANDA</h4>
                 
                 <p class="auth-subtitle mb-4 text-muted" style="line-height: 1.6;">
-                    Terima kasih telah mendaftar di Big Sport! Sebelum memulai, mohon verifikasi email Anda dengan mengeklik tautan yang baru saja kami kirimkan ke kotak masuk Anda.
+                    Terima kasih telah mendaftar di Bagindo Jaya! Sebelum memulai, mohon verifikasi email Anda dengan mengeklik tautan yang baru saja kami kirimkan ke kotak masuk Anda.
                 </p>
 
                 @if (session('status') == 'verification-link-sent')

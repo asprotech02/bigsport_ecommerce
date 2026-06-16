@@ -1,5 +1,4 @@
-Markdown
-# 🛒 Ecommerce BigSport
+# 🛒 Ecommerce Bagindo Jaya
 
 ## Deskripsi
 Project website e-commerce berbasis Laravel dengan desain minimalis, monokrom, dan fokus pada pengalaman belanja modern. Sistem ini sudah terintegrasi dengan Payment Gateway (Midtrans) dan Logistik/Ongkir (Biteship).
@@ -88,7 +87,7 @@ Karena aplikasi berjalan di localhost, Midtrans membutuhkan "jembatan" (Ngrok) u
 1. Cara Menjalankan Ngrok Bawaan Laragon
 Buka Laragon, klik Start All.
 
-Klik kanan di area kosong (atau tombol Menu) -> www -> Share -> klik ecommerce_bigsport.
+Klik kanan di area kosong (atau tombol Menu) -> www -> Share -> klik ecommerce_bigsport (atau folder proyek Anda).
 
 Jendela Command Prompt hitam akan muncul. Tunggu statusnya menjadi Forwarding.
 

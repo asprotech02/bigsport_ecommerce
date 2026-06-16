@@ -4,7 +4,7 @@
         <div class="row w-100 align-items-center pt-3 pb-2 m-0">
             <div class="col-3 col-lg-3 ps-0 text-start">
                 <a href="/" class="navbar-brand p-0 m-0">
-                    <img src="{{ asset('assets/logo.png') }}" alt="BigSport Logo" style="height: 38px; object-fit: contain; filter: drop-shadow(0 0 4px rgba(255,255,255,0.2));">
+                    <img src="{{ asset('assets/logo.png') }}" alt="Bagindo Jaya Logo" style="height: 38px; object-fit: contain; filter: drop-shadow(0 0 4px rgba(255,255,255,0.2));">
                 </a>
             </div>
             

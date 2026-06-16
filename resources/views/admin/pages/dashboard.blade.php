@@ -5,7 +5,7 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
         <h1 class="h3 mb-1 text-white font-weight-bold tracking-tight">Dashboard Admin</h1>
-        <p class="text-xs text-muted mb-0">Selamat datang kembali! Berikut adalah ringkasan operasional BigSport saat ini.</p>
+        <p class="text-xs text-muted mb-0">Selamat datang kembali! Berikut adalah ringkasan operasional Bagindo Jaya saat ini.</p>
     </div>
     <div class="text-xs text-muted">
         <i class="fas fa-circle text-success mr-1 animate-pulse"></i> Sistem Online &bull; {{ now()->format('d M Y, H:i') }} WIB

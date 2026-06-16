@@ -26,17 +26,17 @@
                 </div>
             @else
                 <div class="text-center mb-5">
-                    <h3 class="fw-bold text-uppercase m-0" style="font-size: 30px; font-weight: 800; letter-spacing: 1px;">Lokasi Toko BigSport</h3>
-                    <p class="text-secondary mt-3">Kunjungi Flagship Store kami</p>
+                    <h3 class="fw-bold text-uppercase m-0" style="font-size: 30px; font-weight: 800; letter-spacing: 1px;">Lokasi Toko Bagindo Jaya</h3>
+                    <p class="text-secondary mt-3">Kunjungi Store kami</p>
                 </div>
 
                 <div class="content-policy" style="line-height: 1.8; font-size: 15px;">
                     <div class="row g-4 align-items-center">
                         <div class="col-md-6">
-                            <h5 class="fw-bold text-uppercase mb-3" style="font-size: 18px; letter-spacing: 0.5px;">BigSport Flagship Store Jakarta</h5>
+                            <h5 class="fw-bold text-uppercase mb-3" style="font-size: 18px; letter-spacing: 0.5px;">Bagindo Jaya Store</h5>
                             <p class="text-secondary">
-                                Jl. Sudirman No. 45, Kav 21-22,<br>
-                                Jakarta Pusat, DKI Jakarta 10210
+                                Jl. Moh. Toha No.87, RT.001/RW.004,<br>
+                                Gerendeng, Kec. Karawaci, Kota Tangerang, Banten 15115
                             </p>
                             <p class="text-secondary">
                                 <strong>Jam Operasional:</strong><br>
