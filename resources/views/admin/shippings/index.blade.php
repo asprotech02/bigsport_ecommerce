@@ -177,6 +177,14 @@
                                     </td>
                                     <td class="text-end pe-3" style="width: 280px; min-width: 280px;">
                                         <div class="d-flex justify-content-end align-items-center" style="gap: 3px;">
+                                            @if(in_array(strtolower($shipping->order->status ?? ''), ['shipped', 'delivered']))
+                                                <button type="button" class="btn btn-sm btn-success btn-complete-single px-2 py-1 d-flex align-items-center fw-bold text-white" 
+                                                        style="font-size: 0.7rem; border-radius: 6px;" 
+                                                        data-id="{{ $shipping->id }}"
+                                                        title="Selesaikan Pengiriman">
+                                                    <i class="fas fa-check me-1"></i> Selesai
+                                                </button>
+                                            @endif
                                             @if(strtolower($shipping->courier_company) !== 'pickup' && !$shipping->biteship_order_id)
                                                 <button type="submit" formAction="{{ route('admin.shippings.bookBiteship', $shipping->id) }}" class="btn btn-sm btn-success px-2 py-1 d-flex align-items-center fw-bold" 
                                                         style="font-size: 0.7rem; border-radius: 6px;" 
@@ -205,14 +213,6 @@
                                                 </button>
                                             @endif
 
-                                            @if(in_array(strtolower($shipping->order->status ?? ''), ['shipped', 'delivered']))
-                                                <button type="button" class="btn btn-sm btn-success btn-complete-single px-2 py-1 d-flex align-items-center fw-bold text-white" 
-                                                        style="font-size: 0.7rem; border-radius: 6px;" 
-                                                        data-id="{{ $shipping->id }}"
-                                                        title="Selesaikan Pengiriman">
-                                                    <i class="fas fa-check me-1"></i> Selesai
-                                                </button>
-                                            @endif
 
                                             <button type="button" class="btn btn-sm btn-outline-light px-2 py-1 d-flex align-items-center" 
                                                     style="font-size: 0.7rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);" 
@@ -516,6 +516,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    @if(request()->has('track'))
+        setTimeout(function() {
+            $('.btn-track-package').first().click();
+        }, 300);
+    @endif
 });
 </script>
 @endpush

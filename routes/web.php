@@ -51,6 +51,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,sales,manager'])->group(
     Route::get('/customers', [CustomerController::class, 'index'])->name('admin.customers.index');
     Route::get('/customers/{id}', [CustomerController::class, 'show'])->name('admin.customers.show');
     Route::post('/customers/{id}/toggle', [CustomerController::class, 'toggleStatus'])->name('admin.customers.toggle');
+    Route::delete('/customers/{id}', [CustomerController::class, 'destroy'])->name('admin.customers.destroy');
 
     // Pesanan
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');

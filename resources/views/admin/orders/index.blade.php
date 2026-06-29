@@ -109,9 +109,7 @@
                                 <td>
                                     @php
                                         $orderStatus = strtolower($order->status);
-                                        $orderBg = $orderStatus === 'completed' ? 'success' : 
-                                            (($orderStatus === 'cancelled' || $orderStatus === 'failed') ? 'danger' : 
-                                            (in_array($orderStatus, ['processing', 'preparing', 'shipped', 'delivered', 'confirmed']) ? 'info' : 'warning'));
+                                        $orderBg = ($orderStatus === 'cancelled' || $orderStatus === 'failed') ? 'danger' : 'dark';
                                     @endphp
                                     <span class="badge bg-{{ $orderBg }} text-white text-uppercase px-3 py-1.5 rounded-pill fs-7 fw-semibold">
                                         {{ $order->status }}
@@ -156,9 +154,21 @@
                                                     </form>
                                                 @endif
                                                 
-                                                <a class="dropdown-item text-white py-2" href="{{ route('admin.shippings.index', ['search' => $order->invoice_number]) }}">
-                                                    <i class="fas fa-truck me-2 text-success"></i> Buka Pengiriman
-                                                </a>
+                                                @if(strtolower($order->status) === 'completed')
+                                                    @if($order->shippingDetail && $order->shippingDetail->tracking_number)
+                                                        <button type="button" class="dropdown-item text-white py-2 btn-track-package" 
+                                                                data-id="{{ $order->shippingDetail->id }}"
+                                                                data-invoice="{{ $order->invoice_number }}"
+                                                                data-toggle="modal"
+                                                                data-target="#trackModal">
+                                                            <i class="fas fa-search-location me-2 text-success"></i> Lacak Pesanan
+                                                        </button>
+                                                    @endif
+                                                @else
+                                                    <a class="dropdown-item text-white py-2" href="{{ route('admin.shippings.index', ['search' => $order->invoice_number]) }}">
+                                                        <i class="fas fa-truck me-2 text-success"></i> Buka Pengiriman
+                                                    </a>
+                                                @endif
                                             @else
                                                 <!-- Pickup Order actions -->
                                                 <a class="dropdown-item text-white py-2" href="{{ route('admin.pickups.index', ['search' => $order->invoice_number]) }}">
@@ -196,6 +206,106 @@
         @endif
     </div>
 </div>
+
+<!-- Modal Lacak Paket -->
+<div class="modal fade" id="trackModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="background-color: #1e1e2d; border: 1px solid rgba(255, 255, 255, 0.15);">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-white"><i class="fas fa-search-location me-1.5"></i> Lacak Pengiriman</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4 text-white" id="track-modal-content">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Sedang mengambil data tracking...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    $(document).on('click', '.btn-track-package', function() {
+        var id = $(this).data('id');
+        var invoice = $(this).data('invoice');
+        var modalContent = $('#track-modal-content');
+        
+        modalContent.html(`
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Sedang mengambil data tracking untuk #${invoice}...</p>
+            </div>
+        `);
+        
+        $.ajax({
+            url: '/admin/shippings/' + id + '/track',
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    var data = response.data;
+                    var html = `
+                        <div class="mb-3 border-bottom pb-3" style="border-color: rgba(255,255,255,0.1) !important;">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted d-block mb-1">Ekspedisi</small>
+                                    <strong class="text-white text-uppercase">${data.courier.company}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block mb-1">No. Resi</small>
+                                    <strong class="text-white">${data.courier.waybill_id}</strong>
+                                </div>
+                             </div>
+                             <div class="row mt-3">
+                                <div class="col-12">
+                                    <small class="text-muted d-block mb-1">Status Terakhir</small>
+                                    <span class="badge bg-primary text-uppercase px-2.5 py-1.5 rounded text-white fw-bold">${data.status === 'delivered' ? 'TELAH DITERIMA' : data.status.toUpperCase()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tracking-history-timeline" style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                    `;
+                    
+                    if (data.history && data.history.length > 0) {
+                        data.history.forEach(function(item) {
+                            var dateStr = new Date(item.updated_at).toLocaleString('id-ID', {
+                                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                            });
+                            html += `
+                                <div class="position-relative pb-3" style="border-left: 2px solid rgba(255,255,255,0.15); margin-left: 10px; padding-left: 20px;">
+                                    <div class="position-absolute" style="left: -7px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background-color: #4e73df;"></div>
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">${dateStr} WIB</small>
+                                    <strong class="text-white d-block small mt-0.5">${item.status}</strong>
+                                    <span class="text-muted small">${item.note}</span>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += `<p class="text-muted text-center py-3">Tidak ada riwayat pengiriman.</p>`;
+                    }
+                    
+                    html += `</div>`;
+                    modalContent.html(html);
+                } else {
+                    modalContent.html(`<div class="alert alert-danger border-0" style="background-color: rgba(231, 74, 59, 0.15); color: #e74a3b;">${response.message}</div>`);
+                }
+            },
+            error: function() {
+                modalContent.html('<div class="alert alert-danger border-0" style="background-color: rgba(231, 74, 59, 0.15); color: #e74a3b;">Gagal mengambil data tracking. Silakan coba lagi.</div>');
+            }
+        });
+    });
+});
+</script>
+@endpush
 
 <style>
     .dropdown-item:hover {

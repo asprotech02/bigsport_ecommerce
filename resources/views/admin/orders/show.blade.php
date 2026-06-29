@@ -29,9 +29,17 @@
                         </button>
                     </form>
                 @endif
-                <a href="{{ route('admin.shippings.index', ['search' => $order->invoice_number]) }}" class="btn btn-success shadow-sm fw-bold me-2">
-                    <i class="fas fa-truck me-1"></i> Buka Pengiriman
-                </a>
+                @if(strtolower($order->status) === 'completed')
+                    @if($order->shippingDetail && $order->shippingDetail->tracking_number)
+                        <a href="#tracking-history-card" id="btn-scroll-track" class="btn btn-success shadow-sm fw-bold me-2">
+                            <i class="fas fa-search-location me-1"></i> Lacak Pesanan
+                        </a>
+                    @endif
+                @else
+                    <a href="{{ route('admin.shippings.index', ['search' => $order->invoice_number]) }}" class="btn btn-success shadow-sm fw-bold me-2">
+                        <i class="fas fa-truck me-1"></i> Buka Pengiriman
+                    </a>
+                @endif
             @else
                 <a href="{{ route('admin.pickups.index', ['search' => $order->invoice_number]) }}" class="btn btn-success shadow-sm fw-bold me-2">
                     <i class="fas fa-store me-1"></i> Buka Pick Up
@@ -147,6 +155,23 @@
                     @endif
                 </div>
             </div>
+
+            @if(strtolower($order->status) === 'completed' && $order->shippingDetail && $order->shippingDetail->tracking_number)
+                <!-- Card Histori Perjalanan Paket -->
+                <div class="card shadow border-0 mt-4" id="tracking-history-card">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 fw-bold text-primary"><i class="fas fa-history me-1"></i> Histori Perjalanan Paket</h6>
+                    </div>
+                    <div class="card-body" id="tracking-card-content">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Sedang mengambil data tracking...</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <!-- Kolom Kanan: Status & Pelanggan -->
@@ -166,11 +191,7 @@
                     </div>
                     <div>
                         <small class="text-muted d-block mb-1">Status Pengiriman</small>
-                        <span class="badge bg-{{ 
-                            $order->status === 'completed' ? 'success' : 
-                            ($order->status === 'cancelled' ? 'danger' : 
-                            ($order->status === 'processing' ? 'info' : 'secondary text-white')) 
-                        }} fs-6">
+                        <span class="badge bg-{{ ($order->status === 'cancelled' || $order->status === 'failed') ? 'danger' : 'dark text-white' }} fs-6">
                             {{ strtoupper($order->status) }}
                         </span>
                     </div>
@@ -223,4 +244,79 @@
         </div>
     </div>
 </div>
+
+@if(strtolower($order->status) === 'completed' && $order->shippingDetail && $order->shippingDetail->tracking_number)
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // Scroll to tracking history smoothly
+    $('#btn-scroll-track').click(function(e) {
+        e.preventDefault();
+        $('html, body').animate({
+            scrollTop: $("#tracking-history-card").offset().top - 100
+        }, 500);
+    });
+
+    // AJAX Tracking Script
+    $.ajax({
+        url: '{{ route("admin.shippings.track", $order->shippingDetail->id) }}',
+        type: 'GET',
+        success: function(response) {
+            var cardContent = $('#tracking-card-content');
+            if (response.success) {
+                var data = response.data;
+                var html = `
+                    <div class="mb-3 border-bottom pb-3" style="border-color: rgba(0,0,0,0.08) !important;">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">Ekspedisi</small>
+                                <strong class="text-dark text-uppercase">${data.courier.company}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">No. Resi</small>
+                                <strong class="text-dark">${data.courier.waybill_id}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tracking-history-timeline ps-3" style="position: relative; border-left: 2px solid #e9ecef; margin-left: 10px; padding-left: 20px;">
+                `;
+                
+                if (data.history && data.history.length > 0) {
+                    data.history.forEach(function(item, index) {
+                        var dateStr = new Date(item.updated_at).toLocaleString('id-ID', {
+                            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        });
+                        var isLatest = index === 0;
+                        var dotBg = isLatest ? '#4e73df' : '#fff';
+                        var dotBorder = isLatest ? '#4e73df' : '#ced4da';
+                        var statusColor = isLatest ? 'text-primary fw-bold' : 'text-dark';
+                        var textWeight = isLatest ? 'font-weight-bold' : '';
+
+                        html += `
+                            <div class="position-relative mb-4">
+                                <div class="position-absolute" style="left: -28px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background-color: ${dotBg}; border: 2px solid ${dotBorder}; z-index: 2;"></div>
+                                <small class="text-muted d-block ${textWeight}" style="font-size: 0.75rem;">${dateStr} WIB</small>
+                                <strong class="${statusColor} d-block small mt-0.5">${item.status}</strong>
+                                <span class="text-muted small d-block mt-0.5" style="line-height: 1.4;">${item.note}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += `<p class="text-muted text-center py-3">Tidak ada riwayat pengiriman.</p>`;
+                }
+                
+                html += `</div>`;
+                cardContent.html(html);
+            } else {
+                cardContent.html(`<div class="alert alert-danger border-0" style="background-color: rgba(231, 74, 59, 0.1); color: #e74a3b;">${response.message}</div>`);
+            }
+        },
+        error: function() {
+            $('#tracking-card-content').html('<div class="alert alert-danger border-0" style="background-color: rgba(231, 74, 59, 0.1); color: #e74a3b;">Gagal mengambil data tracking. Silakan coba lagi.</div>');
+        }
+    });
+});
+</script>
+@endpush
+@endif
 @endsection

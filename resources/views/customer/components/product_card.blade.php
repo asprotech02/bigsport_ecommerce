@@ -29,22 +29,10 @@
             $imagePath = $primaryImage ? asset('storage/' . $primaryImage->image_path) : asset('assets/images/default.jpg');
 
             // 4. Hitung Stok Valid
-            $standardSizes = [];
-            $isKids = str_contains(strtolower($product->gender ?? ''), 'anak');
-            $catName = $product->category->name ?? '';
-
-            if ($catName == 'Sepatu') {
-                $standardSizes = $isKids ? ['19','20','21','22','23','24','25','26','27','28','29','30'] : ['31','32','33','34','35','36','37','38','39','40','41','42','43','44'];
-            } elseif ($catName == 'Pakaian') {
-                $standardSizes = $isKids ? ['S', 'M', 'L', 'XL'] : ['S', 'M', 'L', 'XL', 'XXL'];
-            } else {
-                $standardSizes = ['All Size'];
-            }
-
             $totalValidStock = 0;
             if ($product->skus) {
                 foreach($product->skus as $sku) {
-                    if(in_array($sku->size, $standardSizes) && $sku->available_stock > 0) {
+                    if($sku->available_stock > 0) {
                         $totalValidStock += $sku->available_stock;
                     }
                 }

@@ -8,26 +8,30 @@
 
     @php
         // 🌟 FIX LOGIKA STOK, HARGA & MATRIX WARNA:
-        $standardSizes = [];
-        $isKids = str_contains(strtolower($product->gender), 'anak');
-
-        if ($product->category->name == 'Sepatu') {
-            $standardSizes = $isKids ? ['19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'] : ['31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'];
-        } elseif ($product->category->name == 'Pakaian') {
-            $standardSizes = $isKids ? ['S', 'M', 'L', 'XL'] : ['S', 'M', 'L', 'XL', 'XXL'];
-        } else {
-            $standardSizes = ['All Size'];
-        }
-
         $skus = $product->skus;
         
         // Ekstrak Warna dan Ukuran yang tersedia
         $availableColors = $skus->pluck('color')->filter()->unique()->values();
         $hasColors = $availableColors->count() > 0;
         
-        // Saring ukuran agar berurutan sesuai $standardSizes
-        $availableSizes = collect($standardSizes)->filter(function($size) use ($skus) {
-            return $skus->where('size', $size)->count() > 0;
+        // Saring dan urutkan ukuran secara dinamis
+        $availableSizes = $skus->pluck('size')->filter()->unique()->values()->sort(function($a, $b) {
+            $aIsNum = is_numeric($a);
+            $bIsNum = is_numeric($b);
+            if ($aIsNum && $bIsNum) {
+                return $a <=> $b;
+            }
+            if ($aIsNum) return -1;
+            if ($bIsNum) return 1;
+            
+            // Urutan Size Pakaian
+            $order = ['XXS' => 1, 'XS' => 2, 'S' => 3, 'M' => 4, 'L' => 5, 'XL' => 6, 'XXL' => 7, 'XXXL' => 8, '3XL' => 8, '4XL' => 9];
+            $aOrder = $order[strtoupper($a)] ?? 99;
+            $bOrder = $order[strtoupper($b)] ?? 99;
+            if ($aOrder !== $bOrder) {
+                return $aOrder <=> $bOrder;
+            }
+            return strcmp($a, $b);
         })->values();
 
         $totalValidStock = 0; 
@@ -44,7 +48,7 @@
 
         // Hitung total stok valid
         foreach($skus as $sku) {
-            if(in_array($sku->size, $standardSizes) && $sku->available_stock > 0) {
+            if($sku->available_stock > 0) {
                 $totalValidStock += $sku->available_stock;
             }
         }
@@ -114,6 +118,73 @@
                     </div>
 
                     <div class="col-12 col-lg-5">
+                        @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'sales', 'manager']))
+                            <!-- Admin Exclusive Control Panel -->
+                            <div class="card border-0 rounded-0 shadow-sm mb-4" style="background: #1e1e2d; color: #a2a3b7; font-family: inherit;">
+                                <div class="card-header border-bottom border-secondary-subtle py-3 px-3 d-flex align-items-center justify-content-between" style="background: #1a1a27;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-shield-fill text-danger fs-5"></i>
+                                        <span class="fw-bold text-white text-uppercase" style="font-size: 13px; letter-spacing: 0.5px;">Admin Control Panel</span>
+                                    </div>
+                                    <span class="badge bg-danger text-white text-uppercase rounded-0 px-2 py-0.5" style="font-size: 9px;">{{ strtoupper(auth()->user()->role) }} MODE</span>
+                                </div>
+                                <div class="card-body p-3" style="font-size: 12px; line-height: 1.6;">
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <span class="text-muted d-block">ID PRODUK</span>
+                                            <span class="fw-bold text-white">#{{ $product->id }}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted d-block">BERAT</span>
+                                            <span class="fw-bold text-white">{{ $product->weight }} gr</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <span class="text-muted d-block">KATEGORI</span>
+                                            <span class="fw-bold text-white">{{ $product->category->name ?? '-' }}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted d-block">FEATURED</span>
+                                            <span class="fw-bold text-white">{{ $product->is_featured ? 'YA' : 'TIDAK' }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <span class="text-muted d-block mb-1.5 fw-bold text-uppercase" style="font-size: 10px;">Detail Stok per SKU:</span>
+                                        <div class="table-responsive border border-secondary border-opacity-25" style="max-height: 150px; overflow-y: auto;">
+                                            <table class="table table-sm table-dark table-striped mb-0 text-center" style="font-size: 11px; background: #1a1a27;">
+                                                <thead>
+                                                    <tr class="table-dark" style="background: #151521;">
+                                                        <th class="text-start ps-2">Warna/Size</th>
+                                                        <th>Fisik</th>
+                                                        <th>Booked</th>
+                                                        <th>Avail</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($product->skus as $sku)
+                                                        <tr>
+                                                            <td class="text-start ps-2">{{ $sku->color ?? '-' }} / {{ $sku->size ?? '-' }}</td>
+                                                            <td class="fw-semibold">{{ $sku->stock }}</td>
+                                                            <td class="text-warning">{{ $sku->reserved_stock }}</td>
+                                                            <td class="fw-bold {{ $sku->available_stock > 0 ? 'text-success' : 'text-danger' }}">
+                                                                {{ $sku->available_stock }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <a href="{{ route('admin.products.edit', $product->id) }}" target="_blank" class="btn btn-danger w-100 fw-bold text-uppercase rounded-0 py-2" style="font-size: 11px; letter-spacing: 0.5px;">
+                                        <i class="bi bi-pencil-square me-1"></i> Edit Produk di Admin Panel
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
+
                         <p class="text-danger fw-bold mb-1 text-uppercase" style="font-size: 12px; letter-spacing: 1px;">{{ $product->brand->name }}</p>
                         <h2 class="fw-black text-uppercase mb-1" style="font-size: 28px; line-height: 1.2;">
                             {{ $product->name }}

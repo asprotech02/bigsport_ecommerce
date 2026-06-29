@@ -66,7 +66,7 @@
                                 <td class="text-end pe-4">
                                     <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
                                         <a href="{{ route('admin.promos.edit', $promo->id) }}" 
-                                           class="btn btn-sm btn-outline-warning px-2.5 py-1.5 d-flex align-items-center" 
+                                           class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
                                            title="Edit Promo"
                                            style="font-size: 0.75rem; border-radius: 6px;">
                                             <i class="fas fa-edit me-1.5"></i> Edit

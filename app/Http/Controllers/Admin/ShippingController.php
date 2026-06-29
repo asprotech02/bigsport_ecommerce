@@ -469,7 +469,7 @@ class ShippingController extends Controller
     // Track shipment from Biteship API with sandbox fallback
     public function trackShipment($id)
     {
-        $shipping = ShippingDetail::findOrFail($id);
+        $shipping = ShippingDetail::with('order')->findOrFail($id);
         if (!$shipping->tracking_number || !$shipping->courier_company) {
             return response()->json(['success' => false, 'message' => 'Nomor resi atau kurir tidak valid.']);
         }
@@ -477,8 +477,77 @@ class ShippingController extends Controller
         try {
             $apiKey = env('BITESHIP_API_KEY');
             
+            // Helper function to translate history items
+            $translateHistory = function ($history) use ($shipping) {
+                $historyIndo = [];
+                $hasDelivered = false;
+
+                if (!empty($history)) {
+                    foreach ($history as $item) {
+                        $statusUpper = strtoupper($item['status'] ?? '');
+                        if ($statusUpper === 'DELIVERED') {
+                            $hasDelivered = true;
+                        }
+
+                        $statusIndo = match($statusUpper) {
+                            'PLACED'       => 'PESANAN DIBUAT',
+                            'CONFIRMED'    => 'MENUNGGU KURIR',
+                            'ALLOCATED'    => 'KURIR DIALOKASIKAN',
+                            'PICKING_UP'   => 'PROSES PENJEMPUTAN',
+                            'PICKED'       => 'PAKET DIAMBIL',
+                            'DROPPING_OFF' => 'DALAM PENGIRIMAN',
+                            'DELIVERED'    => 'TELAH DITERIMA',
+                            'REJECTED'     => 'PENGIRIMAN DITOLAK',
+                            'CANCELLED'    => 'PENGIRIMAN DIBATALKAN',
+                            'RETURNED'     => 'PAKET DIKEMBALIKAN',
+                            default        => $statusUpper
+                        };
+
+                        $note = $item['note'] ?? '';
+                        $replacements = [
+                            'Courier order is confirmed' => 'Pesanan kurir telah dikonfirmasi',
+                            'has been notified to pick up' => 'telah dinotifikasi untuk melakukan penjemputan',
+                            'Pickup Number' => 'Nomor Penjemputan',
+                            'Courier is allocated and ready to pick up' => 'Kurir telah dialokasikan dan bersiap menjemput paket',
+                            'Courier is on the way to pick up location' => 'Kurir sedang dalam perjalanan menuju lokasi penjemputan',
+                            'Item has been picked and ready to be shipped' => 'Paket telah diambil oleh kurir dan siap dikirim',
+                            'Item is on the way to customer' => 'Paket sedang dalam perjalanan menuju alamat pembeli',
+                            'Item has been delivered' => 'Paket telah berhasil dikirim dan diterima',
+                            'Delivered' => 'Terkirim'
+                        ];
+                        $noteIndo = str_ireplace(array_keys($replacements), array_values($replacements), $note);
+
+                        $historyIndo[] = [
+                            'updated_at' => $item['updated_at'],
+                            'status'     => $statusIndo,
+                            'note'       => $noteIndo
+                        ];
+                    }
+                }
+
+                // If the order status is completed in the system, prepend "TELAH DITERIMA" to the top if not already present
+                if ($shipping->order && strtolower($shipping->order->status) === 'completed' && !$hasDelivered) {
+                    array_unshift($historyIndo, [
+                        'updated_at' => $shipping->order->updated_at->toIso8601String(),
+                        'status'     => 'TELAH DITERIMA',
+                        'note'       => 'Paket telah diterima oleh customer.'
+                    ]);
+                }
+
+                return $historyIndo;
+            };
+
             // Check if test key/sandbox mode
             if (str_starts_with($apiKey, 'biteship_test.')) {
+                $rawHistory = [
+                    [
+                        'updated_at' => now()->toIso8601String(),
+                        'status' => 'shipped',
+                        'note' => 'Paket sedang dikirim oleh kurir (Sandbox Mode).'
+                    ]
+                ];
+                $history = $translateHistory($rawHistory);
+
                 return response()->json([
                     'success' => true,
                     'data' => [
@@ -486,14 +555,8 @@ class ShippingController extends Controller
                             'company' => strtoupper($shipping->courier_company),
                             'waybill_id' => $shipping->tracking_number
                         ],
-                        'status' => 'shipped',
-                        'history' => [
-                            [
-                                'updated_at' => now()->toIso8601String(),
-                                'status' => 'shipped',
-                                'note' => 'Paket sedang dikirim oleh kurir (Sandbox Mode).'
-                            ]
-                        ]
+                        'status' => $shipping->order && strtolower($shipping->order->status) === 'completed' ? 'delivered' : 'shipped',
+                        'history' => $history
                     ]
                 ]);
             }
@@ -505,6 +568,8 @@ class ShippingController extends Controller
             $result = $response->json();
 
             if ($response->successful() && isset($result['success']) && $result['success'] == true) {
+                $history = $translateHistory($result['history'] ?? []);
+                
                 return response()->json([
                     'success' => true,
                     'data' => [
@@ -512,14 +577,51 @@ class ShippingController extends Controller
                             'company' => strtoupper($result['courier']['company'] ?? $shipping->courier_company),
                             'waybill_id' => $result['waybill_id'] ?? $shipping->tracking_number
                         ],
-                        'status' => $result['status'] ?? 'Diproses',
-                        'history' => $result['history'] ?? []
+                        'status' => $shipping->order && strtolower($shipping->order->status) === 'completed' ? 'delivered' : ($result['status'] ?? 'Diproses'),
+                        'history' => $history
+                    ]
+                ]);
+            }
+
+            // Fallback if biteship fails but order is completed in system
+            if ($shipping->order && strtolower($shipping->order->status) === 'completed') {
+                $history = $translateHistory([]);
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'courier' => [
+                            'company' => strtoupper($shipping->courier_company),
+                            'waybill_id' => $shipping->tracking_number
+                        ],
+                        'status' => 'delivered',
+                        'history' => $history
                     ]
                 ]);
             }
 
             return response()->json(['success' => false, 'message' => 'Biteship: ' . ($result['error'] ?? 'Data tracking tidak ditemukan.')]);
         } catch (\Exception $e) {
+            // Fallback if exception occurs but order is completed in system
+            if ($shipping->order && strtolower($shipping->order->status) === 'completed') {
+                $history = [
+                    [
+                        'updated_at' => $shipping->order->updated_at->toIso8601String(),
+                        'status'     => 'TELAH DITERIMA',
+                        'note'       => 'Paket telah diterima oleh customer.'
+                    ]
+                ];
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'courier' => [
+                            'company' => strtoupper($shipping->courier_company),
+                            'waybill_id' => $shipping->tracking_number
+                        ],
+                        'status' => 'delivered',
+                        'history' => $history
+                    ]
+                ]);
+            }
             return response()->json(['success' => false, 'message' => 'System Error: ' . $e->getMessage()]);
         }
     }

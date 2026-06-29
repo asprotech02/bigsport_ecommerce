@@ -81,7 +81,7 @@
             </a>
             <div id="collapsePemasaran" class="collapse {{ $isPemasaranActive ? 'show' : '' }}" aria-labelledby="headingPemasaran">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}" href="{{ route('admin.customers.index') }}">Pelanggan</a>
+                    <a class="collapse-item {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}" href="{{ route('admin.customers.index') }}">Daftar Pengguna</a>
                     <a class="collapse-item {{ request()->routeIs('admin.promos.*') ? 'active' : '' }}" href="{{ route('admin.promos.index') }}">Promo & Voucher</a>
                     <a class="collapse-item {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}" href="{{ route('admin.reviews.index') }}">Ulasan Produk</a>
                     <a class="collapse-item {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" href="{{ route('admin.notifications.index') }}">Notifikasi User</a>

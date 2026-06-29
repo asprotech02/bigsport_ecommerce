@@ -181,31 +181,19 @@
                                                         @if($isPickup)
                                                             <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-shop-window me-1"></i> AMBIL DI TOKO</span>
                                                         @else
-                                                            @if($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired']))
-                                                                 <span class="badge border border-danger text-danger rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-x-circle me-1"></i> DIBATALKAN</span>
-                                                             @elseif(in_array($order->payment_status, ['unpaid', 'pending']))
-                                                                 <span class="badge border border-warning text-warning rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-clock me-1"></i> MENUNGGU PEMBAYARAN</span>
-                                                             @elseif($order->payment_status == 'paid' && in_array($order->status, ['pending', 'confirmed', 'preparing', 'processing']))
-                                                                 <span class="badge border border-primary text-primary rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-gear me-1"></i> DIPROSES</span>
-                                                             @elseif(in_array($order->status, ['shipped', 'delivered']))
-                                                                 <span class="badge border border-success text-success rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
-                                                             @elseif($order->status == 'completed')
-                                                                 <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-check-circle me-1"></i> SELESAI</span>
-                                                             @else
-                                                                 @if($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired']))
-                                                                 <span class="badge border border-danger text-danger rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-x-circle me-1"></i> DIBATALKAN</span>
-                                                             @elseif(in_array($order->payment_status, ['unpaid', 'pending']))
-                                                                 <span class="badge border border-warning text-warning rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-clock me-1"></i> MENUNGGU PEMBAYARAN</span>
-                                                             @elseif($order->payment_status == 'paid' && in_array($order->status, ['pending', 'confirmed', 'preparing', 'processing']))
-                                                                 <span class="badge border border-primary text-primary rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-gear me-1"></i> DIPROSES</span>
-                                                             @elseif(in_array($order->status, ['shipped', 'delivered']))
-                                                                 <span class="badge border border-success text-success rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
-                                                             @elseif($order->status == 'completed')
-                                                                 <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-check-circle me-1"></i> SELESAI</span>
-                                                             @else
-                                                                 <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
-                                                             @endif
-                                                             @endif
+                                                            @if($order->status == 'cancelled' || in_array($order->payment_status, ['failed', 'expired', 'refunded']))
+                                                                <span class="badge border border-danger text-danger rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-x-circle me-1"></i> DIBATALKAN</span>
+                                                            @elseif(in_array($order->payment_status, ['unpaid', 'pending']))
+                                                                <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-clock me-1"></i> MENUNGGU PEMBAYARAN</span>
+                                                            @elseif($order->payment_status == 'paid' && in_array($order->status, ['pending', 'confirmed', 'preparing', 'processing']))
+                                                                <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-gear me-1"></i> DIPROSES</span>
+                                                            @elseif(in_array($order->status, ['shipped', 'delivered']))
+                                                                <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-truck me-1"></i> DIKIRIM</span>
+                                                            @elseif($order->status == 'completed')
+                                                                <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-check-circle me-1"></i> SELESAI</span>
+                                                            @else
+                                                                <span class="badge border border-dark text-dark rounded-0 px-2 py-1 ms-sm-2" style="font-size: 10px;"><i class="bi bi-info-circle me-1"></i> {{ strtoupper($order->status) }}</span>
+                                                            @endif
                                                         @endif
                                                     </div>
                                                     <span class="fw-bold text-uppercase {{ $statusData['class'] }}" style="font-size: 12px; letter-spacing: 0.5px;">{{ $statusData['label'] }}</span>
@@ -539,6 +527,58 @@
             </div>
         </div>
 
+        {{-- POP-UP MODAL ALASAN PEMBATALAN PESANAN --}}
+        <div class="modal fade" id="cancelOrderModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered rounded-0">
+                <div class="modal-content rounded-0 border-dark text-start">
+                    <div class="modal-header bg-light border-bottom border-secondary-subtle py-3">
+                        <h6 class="modal-title fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 13px;">Alasan Pembatalan Pesanan</h6>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="text-secondary mb-3" style="font-size: 13px;">Silakan pilih alasan pembatalan Anda. Aksi ini akan membatalkan pesanan dan mengembalikan stok produk otomatis.</p>
+                        <input type="hidden" id="modalCancelOrderId">
+                        
+                        <div class="d-flex flex-column gap-2">
+                            <label class="d-flex align-items-center gap-2 p-2 border border-secondary-subtle style-reason" style="cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="cancel_reason" value="Ingin mengubah rincian pesanan (ukuran, warna, alamat)" checked class="form-check-input border-dark shadow-none">
+                                <span>Ingin mengubah rincian pesanan (ukuran, warna, alamat)</span>
+                            </label>
+                            
+                            <label class="d-flex align-items-center gap-2 p-2 border border-secondary-subtle style-reason" style="cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="cancel_reason" value="Penjual tidak membalas chat / Kurang responsif" class="form-check-input border-dark shadow-none">
+                                <span>Penjual tidak membalas chat / Kurang responsif</span>
+                            </label>
+                            
+                            <label class="d-flex align-items-center gap-2 p-2 border border-secondary-subtle style-reason" style="cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="cancel_reason" value="Menemukan harga yang lebih murah di toko lain" class="form-check-input border-dark shadow-none">
+                                <span>Menemukan harga yang lebih murah di toko lain</span>
+                            </label>
+                            
+                            <label class="d-flex align-items-center gap-2 p-2 border border-secondary-subtle style-reason" style="cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="cancel_reason" value="Waktu pengiriman terlalu lama" class="form-check-input border-dark shadow-none">
+                                <span>Waktu pengiriman terlalu lama</span>
+                            </label>
+                            
+                            <label class="d-flex align-items-center gap-2 p-2 border border-secondary-subtle style-reason" style="cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="cancel_reason" value="Berubah pikiran / Tidak jadi membeli" class="form-check-input border-dark shadow-none">
+                                <span>Berubah pikiran / Tidak jadi membeli</span>
+                            </label>
+
+                            <label class="d-flex align-items-center gap-2 p-2 border border-secondary-subtle style-reason" style="cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="cancel_reason" value="Lainnya" class="form-check-input border-dark shadow-none">
+                                <span>Lainnya</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-white border-top border-light p-3">
+                        <button type="button" class="btn btn-outline-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 10px 20px;" data-bs-dismiss="modal">Kembali</button>
+                        <button type="button" id="btnConfirmCancel" onclick="submitCancelOrder()" class="btn btn-dark fw-bold text-uppercase rounded-0" style="font-size: 11px; padding: 10px 20px;">Konfirmasi Batalkan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     @push('scripts')
     <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
@@ -738,87 +778,74 @@ function submitReviewProduk(e) {
 }
 
 function cancelOrder(id) {
-    Swal.fire({
-        title: 'Batal Pesanan',
-        text: 'Apakah Anda yakin ingin membatalkan pesanan ini?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'YA, BATALKAN',
-        cancelButtonText: 'TIDAK',
-        customClass: {
-            confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2 me-2',
-            cancelButton: 'btn btn-outline-dark fw-bold text-uppercase rounded-0 px-4 py-2'
-        },
-        buttonsStyling: false
-    }).then((result) => {
-        if (result.isConfirmed) {
+    document.getElementById('modalCancelOrderId').value = id;
+    new bootstrap.Modal(document.getElementById('cancelOrderModal')).show();
+}
+
+function submitCancelOrder() {
+    const orderId = document.getElementById('modalCancelOrderId').value;
+    const selectedReason = document.querySelector('input[name="cancel_reason"]:checked').value;
+    const confirmBtn = document.getElementById('btnConfirmCancel');
+    let originalText = 'Konfirmasi Batalkan';
+    
+    if (confirmBtn) {
+        originalText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> MEMBATALKAN...';
+        confirmBtn.disabled = true;
+    }
+
+    axios.post(`/profile/order/${orderId}/cancel-manual`, {
+        _token: '{{ csrf_token() }}',
+        reason: selectedReason
+    }, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.data.success) {
             Swal.fire({
-                title: 'Alasan Pembatalan',
-                text: 'Silakan masukkan alasan Anda membatalkan pesanan ini:',
-                input: 'text',
-                inputPlaceholder: 'Contoh: Berubah pikiran / Salah pilih ukuran',
-                showCancelButton: true,
-                confirmButtonText: 'KIRIM',
-                cancelButtonText: 'BATAL',
+                title: 'Sukses',
+                text: 'Pesanan berhasil dibatalkan!',
+                icon: 'success',
                 customClass: {
-                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2 me-2',
-                    cancelButton: 'btn btn-outline-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
                 },
-                inputAttributes: {
-                    style: 'width: 85%; max-width: 100%; margin: 15px auto; border-radius: 0; border: 1px solid #000000; box-shadow: none; font-size: 14px; padding: 10px 15px; font-family: inherit; display: block;'
-                },
-                buttonsStyling: false,
-                inputValidator: (value) => {
-                    if (!value || value.trim() === '') {
-                        return 'Alasan pembatalan wajib diisi!';
-                    }
-                }
-            }).then((inputResult) => {
-                if (inputResult.isConfirmed) {
-                    const reason = inputResult.value;
-                    axios.post(`/profile/order/${id}/cancel-manual`, {
-                        reason: reason,
-                        _token: '{{ csrf_token() }}'
-                    })
-                    .then(res => {
-                        if (res.data.success) {
-                            Swal.fire({
-                                title: 'Sukses',
-                                text: 'Pesanan berhasil dibatalkan!',
-                                icon: 'success',
-                                customClass: {
-                                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
-                                },
-                                buttonsStyling: false
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                title: 'Gagal',
-                                text: res.data.message || 'Gagal membatalkan pesanan.',
-                                icon: 'error',
-                                customClass: {
-                                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
-                                },
-                                buttonsStyling: false
-                            });
-                        }
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        Swal.fire({
-                            title: 'Error',
-                            text: 'Terjadi kesalahan sistem saat membatalkan pesanan.',
-                            icon: 'error',
-                            customClass: {
-                                confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
-                            },
-                            buttonsStyling: false
-                        });
-                    });
-                }
+                buttonsStyling: false
+            }).then(() => {
+                window.location.reload();
             });
+        } else {
+            Swal.fire({
+                title: 'Gagal',
+                text: response.data.message || 'Gagal membatalkan pesanan.',
+                icon: 'error',
+                customClass: {
+                    confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+                },
+                buttonsStyling: false
+            });
+            if (confirmBtn) {
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            }
+        }
+    })
+    .catch(error => {
+        console.error("Cancel Error:", error);
+        Swal.fire({
+            title: 'Error',
+            text: 'Terjadi kesalahan koneksi server.',
+            icon: 'error',
+            customClass: {
+                confirmButton: 'btn btn-dark fw-bold text-uppercase rounded-0 px-4 py-2'
+            },
+            buttonsStyling: false
+        });
+        if (confirmBtn) {
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
         }
     });
 }

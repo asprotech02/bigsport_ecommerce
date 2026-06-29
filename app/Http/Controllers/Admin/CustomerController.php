@@ -9,20 +9,17 @@ use Illuminate\Support\Facades\Redirect;
 
 class CustomerController extends Controller
 {
-    // List all customers with pagination
+    // List all users with pagination
     public function index()
     {
-        $customers = User::where('role', 'customer')
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $customers = User::orderByDesc('created_at')->paginate(20);
         return view('admin.customers.index', compact('customers'));
     }
 
-    // Show detailed view of a single customer
+    // Show detailed view of a single user
     public function show($id)
     {
         $customer = User::with(['orders', 'addresses'])
-            ->where('role', 'customer')
             ->findOrFail($id);
         return view('admin.customers.show', compact('customer'));
     }
@@ -33,7 +30,25 @@ class CustomerController extends Controller
         $customer = User::findOrFail($id);
         $customer->active = !$customer->active;
         $customer->save();
-        return Redirect::back()->with('success', 'Status pelanggan diperbarui.');
+        return Redirect::back()->with('success', 'Status pengguna diperbarui.');
+    }
+
+    // Delete user (admin only)
+    public function destroy($id)
+    {
+        if (auth()->id() == $id) {
+            return Redirect::back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang digunakan.');
+        }
+
+        $customer = User::findOrFail($id);
+
+        // Delete reviews first to prevent Fkey constraint violation
+        \App\Models\Review::where('user_id', $customer->id)->delete();
+
+        // Delete user (orders, addresses, notifications, etc. cascade delete)
+        $customer->delete();
+
+        return Redirect::route('admin.customers.index')->with('success', 'Pengguna berhasil dihapus.');
     }
 }
 ?>

@@ -54,6 +54,67 @@ class ProfileController extends Controller
             $result = $response->json();
 
             if ($response->successful() && isset($result['success']) && $result['success'] == true) {
+                // Let's translate history!
+                $translateHistory = function ($history) use ($order) {
+                    $historyIndo = [];
+                    $hasDelivered = false;
+
+                    if (!empty($history)) {
+                        foreach ($history as $item) {
+                            $statusUpper = strtoupper($item['status'] ?? '');
+                            if ($statusUpper === 'DELIVERED') {
+                                $hasDelivered = true;
+                            }
+
+                            $statusIndo = match($statusUpper) {
+                                'PLACED'       => 'PESANAN DIBUAT',
+                                'CONFIRMED'    => 'MENUNGGU KURIR',
+                                'ALLOCATED'    => 'KURIR DIALOKASIKAN',
+                                'PICKING_UP'   => 'PROSES PENJEMPUTAN',
+                                'PICKED'       => 'PAKET DIAMBIL',
+                                'DROPPING_OFF' => 'DALAM PENGIRIMAN',
+                                'DELIVERED'    => 'TELAH DITERIMA',
+                                'REJECTED'     => 'PENGIRIMAN DITOLAK',
+                                'CANCELLED'    => 'PENGIRIMAN DIBATALKAN',
+                                'RETURNED'     => 'PAKET DIKEMBALIKAN',
+                                default        => $statusUpper
+                            };
+
+                            $note = $item['note'] ?? '';
+                            $replacements = [
+                                'Courier order is confirmed' => 'Pesanan kurir telah dikonfirmasi',
+                                'has been notified to pick up' => 'telah dinotifikasi untuk melakukan penjemputan',
+                                'Pickup Number' => 'Nomor Penjemputan',
+                                'Courier is allocated and ready to pick up' => 'Kurir telah dialokasikan dan bersiap menjemput paket',
+                                'Courier is on the way to pick up location' => 'Kurir sedang dalam perjalanan menuju lokasi penjemputan',
+                                'Item has been picked and ready to be shipped' => 'Paket telah diambil oleh kurir dan siap dikirim',
+                                'Item is on the way to customer' => 'Paket sedang dalam perjalanan menuju alamat pembeli',
+                                'Item has been delivered' => 'Paket telah berhasil dikirim dan diterima',
+                                'Delivered' => 'Terkirim'
+                            ];
+                            $noteIndo = str_ireplace(array_keys($replacements), array_values($replacements), $note);
+
+                            $historyIndo[] = [
+                                'updated_at' => $item['updated_at'],
+                                'status'     => $statusIndo,
+                                'note'       => $noteIndo
+                            ];
+                        }
+                    }
+
+                    if (in_array(strtolower($order->status), ['completed', 'delivered']) && !$hasDelivered) {
+                        array_unshift($historyIndo, [
+                            'updated_at' => $order->updated_at->toIso8601String(),
+                            'status'     => 'TELAH DITERIMA',
+                            'note'       => 'Paket telah diterima oleh customer.'
+                        ]);
+                    }
+
+                    return $historyIndo;
+                };
+
+                $history = $translateHistory($result['history'] ?? []);
+
                 return response()->json([
                     'success' => true,
                     'data' => [
@@ -61,8 +122,29 @@ class ProfileController extends Controller
                             'company' => strtoupper($result['courier']['company'] ?? $shipping->courier_company),
                             'waybill_id' => $result['waybill_id'] ?? $shipping->tracking_number
                         ],
-                        'status' => $result['status'] ?? 'Diproses',
-                        'history' => $result['history'] ?? []
+                        'status' => in_array(strtolower($order->status), ['completed', 'delivered']) ? 'delivered' : ($result['status'] ?? 'Diproses'),
+                        'history' => $history
+                    ]
+                ]);
+            }
+
+            // Fallback if biteship fails but order is completed or delivered
+            if (in_array(strtolower($order->status), ['completed', 'delivered'])) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'courier' => [
+                            'company' => strtoupper($shipping->courier_company),
+                            'waybill_id' => $shipping->tracking_number
+                        ],
+                        'status' => 'delivered',
+                        'history' => [
+                            [
+                                'updated_at' => $order->updated_at->toIso8601String(),
+                                'status'     => 'TELAH DITERIMA',
+                                'note'       => 'Paket telah diterima oleh customer.'
+                            ]
+                        ]
                     ]
                 ]);
             }
@@ -264,8 +346,11 @@ class ProfileController extends Controller
         // Membersihkan spasi jika ada typo saat ketik manual di database
         $cleanStatus = trim(strtolower($order->status));
 
-        if (!in_array($cleanStatus, ['processing', 'shipped', 'delivered'])) {
-            // Akan memunculkan status asli dari DB agar kita tahu apa yang salah
+        if ($order->payment_status !== 'paid') {
+            return response()->json(['success' => false, 'message' => 'Gagal! Pesanan belum dibayar.']);
+        }
+
+        if (in_array($cleanStatus, ['completed', 'cancelled'])) {
             return response()->json(['success' => false, 'message' => 'Gagal! Status di database saat ini: "' . $order->status . '"']);
         }
 
@@ -512,6 +597,39 @@ public function storeReview(Request $request)
                 }
             } catch (\Exception $e) {
                 $errorMessage = 'System Error: Gagal terhubung ke server ekspedisi.';
+            }
+        }
+
+        // Fallback if biteship fails but order is completed or delivered
+        if ((!$trackingData || $errorMessage) && in_array(strtolower($order->status), ['completed', 'delivered'])) {
+            $trackingData = [
+                'courier_company' => strtoupper($shipping->courier_company ?? 'KURIER'),
+                'waybill_id' => $shipping->tracking_number ?? '-',
+                'status' => 'delivered',
+                'history' => [
+                    [
+                        'updated_at' => $order->updated_at->toIso8601String(),
+                        'status'     => 'TELAH DITERIMA',
+                        'note'       => 'Paket telah diterima oleh customer.'
+                    ]
+                ]
+            ];
+            $errorMessage = null;
+        }
+
+        if ($trackingData && !empty($trackingData['history'])) {
+            $hasDelivered = false;
+            foreach ($trackingData['history'] as $item) {
+                if (in_array(strtoupper($item['status']), ['DELIVERED', 'TELAH DITERIMA'])) {
+                    $hasDelivered = true;
+                }
+            }
+            if (in_array(strtolower($order->status), ['completed', 'delivered']) && !$hasDelivered) {
+                array_unshift($trackingData['history'], [
+                    'updated_at' => $order->updated_at->toIso8601String(),
+                    'status'     => 'TELAH DITERIMA',
+                    'note'       => 'Paket telah diterima oleh customer.'
+                ]);
             }
         }
 

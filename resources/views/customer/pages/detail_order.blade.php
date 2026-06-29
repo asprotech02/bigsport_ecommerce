@@ -109,24 +109,14 @@
                         
                         <div class="col-md-6 p-4">
                             @if($isPickup)
-                                <div class="d-flex flex-column align-items-center justify-content-center h-100">
-                                    <p class="text-dark fw-bold mb-2 text-uppercase text-center" style="font-size: 13px; letter-spacing: 1px;">KODE PENGAMBILAN</p>
-                                    @if(in_array($order->status, ['confirmed', 'processing']))
-                                        <div class="bg-white p-2 border border-secondary-subtle shadow-sm" id="qr-code-box">
-                                            {!! QrCode::size(110)->generate($order->invoice_number) !!}
-                                        </div>
-                                        <p class="text-secondary mt-2 mb-2 text-center" style="font-size: 11px;">Tunjukkan kode ini ke kasir toko</p>
-                                        <button type="button" onclick="downloadQRCode('{{ $order->invoice_number }}')" class="btn btn-outline-dark btn-sm rounded-0 fw-bold" style="font-size: 10px; padding: 5px 12px; letter-spacing: 0.5px;">
-                                            <i class="bi bi-download me-1"></i> SIMPAN QR
-                                        </button>
-                                    @else
-                                        <div class="bg-light d-flex align-items-center justify-content-center border border-secondary-subtle" style="width: 110px; height: 110px;">
-                                            <i class="bi bi-lock text-secondary fs-1"></i>
-                                        </div>
-                                        <p class="text-secondary mt-2 mb-0 text-center" style="font-size: 11px;">
-                                            {{ $order->payment_status == 'unpaid' ? 'Selesaikan pembayaran dahulu' : 'QR Code kedaluwarsa' }}
+                                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-center">
+                                    <p class="text-dark fw-bold mb-2 text-uppercase text-center" style="font-size: 13px; letter-spacing: 1px;">PENGAMBILAN PESANAN</p>
+                                    <div class="bg-light p-3 border border-secondary-subtle w-100">
+                                        <p class="text-dark fw-bold mb-1" style="font-size: 13px;">Tunjukkan Invoice</p>
+                                        <p class="text-secondary mb-0 small" style="line-height: 1.5;">
+                                            Silakan tunjukkan nomor invoice <strong class="text-dark">#{{ $order->invoice_number }}</strong> kepada kasir untuk mengambil pesanan Anda di toko.
                                         </p>
-                                    @endif
+                                    </div>
                                 </div>
                             @else
                                 <h6 class="fw-bold text-uppercase mb-3" style="font-size: 12px; letter-spacing: 1px;">
@@ -290,14 +280,14 @@
                 @endif
                 
                 {{-- Lacak Pesanan (Arahkan ke halaman khusus) --}}
-                @if(in_array($order->status, ['processing', 'completed']) && !$isPickup && $hasTracking)
+                @if(in_array($order->status, ['processing', 'shipped', 'delivered', 'completed']) && !$isPickup && $hasTracking)
                     <a href="{{ route('order.track', $order->id) }}" class="btn btn-outline-dark fw-bold text-uppercase rounded-0 py-2.5 text-center w-100 d-block" style="font-size: 12px; letter-spacing: 0.5px;">
                         Lacak Pesanan
                     </a>
                 @endif
 
                 {{-- Pesanan Diterima (Fungsi Aktif) --}}
-                @if($order->status == 'processing' && !$isPickup && $hasTracking)
+                @if(in_array($order->status, ['processing', 'shipped', 'delivered']) && $order->payment_status == 'paid')
                     <button type="button" onclick="submitOrderReceived({{ $order->id }})" id="btn-complete-order" class="btn btn-dark fw-bold text-uppercase rounded-0 py-2.5 w-100" style="font-size: 12px; letter-spacing: 0.5px;">Pesanan Diterima</button>
                 @endif
                 
