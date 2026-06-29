@@ -21,7 +21,8 @@ class RedirectAdminFromFrontend
                 !$request->is('api*') && 
                 !$request->is('logout') && 
                 !$request->is('biteship*') && 
-                !$request->is('midtrans*')) {
+                !$request->is('midtrans*') &&
+                !$request->is('product/*')) {
                 
                 return redirect()->route('admin.dashboard');
             }
