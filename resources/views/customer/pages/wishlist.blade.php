@@ -26,7 +26,13 @@
                 @forelse($wishlistItems as $item)
                     @php
                         $product = $item->product;
-                        $isDiscount = $product->discount_price && $product->discount_price < $product->base_price;
+                        
+                        // Ambil SKU pertama yang ada stok tersedia, atau SKU pertama jika kosong semua
+                        $activeSku = $product->skus->where('available_stock', '>', 0)->first() ?? $product->skus->first();
+                        $basePrice = $activeSku ? $activeSku->base_price : 0;
+                        $discountPrice = $activeSku ? $activeSku->discount_price : null;
+                        $isDiscount = !is_null($discountPrice);
+                        
                         $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
                         $imagePath = $primaryImage ? asset('storage/' . $primaryImage->image_path) : asset('assets/images/default.jpg');
                         
@@ -65,10 +71,10 @@
                             <span class="d-md-none fw-bold text-secondary text-uppercase" style="font-size: 12px;">Harga</span>
                             <div class="text-md-center">
                                 @if($isDiscount)
-                                    <span class="fw-bold text-danger d-block" style="font-size: 15px;">Rp {{ number_format($product->discount_price, 0, ',', '.') }}</span>
-                                    <span class="text-secondary text-decoration-line-through" style="font-size: 12px;">Rp {{ number_format($product->base_price, 0, ',', '.') }}</span>
+                                    <span class="fw-bold text-danger d-block" style="font-size: 15px;">Rp {{ number_format($discountPrice, 0, ',', '.') }}</span>
+                                    <span class="text-secondary text-decoration-line-through" style="font-size: 12px;">Rp {{ number_format($basePrice, 0, ',', '.') }}</span>
                                 @else
-                                    <span class="fw-bold" style="font-size: 15px;">Rp {{ number_format($product->base_price, 0, ',', '.') }}</span>
+                                    <span class="fw-bold" style="font-size: 15px;">Rp {{ number_format($basePrice, 0, ',', '.') }}</span>
                                 @endif
                             </div>
                         </div>

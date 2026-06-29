@@ -9,7 +9,7 @@ class WishlistController extends Controller
 {
     public function index()
     {
-        $wishlistItems = \App\Models\Wishlist::with(['product.brand', 'product.images' => function($q) {
+        $wishlistItems = \App\Models\Wishlist::with(['product.brand', 'product.skus', 'product.images' => function($q) {
             $q->where('is_primary', true);
         }])->where('user_id', auth()->id())->get();
 
