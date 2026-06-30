@@ -335,4 +335,44 @@ class ProductController extends Controller
             return back()->withErrors(['error' => 'Gagal menghapus produk: ' . $e->getMessage()]);
         }
     }
+
+    public function deleteBulk(Request $request)
+    {
+        $productIds = $request->input('product_ids');
+        if (empty($productIds)) {
+            return redirect()
+                ->route('admin.products.index')
+                ->with('error', 'Pilih minimal satu produk untuk dihapus.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $products = Product::with('images')->whereIn('id', $productIds)->get();
+
+            foreach ($products as $product) {
+                // Hapus file fisik dari storage
+                foreach ($product->images as $img) {
+                    Storage::disk('public')->delete($img->image_path);
+                }
+
+                // Hapus relasi di database terlebih dahulu secara eksplisit
+                $product->images()->delete();
+                $product->skus()->delete();
+                $product->delete();
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.products.index')
+                ->with('success', count($productIds) . ' Produk berhasil dihapus secara masal.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()
+                ->route('admin.products.index')
+                ->with('error', 'Gagal menghapus produk secara masal: ' . $e->getMessage());
+        }
+    }
 }

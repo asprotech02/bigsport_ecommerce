@@ -44,6 +44,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,sales,manager'])->group(
     Route::resource('subcategories', SubcategoryController::class)
         ->names('admin.subcategories');
 
+    Route::post('/products/delete-bulk', [AdminProductController::class, 'deleteBulk'])->name('admin.products.deleteBulk');
     Route::resource('products', AdminProductController::class)
         ->names('admin.products');
 

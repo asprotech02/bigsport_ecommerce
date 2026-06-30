@@ -348,16 +348,16 @@
                             <span class="text-secondary d-block mb-2" style="font-size: 12px;">Sedia Metode Pembayaran:</span>
                             <div class="d-flex flex-wrap gap-2">
                                 <div class="bg-white border border-light-subtle d-flex align-items-center justify-content-center p-1" style="width: 55px; height: 32px;">
-                                    <img src="{{ asset('assets/customer/icon/Icon-bca.png') }}" alt="BCA" class="w-100 h-100" style="object-fit: contain;">
+                                    <img src="{{ asset('assets/customer/icon/Icon-BCA.png') }}" alt="BCA" class="w-100 h-100" style="object-fit: contain;">
                                 </div>
                                 <div class="bg-white border border-light-subtle d-flex align-items-center justify-content-center p-1" style="width: 55px; height: 32px;">
-                                    <img src="{{ asset('assets/customer/icon/Icon-qris.png') }}" alt="QRIS" class="w-100 h-100" style="object-fit: contain;">
+                                    <img src="{{ asset('assets/customer/icon/Icon-QRIS.png') }}" alt="QRIS" class="w-100 h-100" style="object-fit: contain;">
                                 </div>
                                 <div class="bg-white border border-light-subtle d-flex align-items-center justify-content-center p-1" style="width: 55px; height: 32px;">
-                                    <img src="{{ asset('assets/customer/icon/Icon-mastercard.png') }}" alt="Mastercard" class="w-100 h-100" style="object-fit: contain;">
+                                    <img src="{{ asset('assets/customer/icon/Icon-Mastercard.png') }}" alt="Mastercard" class="w-100 h-100" style="object-fit: contain;">
                                 </div>
                                 <div class="bg-white border border-light-subtle d-flex align-items-center justify-content-center p-1" style="width: 55px; height: 32px;">
-                                    <img src="{{ asset('assets/customer/icon/Icon-visa.svg') }}" alt="Visa" class="w-100 h-100" style="object-fit: contain;">
+                                    <img src="{{ asset('assets/customer/icon/Icon-Visa.svg') }}" alt="Visa" class="w-100 h-100" style="object-fit: contain;">
                                 </div>
                                 <div class="bg-white border border-light-subtle d-flex align-items-center justify-content-center p-1" style="width: 55px; height: 32px;">
                                     <img src="{{ asset('assets/customer/icon/Icon-Jcb.png') }}" alt="JCB" class="w-100 h-100" style="object-fit: contain;">

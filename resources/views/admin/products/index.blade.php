@@ -14,33 +14,60 @@
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show" role="alert">
+        <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-4" role="alert" style="background-color: rgba(46, 196, 182, 0.15); color: #2ec4b6; border: 1px solid rgba(46, 196, 182, 0.3);">
             <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger border-0 shadow-sm alert-dismissible fade show mb-4" role="alert" style="background-color: rgba(230, 57, 70, 0.15); color: #e63946; border: 1px solid rgba(230, 57, 70, 0.3);">
+            <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    <!-- Bulk Delete Form -->
+    <form id="bulk-delete-form" action="{{ route('admin.products.deleteBulk') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus semua produk terpilih secara masal? Semua gambar dan variasi SKU juga akan dihapus secara permanen.')">
+        @csrf
+    </form>
+
+    <div class="mb-3 d-flex align-items-center">
+        <button type="submit" id="btn-bulk-delete" form="bulk-delete-form" class="btn btn-danger btn-sm d-flex align-items-center px-3 py-2" style="border-radius: 6px;" disabled>
+            <i class="fas fa-trash-alt me-1.5"></i> Hapus Terpilih (Masal)
+        </button>
+        <span id="bulk-select-count" class="text-muted small ms-2 d-none">0 terpilih</span>
+    </div>
+
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" style="min-width: 1000px;">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light text-uppercase fs-7 text-secondary">
                         <tr>
-                            <th class="ps-4" width="80">No</th>
-                            <th width="100">Gambar</th>
+                            <th class="ps-4" style="width: 45px;">
+                                <input type="checkbox" id="check-all" class="form-check-input position-static m-0">
+                            </th>
+                            <th class="ps-2" style="width: 60px;">No</th>
+                            <th width="80">Gambar</th>
                             <th>Produk</th>
                             <th>Kategori / Brand</th>
                             <th>Gender</th>
                             <th>Harga Terendah</th>
                             <th>Total Stok</th>
                             <th class="text-center">Featured</th>
-                            <th class="pe-4 text-end" width="220">Aksi</th>
+                            <th class="pe-4 text-end" width="130">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($products as $product)
                         <tr>
-                            <td class="ps-4 fw-bold text-secondary">
+                            <td class="ps-4">
+                                <input type="checkbox" name="product_ids[]" value="{{ $product->id }}" 
+                                       class="product-checkbox form-check-input position-static m-0"
+                                       form="bulk-delete-form">
+                            </td>
+                            <td class="ps-2 fw-bold text-secondary">
                                 {{ $loop->iteration }}
                             </td>
                             <td>
@@ -111,32 +138,34 @@
                                 @endif
                             </td>
                             <td class="pe-4 text-end">
-                                <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
-                                    <a href="{{ route('product.detail', $product->slug) }}" 
-                                       target="_blank" 
-                                       class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
-                                       title="Lihat di Toko"
-                                       style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);">
-                                        <i class="fas fa-external-link-alt me-1.5"></i> Detail
-                                    </a>
- 
-                                    <a href="{{ route('admin.products.edit', $product->id) }}" 
-                                       class="btn btn-sm btn-outline-light px-2.5 py-1.5 d-flex align-items-center" 
-                                       title="Edit Produk"
-                                       style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);">
-                                        <i class="fas fa-edit me-1.5"></i> Edit
-                                    </a>
- 
-                                    <form action="{{ route('admin.products.destroy', $product->id) }}" 
-                                          method="POST" 
-                                          class="d-inline mb-0"
-                                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini? Semua gambar dan variasi SKU-nya juga akan terhapus permanen.')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger px-2.5 py-1.5 d-flex align-items-center" title="Hapus Produk" style="font-size: 0.75rem; border-radius: 6px;">
-                                            <i class="fas fa-trash-alt me-1.5"></i> Hapus
-                                        </button>
-                                    </form>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-light dropdown-toggle px-2.5 py-1.5 d-flex align-items-center" 
+                                            type="button" 
+                                            id="actionDropdown{{ $product->id }}" 
+                                            data-toggle="dropdown" 
+                                            aria-haspopup="true" 
+                                            aria-expanded="false"
+                                            style="font-size: 0.75rem; border-radius: 6px; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);">
+                                        <i class="fas fa-cog me-1.5"></i> Aksi
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="actionDropdown{{ $product->id }}" style="background-color: #1e1e2d; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-radius: 8px;">
+                                        <a class="dropdown-item text-white py-2" href="{{ route('product.detail', $product->slug) }}" target="_blank">
+                                            <i class="fas fa-external-link-alt me-2 text-primary"></i> Lihat di Toko
+                                        </a>
+                                        <a class="dropdown-item text-white py-2" href="{{ route('admin.products.edit', $product->id) }}">
+                                            <i class="fas fa-edit me-2 text-info"></i> Edit
+                                        </a>
+                                        <form action="{{ route('admin.products.destroy', $product->id) }}" 
+                                              method="POST" 
+                                              class="d-inline mb-0"
+                                              onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini? Semua gambar dan variasi SKU-nya juga akan terhapus permanen.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="dropdown-item text-danger py-2" style="background: none; border: none; width: 100%; text-align: left;">
+                                                <i class="fas fa-trash-alt me-2 text-danger"></i> Hapus
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -159,5 +188,59 @@
 <style>
     .fs-7 { font-size: 0.8rem; }
     .text-orange { color: #fd7e14; }
+    .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: #ffffff !important;
+    }
 </style>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkAll = document.getElementById('check-all');
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    const btnBulkDelete = document.getElementById('btn-bulk-delete');
+    const selectCountText = document.getElementById('bulk-select-count');
+
+    function updateBulkButtonState() {
+        const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+        const checkedCount = checkedBoxes.length;
+
+        if (checkedCount > 0) {
+            btnBulkDelete.disabled = false;
+            selectCountText.innerText = checkedCount + ' terpilih';
+            selectCountText.classList.remove('d-none');
+        } else {
+            btnBulkDelete.disabled = true;
+            selectCountText.classList.add('d-none');
+            if (checkAll) {
+                checkAll.checked = false;
+            }
+        }
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => {
+                cb.checked = checkAll.checked;
+            });
+            updateBulkButtonState();
+        });
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            updateBulkButtonState();
+            
+            // Update checkAll state based on whether all checkboxes are checked
+            if (checkAll) {
+                const totalCheckboxes = checkboxes.length;
+                const totalChecked = document.querySelectorAll('.product-checkbox:checked').length;
+                checkAll.checked = (totalCheckboxes === totalChecked);
+            }
+        });
+    });
+});
+</script>
+@endpush
 @endsection
