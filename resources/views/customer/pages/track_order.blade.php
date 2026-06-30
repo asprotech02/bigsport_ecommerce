@@ -250,10 +250,10 @@
                     throw new Error("Leaflet.js library is not loaded.");
                 }
 
-                // 1. Titik Asal (Store Bagindo Jaya Larangan)
-                const originLat = -6.2263;
-                const originLng = 106.7291;
-                const originName = "Bagindo Jaya Store (Larangan)";
+                // 1. Titik Asal (Store Bagindo Jaya Tangerang)
+                const originLat = -6.1758;
+                const originLng = 106.6306;
+                const originName = "Bagindo Jaya Store (Tangerang)";
 
                 // 2. Alamat User & Koordinat dari Server
                 const destLat = parseFloat({!! json_encode($destLat ?? -6.1783) !!});
